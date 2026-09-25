@@ -1,0 +1,154 @@
+<div class="template-container">
+  <!-- Header Card & Auth Status -->
+  <ss-card [title]="'Dự Án Base Template — Micro-Frontend Platform'">
+    <div class="header-content">
+      <div class="status-info">
+        <p>
+          Trạng thái phiên đăng nhập OIDC:
+          <ss-tag [status]="authService.isAuthenticated() ? 'success' : 'warning'">
+            {{ authService.isAuthenticated() ? 'Đã xác thực (Authenticated)' : 'Chưa đăng nhập' }}
+          </ss-tag>
+        </p>
+        <p *ngIf="authService.claims && authService.isAuthenticated()">
+          Tài khoản: <strong>{{ authService.claims['preferred_username'] || authService.claims['name'] || 'User' }}</strong>
+          <span *ngIf="authService.claims['email']"> ({{ authService.claims['email'] }})</span>
+        </p>
+      </div>
+      <div class="header-actions">
+        <ss-button type="default" [danger]="true" (onClick)="onLogout()">Đăng Xuất</ss-button>
+      </div>
+    </div>
+  </ss-card>
+
+  <!-- Card Kiểm Tra Token & Header Authorization -->
+  <ss-card [title]="'Kiểm Tra Token OIDC & Header Authorization (authInterceptor)'">
+    <div class="token-section">
+      <div class="token-field">
+        <div class="token-field-header">
+          <label class="form-label"><strong>Access Token (JWT Bearer Token):</strong></label>
+          <ss-button *ngIf="authService.getToken()" type="default" (onClick)="copyToken()">Sao chép Token</ss-button>
+        </div>
+        <div class="token-box">
+          <code *ngIf="authService.getToken()">{{ authService.getToken() }}</code>
+          <span *ngIf="!authService.getToken()" class="text-muted">Chưa có Access Token trong phiên.</span>
+        </div>
+      </div>
+
+      <div class="token-field">
+        <label class="form-label"><strong>Test gắn Header 'Authorization: Bearer &lt;token&gt;' khi gọi Backend:</strong></label>
+        <div class="api-test-actions">
+          <ss-button type="primary" [disabled]="apiLoading" (onClick)="testCallApi()">
+            {{ apiLoading ? 'Đang gửi Request...' : 'Gửi Request kiểm tra Header' }}
+          </ss-button>
+          <span class="api-note">Gọi tới: <code>{{ authService.apiBaseUrls[0] || 'http://localhost:8080' }}/api/template/test</code></span>
+        </div>
+        <div *ngIf="apiResult" class="api-result" [class.success]="apiSuccess" [class.error]="!apiSuccess">
+          <pre>{{ apiResult }}</pre>
+        </div>
+      </div>
+
+      <div class="token-field" *ngIf="authService.claims && authService.isAuthenticated()">
+        <label class="form-label"><strong>User Claims (Giải mã trực tiếp từ Token):</strong></label>
+        <pre class="claims-box">{{ authService.claims | json }}</pre>
+      </div>
+    </div>
+  </ss-card>
+
+  <!-- Showcase Feedback: Toasts & Dialogs -->
+  <ss-card [title]="'1. Feedback Services (SsToastService & SsConfirmService)'">
+    <ss-alert
+      type="info"
+      message="Sử dụng trực tiếp SsToastService và SsConfirmService từ @platform/ui-kit. Interceptor cũng tự động hiển thị toast khi xảy ra lỗi HTTP 403, 500."
+    ></ss-alert>
+
+    <div class="demo-buttons-row">
+      <ss-button type="primary" (onClick)="showSuccess()">Toast Success</ss-button>
+      <ss-button type="primary" [danger]="true" (onClick)="showError()">Toast Error</ss-button>
+      <ss-button type="default" (onClick)="showWarning()">Toast Warning</ss-button>
+      <ss-button type="default" (onClick)="showInfo()">Toast Info</ss-button>
+      <ss-button type="default" (onClick)="clearToasts()">Clear All Toasts</ss-button>
+      <ss-button type="primary" (onClick)="openConfirm()">Mở SsConfirm Dialog</ss-button>
+      <ss-button type="default" (onClick)="openDialog()">Mở SsDialog Component</ss-button>
+      <ss-button type="default" (onClick)="toggleSpin()">
+        {{ isSpinning ? 'Ẩn SsSpin' : 'Hiện SsSpin Loading' }}
+      </ss-button>
+    </div>
+
+    <div class="spin-demo-box" *ngIf="isSpinning">
+      <ss-spin></ss-spin>
+      <span>Đang tải dữ liệu từ máy chủ...</span>
+    </div>
+  </ss-card>
+
+  <!-- Showcase Form Controls -->
+  <ss-card [title]="'2. Form Controls (@platform/ui-kit)'">
+    <div class="form-grid">
+      <div class="form-item">
+        <label class="form-label">Ô nhập văn bản (ss-input):</label>
+        <ss-input [(ngModel)]="inputText" placeholder="Nhập nội dung..."></ss-input>
+      </div>
+
+      <div class="form-item">
+        <label class="form-label">Chọn danh sách (ss-select):</label>
+        <ss-select [(ngModel)]="selectedValue" [options]="selectOptions"></ss-select>
+      </div>
+
+      <div class="form-item">
+        <label class="form-label">Nhãn trạng thái (ss-tag & ss-badge):</label>
+        <div class="tags-row">
+          <ss-tag status="success">Hoạt động</ss-tag>
+          <ss-tag status="processing">Đang xử lý</ss-tag>
+          <ss-tag status="error">Đã hủy</ss-tag>
+          <ss-badge [count]="15"></ss-badge>
+          <ss-badge [count]="99" [overflowCount]="99"></ss-badge>
+        </div>
+      </div>
+    </div>
+  </ss-card>
+
+  <!-- Showcase Shared Pipes -->
+  <ss-card [title]="'3. Tiện ích dùng chung (@shared Pipes)'">
+    <div class="pipes-grid">
+      <div class="pipe-card">
+        <div class="pipe-title">Format Currency Pipe</div>
+        <div class="pipe-result">{{ samplePrice | formatCurrency }}</div>
+        <small class="pipe-sub">Giá trị gốc: {{ samplePrice }}</small>
+      </div>
+
+      <div class="pipe-card">
+        <div class="pipe-title">Truncate Pipe (Giới hạn 45 ký tự)</div>
+        <div class="pipe-result">{{ sampleLongText | truncate: 45 }}</div>
+        <small class="pipe-sub">Độ dài gốc: {{ sampleLongText.length }} ký tự</small>
+      </div>
+
+      <div class="pipe-card">
+        <div class="pipe-title">Safe HTML Pipe</div>
+        <div class="pipe-result" [innerHTML]="sampleHtml | safeHtml"></div>
+        <small class="pipe-sub">Sanitized an toàn bởi Angular DOMSanitizer</small>
+      </div>
+    </div>
+  </ss-card>
+
+  <!-- Showcase Data Table -->
+  <ss-card [title]="'4. Bảng Dữ Liệu (ss-data-table)'">
+    <ss-data-table
+      [columns]="tableColumns"
+      [data]="tableData"
+      [settings]="tableSettings"
+    ></ss-data-table>
+  </ss-card>
+
+  <!-- Modal SsDialog -->
+  <ss-dialog
+    [visible]="dialogVisible"
+    title="Thông Báo Mẫu (SsDialog)"
+    (onClose)="closeDialog()"
+  >
+    <p>Nội dung hiển thị bên trong hộp thoại <code>&lt;ss-dialog&gt;</code> từ thư viện <code>&#64;platform/ui-kit</code>.</p>
+    <p>Giá trị bạn đang nhập: <strong>{{ inputText }}</strong></p>
+    <div slot="footer" style="display: flex; justify-content: flex-end; gap: 8px;">
+      <ss-button type="default" (onClick)="closeDialog()">Đóng</ss-button>
+      <ss-button type="primary" (onClick)="closeDialog()">Xác nhận</ss-button>
+    </div>
+  </ss-dialog>
+</div>
