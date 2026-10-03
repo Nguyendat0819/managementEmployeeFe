@@ -166,7 +166,7 @@ export class templateModule {
   testCallApi(): void {
     this.apiLoading = true;
     this.apiResult = null;
-    const url = `${environment.apiBaseUrl}/api/template/test`;
+    const url = `${environment.apiBaseUrl}/${environment.contextPath}/api/template/test`;
 
     this.http.get(url, { responseType: 'text' }).subscribe({
       next: (res) => {

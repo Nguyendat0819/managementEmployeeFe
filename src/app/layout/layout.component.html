@@ -1,0 +1,25 @@
+<div class="app-layout" [class.is-mobile]="isMobile" [class.mobile-open]="mobileOpen" [class.is-collapsed]="collapsed && !isMobile">
+  <aside class="app-sider">
+    <app-sidebar
+      [collapsed]="isMobile ? false : collapsed"
+      (toggleCollapsed)="toggleSidebar()"
+      (navigate)="closeMobileMenu()"
+    ></app-sidebar>
+  </aside>
+
+  <div class="app-backdrop" *ngIf="isMobile && mobileOpen" (click)="closeMobileMenu()"></div>
+
+  <main class="app-right">
+    <header class="app-header">
+      <app-header
+        [crumbs]="breadcrumb.crumbs()"
+        [widthMode]="widthMode"
+        (menuToggle)="toggleSidebar()"
+      ></app-header>
+    </header>
+
+    <section class="app-content">
+      <router-outlet></router-outlet>
+    </section>
+  </main>
+</div>

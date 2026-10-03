@@ -21,8 +21,8 @@
       "@shared/*": ["./src/app/shared/*"],
       "@features/*": ["./src/app/features/*"],
       "@env/*": ["./src/environments/*"],
-      "@platform/ui-kit": ["../../Template/mfe-platform-libs/projects/platform/ui-kit/src/public-api.ts"],
-      "@platform/shared": ["../../Template/mfe-platform-libs/projects/platform/shared/src/public-api.ts"]
+      "@platform/ui-kit": ["../mfe-platform-libs-no-keycloak/projects/platform/ui-kit/src/public-api.ts"],
+      "@platform/shared": ["../mfe-platform-libs-no-keycloak/projects/platform/shared/src/public-api.ts"]
     }
   },
   "angularCompilerOptions": {

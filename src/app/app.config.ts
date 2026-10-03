@@ -4,11 +4,20 @@ import {
   provideAppInitializer,
   inject,
 } from '@angular/core';
-import { provideRouter, withComponentInputBinding, Router } from '@angular/router';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { en_US, provideNzI18n } from 'ng-zorro-antd/i18n';
-import { provideOAuthClient } from 'angular-oauth2-oidc';
+import { provideNzIcons } from 'ng-zorro-antd/icon';
+import {
+  BellOutline,
+  EyeInvisibleOutline,
+  EyeOutline,
+  HomeOutline,
+  LogoutOutline,
+  MenuOutline,
+  QuestionCircleOutline,
+} from '@ant-design/icons-angular/icons';
 
 import { authInterceptor, AUTH_CONFIG, AuthService } from '@platform/shared';
 import { SS_ERROR_MESSAGES, SS_DEFAULT_ERROR_MESSAGES } from '@platform/ui-kit';
@@ -22,12 +31,22 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([authInterceptor])),
     provideAnimationsAsync(),
     provideNzI18n(en_US),
-    provideOAuthClient(),
+    provideNzIcons([
+      BellOutline,
+      EyeInvisibleOutline,
+      EyeOutline,
+      HomeOutline,
+      LogoutOutline,
+      MenuOutline,
+      QuestionCircleOutline,
+    ]),
     provideAppInitializer(async () => {
       const auth = inject(AuthService);
-      const router = inject(Router);
-      await auth.init();
-
+      try {
+        await auth.init();
+      } catch (e) {
+        console.error('[AppInit] Auth init failed:', e);
+      }
     }),
     {
       provide: AUTH_CONFIG,

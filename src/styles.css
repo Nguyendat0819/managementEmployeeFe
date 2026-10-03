@@ -21,12 +21,30 @@ body {
   height: 100%;
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--font-family-base);
   color: var(--color-text);
   background: var(--color-bg-layout);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+app-root {
+  display: block;
+  height: 100%;
+}
+
+:root {
+  --sider-width: clamp(220px, 12.5vw + 60px, 300px);
+  --app-content-padding: clamp(8px, 1.25vw - 8px, 16px);
+  --sider-bg: #243758;
+  --sider-text: #bcc9dc;
+  --sider-text-active: #ffffff;
+  --sider-hover-bg: rgba(255, 255, 255, 0.08);
+  --sider-active-bg: rgba(255, 255, 255, 0.14);
+  --sider-label: #bcc9dc;
+  --sider-profile-bg: #172b4f;
+  --sider-role: #ed1c24;
+  --sider-status: #37d046;
 }
 
 a {

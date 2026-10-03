@@ -1,0 +1,24 @@
+<div class="header-bar">
+  <ss-button
+    class="menu-toggle"
+    variant="text"
+    shape="circle"
+    icon="menu"
+    [iconOnly]="true"
+    tooltip="Menu"
+    (onClick)="emitMenuToggle()"
+  ></ss-button>
+
+  <div class="page-context">
+    <nav *ngIf="!isMobile" class="header-crumb" aria-label="Điều hướng">
+      <ss-breadcrumb [items]="crumbs" [maxItems]="crumbMaxItems" [compact]="true"></ss-breadcrumb>
+    </nav>
+    <span *ngIf="isMobile && currentLabel" class="header-title">{{ currentLabel }}</span>
+  </div>
+
+  <span class="spacer"></span>
+
+  <span class="live-status"><i></i> Hệ thống hoạt động</span>
+  <ss-button variant="text" shape="circle" icon="question-circle" [iconOnly]="true" tooltip="Trợ giúp"></ss-button>
+  <ss-button variant="text" shape="circle" icon="bell" [iconOnly]="true" tooltip="Thông báo"></ss-button>
+</div>

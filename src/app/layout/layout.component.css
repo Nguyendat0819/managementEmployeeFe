@@ -1,0 +1,80 @@
+:host {
+  display: block;
+  height: 100%;
+  overflow: hidden;
+}
+
+.app-layout {
+  display: grid;
+  grid-template-columns: var(--sider-width) minmax(0, 1fr);
+  height: 100%;
+  background: #f4f7fb;
+}
+
+.app-layout.is-collapsed {
+  grid-template-columns: 72px minmax(0, 1fr);
+}
+
+.app-sider {
+  height: 100%;
+  overflow: hidden;
+}
+
+.app-right {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  background: var(--color-bg-layout);
+}
+
+.app-header {
+  flex: 0 0 64px;
+  height: 64px;
+  padding: 0 28px;
+  background: var(--color-bg-container);
+  border-bottom: 1px solid var(--color-border-secondary);
+  box-shadow: 0 1px 0 rgba(15, 23, 42, .02);
+}
+
+.app-content {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: clamp(16px, 2vw, 28px);
+  background: #f4f7fb;
+}
+
+.app-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.app-layout.is-mobile {
+  display: block;
+}
+
+.app-layout.is-mobile .app-sider {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 1001;
+  width: var(--sider-width);
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.25);
+}
+
+.app-layout.is-mobile.mobile-open .app-sider {
+  transform: translateX(0);
+}
+
+@media (max-width: 767.98px) {
+  .app-header {
+    padding: 0 12px;
+  }
+
+  .app-content {
+    padding: 12px;
+  }
+}
