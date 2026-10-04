@@ -1,11 +1,12 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { SsBreadcrumbComponent, SsBreadcrumbItem, SsButtonComponent } from '@platform/ui-kit';
 import { HEADER_CRUMB_MAX_ITEMS, LayoutWidthMode } from '@core';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [SsBreadcrumbComponent, SsButtonComponent],
+  imports: [CommonModule, SsBreadcrumbComponent, SsButtonComponent],
   templateUrl: './header.component.html',
   styleUrl: './header.component.css',
 })
@@ -23,11 +24,13 @@ export class HeaderComponent {
   }
 
   get currentLabel(): string {
-    return this.crumbs.length ? this.crumbs[this.crumbs.length - 1].label : '';
+    return this.breadcrumbItems.length
+      ? this.breadcrumbItems[this.breadcrumbItems.length - 1].label
+      : '';
   }
 
-  get visibleCrumbs(): SsBreadcrumbItem[] {
-    return this.crumbMaxItems ? this.crumbs.slice(-this.crumbMaxItems) : this.crumbs;
+  get breadcrumbItems(): SsBreadcrumbItem[] {
+    return this.crumbs.length ? this.crumbs : [{ label: 'Trang chủ', path: '/dashboard' }];
   }
 
   emitMenuToggle(): void {

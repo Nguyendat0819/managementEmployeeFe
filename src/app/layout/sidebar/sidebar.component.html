@@ -52,19 +52,32 @@
       [attr.aria-label]="collapsed ? 'Mở rộng menu' : 'Thu gọn menu'"
       (click)="emitToggleCollapsed()"
     >
-      <span class="collapse-icon">{{ collapsed ? '›' : '‹' }}</span>
+      <nz-icon class="collapse-icon" [nzType]="collapsed ? 'right-circle' : 'left-circle'"></nz-icon>
       <span class="collapse-text" *ngIf="!collapsed">Thu gọn menu</span>
     </button>
 
-    <div class="profile">
-      <span class="profile-avatar">{{ displayName.charAt(0).toUpperCase() }}</span>
+    <div
+      class="profile"
+      nz-dropdown
+      [nzDropdownMenu]="profileMenu"
+      nzTrigger="click"
+      nzPlacement="topRight"
+    >
+      <nz-avatar nzIcon="user" [nzSize]="32"></nz-avatar>
       <div class="profile-text" *ngIf="!collapsed">
         <div class="profile-name">{{ displayName }}</div>
-        <div class="profile-role">{{ roleName }}</div>
+        <div class="profile-role" *ngIf="roleName">{{ roleName }}</div>
       </div>
+      <nz-icon *ngIf="!collapsed" class="profile-caret" nzType="up"></nz-icon>
     </div>
-    <button type="button" class="logout-button" (click)="logout()" [attr.title]="collapsed ? 'Đăng xuất' : null">
-      <span>↪</span><span *ngIf="!collapsed">Đăng xuất</span>
-    </button>
+
+    <nz-dropdown-menu #profileMenu="nzDropdownMenu">
+      <ul nz-menu>
+        <li nz-menu-item (click)="auth.logout()">
+          <nz-icon nzType="logout"></nz-icon>
+          <span>Đăng xuất</span>
+        </li>
+      </ul>
+    </nz-dropdown-menu>
   </div>
 </div>

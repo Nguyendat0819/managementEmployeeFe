@@ -189,27 +189,28 @@
   line-height: 1;
 }
 
+
 .profile {
+  background: var(--sider-profile-bg);   /* Figma: nền khối hồ sơ KHÁC nền menu */
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-width: 0;
-  padding: 14px 12px;
-  border-top: 1px solid rgba(255, 255, 255, .08);
-  background: transparent;
+  gap: 16px;
+  padding: 24px 20px;
+
+
+  cursor: pointer;
 }
 
-.profile-avatar {
-  display: inline-grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
-  color: #fff;
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 700;
+.profile:hover {
+  background: var(--sider-hover-bg);
+}
+
+.profile-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  line-height: 1.25;
+  overflow: hidden;
 }
 
 .profile-name {
@@ -222,45 +223,29 @@
 }
 
 .profile-role {
-  color: #91a8ca;
+  color: var(--sider-role);   /* Figma #ED1C24 */
   font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.logout-button {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 11px 14px;
-  color: #91a8ca;
-  font: inherit;
-  font-size: 12px;
-  background: transparent;
-  border: 0;
-  border-top: 1px solid rgba(255, 255, 255, .08);
-  cursor: pointer;
+.profile-caret {
+  color: var(--sider-label);
+  flex: 0 0 auto;
 }
-
-.logout-button:hover {
-  color: #fff;
-  background: rgba(239, 68, 68, .12);
-}
-
-.collapsed .brand {
+/* ============ Trạng thái thu gọn ============ */
+.sidebar.collapsed .brand {
   justify-content: center;
-  padding: 20px 0;
+  padding: 0;
 }
 
-.collapsed .brand-status {
+.sidebar.collapsed .brand-status {
   display: none;
 }
 
-.collapsed .collapse-row,
-.collapsed .profile,
-.collapsed .logout-button {
+.sidebar.collapsed .collapse-row,
+.sidebar.collapsed .profile {
   justify-content: center;
   padding-inline: 0;
 }

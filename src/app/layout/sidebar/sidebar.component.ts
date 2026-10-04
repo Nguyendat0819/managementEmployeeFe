@@ -4,11 +4,11 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '@platform/shared';
 import { MenuService } from '@core/menu/menu.service';
 import { MenuItem } from '@core/menu/menu-item.model';
-
+import { SharedModule } from '@shared/shared.module';
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, SharedModule],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.css',
 })
@@ -25,7 +25,10 @@ export class SidebarComponent {
 
   get displayName(): string {
     const claims = this.auth.claims;
-    return this.stringClaim(claims, 'user', 'userName', 'username', 'name', 'preferred_username') ?? 'HRM User';
+    return (
+      this.stringClaim(claims, 'user', 'userName', 'username', 'name', 'preferred_username') ??
+      'HRM User'
+    );
   }
 
   get roleName(): string {

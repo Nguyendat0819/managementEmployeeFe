@@ -1,49 +1,69 @@
 :host {
   display: block;
+  /* Phần trăm thay cho vh: html và body đã cao 100% nên chuỗi chiều cao chạy suốt, khỏi phụ thuộc vh. */
   height: 100%;
-  overflow: hidden;
+  overflow: hidden; /* không cho cả trang cuộn -> shell cố định */
 }
 
 .app-layout {
-  display: grid;
-  grid-template-columns: var(--sider-width) minmax(0, 1fr);
   height: 100%;
-  background: #f4f7fb;
 }
 
-.app-layout.is-collapsed {
-  grid-template-columns: 72px minmax(0, 1fr);
-}
-
+/* Sider: nền navy, cố định chiều cao; phần cuộn nằm trong app-sidebar */
 .app-sider {
   height: 100%;
   overflow: hidden;
 }
+:host ::ng-deep .app-sider,
+:host ::ng-deep .app-sider .ant-layout-sider-children {
+  background: var(--sider-bg);
+}
 
+/* Khung phải: cột dọc cao đúng viewport */
 .app-right {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  min-width: 0;
-  height: 100%;
-  background: var(--color-bg-layout);
 }
 
+/* Header cố định, KHÔNG cuộn. Hạ từ 80 xuống 56 và nhận luôn breadcrumb: ở laptop
+   768px chiều cao thì 80px trống chiếm hơn một phần mười màn mà không chứa gì. */
 .app-header {
-  flex: 0 0 64px;
-  height: 64px;
-  padding: 0 28px;
+  flex: 0 0 56px;
+  height: 56px;
+  padding: 0 24px;
   background: var(--color-bg-container);
   border-bottom: 1px solid var(--color-border-secondary);
-  box-shadow: 0 1px 0 rgba(15, 23, 42, .02);
 }
 
+/* CHỉ vùng này cuộn — MFE nằm trong đây */
 .app-content {
   flex: 1 1 auto;
   overflow: auto;
-  padding: clamp(16px, 2vw, 28px);
-  background: #f4f7fb;
+  /* Không chừa sẵn chỗ cho thanh cuộn dọc nữa: gần như mọi màn giờ tự vừa chiều cao nên chỗ chừa đó
+     chỉ làm mép phải dày hơn ba mép kia đúng bằng bề rộng thanh cuộn. Đổi lại, màn nào dài thật thì
+     lúc thanh cuộn hiện ra nội dung sẽ dịch sang trái một nhịp. */
+  /* Đệm gọn hơn bản cũ để trả thêm bề ngang cho bảng, nhất là ở laptop. */
+  padding: var(--app-content-padding);
+  background: var(--color-bg-layout);
 }
 
+/* ============ Mobile (< md = 768px): sidebar off-canvas ============ */
+/* Dưới md, sider tách khỏi luồng (position: fixed) và trượt ngang bằng transform.
+   nzCollapsed=false nên sider vẫn rộng 240px (hiện đủ nhãn), chỉ ẩn/hiện bằng translateX. */
+.app-layout.is-mobile .app-sider {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 1001;
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.25);
+}
+.app-layout.is-mobile.mobile-open .app-sider {
+  transform: translateX(0);
+}
+
+/* Nền mờ phủ nội dung khi drawer mở */
 .app-backdrop {
   position: fixed;
   inset: 0;
@@ -51,30 +71,12 @@
   background: rgba(0, 0, 0, 0.45);
 }
 
-.app-layout.is-mobile {
-  display: block;
-}
-
-.app-layout.is-mobile .app-sider {
-  position: fixed;
-  inset: 0 auto 0 0;
-  z-index: 1001;
-  width: var(--sider-width);
-  transform: translateX(-100%);
-  transition: transform 0.25s ease;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.25);
-}
-
-.app-layout.is-mobile.mobile-open .app-sider {
-  transform: translateX(0);
-}
-
+/* Padding gọn lại trên màn nhỏ */
 @media (max-width: 767.98px) {
   .app-header {
     padding: 0 12px;
   }
-
   .app-content {
-    padding: 12px;
+    padding: var(--app-content-padding) 12px;
   }
 }

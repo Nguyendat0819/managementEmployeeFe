@@ -1,25 +1,33 @@
-<div class="app-layout" [class.is-mobile]="isMobile" [class.mobile-open]="mobileOpen" [class.is-collapsed]="collapsed && !isMobile">
-  <aside class="app-sider">
+<nz-layout class="app-layout" [class.is-mobile]="isMobile" [class.mobile-open]="mobileOpen">
+  <nz-sider
+    class="app-sider"
+    nzCollapsible
+    [nzCollapsed]="isMobile ? false : collapsed"
+    [nzWidth]="'var(--sider-width)'"
+    [nzCollapsedWidth]="72"
+    [nzTrigger]="null"
+    nzTheme="dark"
+  >
     <app-sidebar
       [collapsed]="isMobile ? false : collapsed"
       (toggleCollapsed)="toggleSidebar()"
-      (navigate)="closeMobileMenu()"
     ></app-sidebar>
-  </aside>
+  </nz-sider>
 
-  <div class="app-backdrop" *ngIf="isMobile && mobileOpen" (click)="closeMobileMenu()"></div>
+  <!-- Backdrop: chỉ hiện khi mở drawer ở mobile, bấm ra ngoài để đóng -->
+<!--  <div class="app-backdrop" *ngIf="isMobile && mobileOpen" (click)="closeMobile()"></div>-->
 
-  <main class="app-right">
-    <header class="app-header">
+  <nz-layout class="app-right">
+    <nz-header class="app-header">
       <app-header
         [crumbs]="breadcrumb.crumbs()"
         [widthMode]="widthMode"
         (menuToggle)="toggleSidebar()"
       ></app-header>
-    </header>
+    </nz-header>
 
-    <section class="app-content">
+    <nz-content class="app-content">
       <router-outlet></router-outlet>
-    </section>
-  </main>
-</div>
+    </nz-content>
+  </nz-layout>
+</nz-layout>
