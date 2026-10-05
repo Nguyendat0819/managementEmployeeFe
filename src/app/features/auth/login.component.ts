@@ -42,7 +42,7 @@ export class LoginComponent {
     this.form.reset();
   }
 
-   submit(): void {
+  async submit(): Promise<void> {
     this.error.set('');
     this.success.set('');
     this.form.markAllAsTouched();
@@ -52,8 +52,11 @@ export class LoginComponent {
     this.submitting.set(true);
     try {
       if (this.mode() === 'login') {
-        this.auth.login({ username: this.form.controls.username.value, password: this.form.controls.password.value });
-         this.router.navigateByUrl('/dashboard');
+        await this.auth.login({
+          username: this.form.controls.username.value,
+          password: this.form.controls.password.value,
+        });
+        await this.router.navigateByUrl('/dashboard');
       } else {
         this.register();
         this.setMode('login');

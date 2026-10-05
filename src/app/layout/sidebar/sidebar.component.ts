@@ -1,5 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  inject,
+} from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '@platform/shared';
 import { MenuService } from '@core/menu/menu.service';
@@ -11,6 +18,7 @@ import { SharedModule } from '@shared/shared.module';
   imports: [CommonModule, RouterModule, SharedModule],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SidebarComponent {
   @Input() collapsed = false;
@@ -19,6 +27,7 @@ export class SidebarComponent {
 
   protected readonly auth = inject(AuthService);
   protected readonly menuService = inject(MenuService);
+  protected readonly menuItems = this.menuService.getMenu();
   private readonly router = inject(Router);
 
   openMap: Record<string, boolean> = {};
@@ -49,6 +58,10 @@ export class SidebarComponent {
 
   onNavigate(): void {
     this.navigate.emit();
+  }
+
+  trackById(_index: number, item: MenuItem): string {
+    return item.id;
   }
 
   navigateTo(item: MenuItem): void {
@@ -90,7 +103,7 @@ export class SidebarComponent {
       return false;
     };
 
-    walk(this.menuService.getMenu(), []);
+    walk(this.menuItems, []);
     return found;
   }
 

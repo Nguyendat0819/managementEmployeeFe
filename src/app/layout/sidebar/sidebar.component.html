@@ -9,40 +9,44 @@
   </div>
 
   <div class="sidebar-menu">
-    <ng-container *ngTemplateOutlet="menuNodes; context: { $implicit: menuService.getMenu(), level: 1 }"></ng-container>
+    <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="collapsed">
+      <ng-container
+        *ngTemplateOutlet="menuNodes; context: { $implicit: menuItems, level: 1 }"
+      ></ng-container>
+      <ng-template #menuNodes let-items let-level="level">
+        <ng-container *ngFor="let item of items; trackBy: trackById">
+          <li
+            *ngIf="item.children && item.children.length"
+            nz-submenu
+            [nzTitle]="nodeTitle"
+            [nzOpen]="!!openMap[item.id]"
+            [nzPaddingLeft]="collapsed ? null : level * 24"
+            (nzOpenChange)="onOpenChange(item.id, $event)"
+          >
+            <ng-template #nodeTitle>
+              <nz-icon [nzType]="item.icon ?? ''"></nz-icon>
+              <span>{{ item.label }}</span>
+            </ng-template>
 
-    <ng-template #menuNodes let-items let-level="level">
-      <ng-container *ngFor="let item of items">
-        <button
-          *ngIf="item.children?.length"
-          type="button"
-          class="menu-node"
-          [class.menu-node--open]="!!openMap[item.id]"
-          [style.padding-left.px]="collapsed ? 16 : level * 18"
-          (click)="onOpenChange(item.id, !openMap[item.id])"
-        >
-          <span class="menu-symbol" [style.color]="item.iconColor">{{ item.icon.charAt(0).toUpperCase() }}</span>
-          <span *ngIf="!collapsed" class="menu-label">{{ item.label }}</span>
-          <span *ngIf="!collapsed" class="menu-caret">{{ openMap[item.id] ? '−' : '+' }}</span>
-        </button>
-        <div *ngIf="item.children?.length && openMap[item.id] && !collapsed">
-          <ng-container *ngTemplateOutlet="menuNodes; context: { $implicit: item.children, level: level + 1 }"></ng-container>
-        </div>
+            <ul>
+              <ng-container
+                *ngTemplateOutlet="menuNodes; context: { $implicit: item.children, level: level + 1 }"
+              ></ng-container>
+            </ul>
+          </li>
+          <li
+            *ngIf="!item.children || !item.children.length"
+            nz-menu-item
+            [nzPaddingLeft]="collapsed ? null : level * 24"
+            [routerLink]="item.path ?? null"
+          >
+            <nz-icon [nzType]="item.icon ?? ''"></nz-icon>
+            <span>{{ item.label }}</span>
+          </li>
 
-        <button
-          *ngIf="!item.children?.length"
-          type="button"
-          class="menu-node"
-          [class.menu-node--active]="isActive(item)"
-          [attr.title]="collapsed ? item.label : null"
-          [style.padding-left.px]="collapsed ? 16 : level * 18"
-          (click)="navigateTo(item)"
-        >
-          <span class="menu-symbol" [style.color]="item.iconColor">{{ item.icon.charAt(0).toUpperCase() }}</span>
-          <span *ngIf="!collapsed" class="menu-label">{{ item.label }}</span>
-        </button>
-      </ng-container>
-    </ng-template>
+        </ng-container>
+      </ng-template>
+    </ul>
   </div>
 
   <div class="sidebar-footer">
