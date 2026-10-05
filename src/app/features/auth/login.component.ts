@@ -75,7 +75,7 @@ export class LoginComponent {
 
   private register(): Promise<unknown> {
     const { username, email, firstName, lastName, password } = this.form.getRawValue();
-    const url = `${environment.apiBaseUrl}/${environment.contextPath}/api/users`;
+    const url = `${environment.apiBaseUrl}/${environment.contextPath}/api/auth/register`;
     return new Promise((resolve, reject) =>
       this.http.post(url, { username, email, firstName, lastName, password, roleCode: 'USER' }).subscribe({
         next: resolve,

@@ -6,4 +6,7 @@ export interface MenuItem {
   path?: string;
   order: number;
   children?: MenuItem[];
+
+  roles?: string[];
+  permissions?: string[];
 }

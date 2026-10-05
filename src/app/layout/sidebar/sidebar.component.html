@@ -24,7 +24,8 @@
             (nzOpenChange)="onOpenChange(item.id, $event)"
           >
             <ng-template #nodeTitle>
-              <nz-icon [nzType]="item.icon ?? ''"></nz-icon>
+<!--              <nz-icon [nzType]="item.icon ?? ''"></nz-icon>-->
+              <nz-icon [nzType]="item.icon ?? ''" [style.color]="item.iconColor"></nz-icon>
               <span>{{ item.label }}</span>
             </ng-template>
 
@@ -40,7 +41,8 @@
             [nzPaddingLeft]="collapsed ? null : level * 24"
             [routerLink]="item.path ?? null"
           >
-            <nz-icon [nzType]="item.icon ?? ''"></nz-icon>
+<!--            <nz-icon [nzType]="item.icon ?? ''"></nz-icon>-->
+            <nz-icon [nzType]="item.icon ?? ''" [style.color]="item.iconColor"></nz-icon>
             <span>{{ item.label }}</span>
           </li>
 
@@ -77,7 +79,7 @@
 
     <nz-dropdown-menu #profileMenu="nzDropdownMenu">
       <ul nz-menu>
-        <li nz-menu-item (click)="auth.logout()">
+        <li nz-menu-item (click)="logout()">
           <nz-icon nzType="logout"></nz-icon>
           <span>Đăng xuất</span>
         </li>

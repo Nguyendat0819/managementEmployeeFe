@@ -11,6 +11,7 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '@platform/shared';
 import { MenuService } from '@core/menu/menu.service';
 import { MenuItem } from '@core/menu/menu-item.model';
+import { PermissionService } from '@core/services/permission.service';
 import { SharedModule } from '@shared/shared.module';
 @Component({
   selector: 'app-sidebar',
@@ -27,7 +28,8 @@ export class SidebarComponent {
 
   protected readonly auth = inject(AuthService);
   protected readonly menuService = inject(MenuService);
-  protected readonly menuItems = this.menuService.getMenu();
+  private readonly permissionService = inject(PermissionService);
+  protected readonly menuItems = this.filterMenu(this.menuService.getMenu());
   private readonly router = inject(Router);
 
   openMap: Record<string, boolean> = {};
@@ -86,7 +88,7 @@ export class SidebarComponent {
 
   logout(): void {
     this.auth.logout();
-    void this.router.navigateByUrl('/login');
+    void this.router.navigate(['/login'], { replaceUrl: true });
   }
 
   private ancestorsOf(id: string): string[] {
@@ -105,6 +107,20 @@ export class SidebarComponent {
 
     walk(this.menuItems, []);
     return found;
+  }
+
+  private filterMenu(items: MenuItem[]): MenuItem[] {
+    return items.reduce<MenuItem[]>((visible, item) => {
+      const children = item.children ? this.filterMenu(item.children) : undefined;
+      const isAllowed = this.permissionService.canAccess(item);
+      const hasVisibleChildren = !!children?.length;
+
+      if (isAllowed && (!item.children?.length || hasVisibleChildren)) {
+        visible.push({ ...item, children });
+      }
+
+      return visible;
+    }, []);
   }
 
   private stringClaim(claims: Record<string, unknown>, ...keys: string[]): string | null {
