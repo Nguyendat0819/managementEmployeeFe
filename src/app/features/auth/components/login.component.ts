@@ -1,13 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '@platform/shared';
 import { SsButtonComponent, SsInputComponent } from '@platform/ui-kit';
-import { environment } from '@env/environment';
-
-type AuthMode = 'login' | 'register';
+import { AuthMode, RegisterRequest } from '../model/auth.model';
+import { AuthFeatureService } from '../service/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -19,7 +18,7 @@ type AuthMode = 'login' | 'register';
 export class LoginComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly auth = inject(AuthService);
-  private readonly http = inject(HttpClient);
+  private readonly authFeature = inject(AuthFeatureService);
   private readonly router = inject(Router);
 
   readonly mode = signal<AuthMode>('login');
@@ -75,13 +74,8 @@ export class LoginComponent {
 
   private register(): Promise<unknown> {
     const { username, email, firstName, lastName, password } = this.form.getRawValue();
-    const url = `${environment.apiBaseUrl}/${environment.contextPath}/api/auth/register`;
-    return new Promise((resolve, reject) =>
-      this.http.post(url, { username, email, firstName, lastName, password, roleCode: 'USER' }).subscribe({
-        next: resolve,
-        error: reject,
-      }),
-    );
+    const request: RegisterRequest = { username, email, firstName, lastName, password };
+    return this.authFeature.register(request);
   }
 
   private registrationError(error: unknown): string {

@@ -1,14 +1,13 @@
 import { Routes } from '@angular/router';
 import { authGuard } from '@core';
-import { LoginComponent } from './features/auth/login.component';
-import { DashboardComponent } from './features/dashboard/dashboard.component';
+import { authRoutes } from './features/auth/auth.routes';
+import { dashboardRoutes } from './features/dashboard/dashboard.routes';
 import { LayoutComponent } from './layout/layout.component';
 
 export const routes: Routes = [
   {
     path: 'login',
-    title: 'Đăng nhập',
-    component: LoginComponent,
+    children: authRoutes,
   },
   {
     path: '',
@@ -18,8 +17,7 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       {
         path: 'dashboard',
-        title: 'Trang chủ',
-        component: DashboardComponent,
+        children: dashboardRoutes,
       },
     ],
   },
