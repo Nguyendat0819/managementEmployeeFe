@@ -1,0 +1,39 @@
+<main class="leave-page">
+  <section class="stats-grid" aria-label="Tổng quan nghỉ phép">
+    <ss-stat label="Tổng ngày phép còn lại" [value]="totalRemaining" suffix="ngày" hint="Tất cả loại phép" tone="primary" icon="solution"></ss-stat>
+    <ss-stat label="Đơn đang chờ duyệt" [value]="1" suffix="đơn" hint="Cần theo dõi" tone="warning" icon="clock-circle"></ss-stat>
+    <ss-stat label="Đã nghỉ trong năm" [value]="2" suffix="ngày" hint="Tính đến hôm nay" tone="success" icon="calendar"></ss-stat>
+    <ss-stat label="Ngày phép sắp tới" [value]="0" suffix="ngày" hint="Chưa có lịch đăng ký" tone="info" icon="schedule"></ss-stat>
+  </section>
+
+  <section class="balance-grid">
+    <ss-card title="Số dư nghỉ phép" description="Năm 2025" icon="pie-chart" iconColor="#722ed1">
+      <div class="balance-list">
+        <div class="balance-row" *ngFor="let balance of balances">
+          <div class="balance-label"><strong>{{ balance.label }}</strong><span>Đã dùng {{ balance.used }} / {{ balance.total }} ngày</span></div>
+          <strong class="balance-value">{{ balance.total - balance.used }} <small>ngày</small></strong>
+          <div class="progress"><span [class]="'progress-' + balance.tone" [style.width.%]="((balance.total - balance.used) / balance.total) * 100"></span></div>
+        </div>
+      </div>
+      <div cardFooterStart class="card-note">Số dư được tính theo chính sách nghỉ phép hiện hành.</div>
+    </ss-card>
+
+    <ss-card title="Quy định nghỉ phép" description="Thông tin cần biết" icon="info-circle" iconColor="#faad14">
+      <div class="policy-list"><div><span class="policy-icon">1</span><p>Đơn nghỉ phép cần được gửi trước tối thiểu 03 ngày làm việc.</p></div><div><span class="policy-icon">2</span><p>Ngày nghỉ chỉ được trừ sau khi đơn được phê duyệt.</p></div><div><span class="policy-icon">3</span><p>Liên hệ quản lý trực tiếp nếu cần điều chỉnh lịch nghỉ.</p></div></div>
+      <ss-button variant="text" color="primary" icon="file-text">Xem chính sách chi tiết</ss-button>
+    </ss-card>
+  </section>
+
+  <section class="requests-table" aria-label="Đơn nghỉ phép gần đây">
+    <ss-data-table [data]="requests()" [columns]="leaveColumns" [settings]="leaveTableSettings" (primaryClick)="openRequestDialog()"></ss-data-table>
+  </section>
+
+  <ss-dialog [visible]="dialogVisible()" [title]="'Tạo đơn nghỉ phép'" [width]="560" [maskClosable]="false" (visibleChange)="dialogVisible.set($event)">
+    <form class="leave-form" (ngSubmit)="submitRequest()">
+      <div class="form-field"><label for="leave-type">Loại phép</label><select id="leave-type" name="type" [(ngModel)]="leaveForm.type"><option value="Phép năm">Phép năm</option><option value="Phép ốm">Phép ốm</option><option value="Phép đặc biệt">Phép đặc biệt</option></select></div>
+      <div class="form-grid"><div class="form-field"><label for="leave-start">Từ ngày</label><input id="leave-start" name="startDate" type="date" [(ngModel)]="leaveForm.startDate" required></div><div class="form-field"><label for="leave-end">Đến ngày</label><input id="leave-end" name="endDate" type="date" [(ngModel)]="leaveForm.endDate" required></div></div>
+      <div class="form-field"><label for="leave-reason">Lý do nghỉ</label><textarea id="leave-reason" name="reason" rows="3" maxlength="250" [(ngModel)]="leaveForm.reason" placeholder="Nhập lý do nghỉ phép" required></textarea></div>
+      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeRequestDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit">Gửi đơn</ss-button></div>
+    </form>
+  </ss-dialog>
+</main>

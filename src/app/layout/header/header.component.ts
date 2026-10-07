@@ -13,7 +13,7 @@ import { HEADER_CRUMB_MAX_ITEMS, LayoutWidthMode } from '@core';
 })
 export class HeaderComponent {
   private readonly defaultBreadcrumbItems: SsBreadcrumbItem[] = [
-    { label: 'Trang chủ', path: '/dashboard' },
+    { label: 'Trang chủ', path: '/user/dashboard' },
   ];
 
   @Input() crumbs: SsBreadcrumbItem[] = [];

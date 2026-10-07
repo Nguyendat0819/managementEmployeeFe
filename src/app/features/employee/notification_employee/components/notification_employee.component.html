@@ -1,0 +1,20 @@
+<main class="notification-page">
+  <section class="stats-grid" aria-label="Tổng quan thông báo">
+    <ss-stat label="Tổng thông báo" [value]="notifications().length" suffix="tin" hint="Trong hộp thư" tone="primary" icon="bell"></ss-stat>
+    <ss-stat label="Chưa đọc" [value]="unreadCount()" suffix="tin" hint="Cần xem xét" tone="warning" icon="mail"></ss-stat>
+    <ss-stat label="Trong tuần này" [value]="2" suffix="tin" hint="Thông báo mới" tone="info" icon="calendar"></ss-stat>
+    <ss-stat label="Quan trọng" [value]="1" suffix="tin" hint="Cần hoàn thành" tone="error" icon="exclamation-circle"></ss-stat>
+  </section>
+
+  <section class="notification-table" aria-label="Thông báo của tôi">
+    <ss-data-table [data]="notifications()" [columns]="notificationColumns" [settings]="notificationTableSettings" (rowClick)="openDetail($event)" (primaryClick)="markAllAsRead()"></ss-data-table>
+  </section>
+
+  <ss-dialog [visible]="detailVisible()" [title]="selectedNotification()?.title ?? 'Chi tiết thông báo'" [width]="620" [maskClosable]="false" (visibleChange)="detailVisible.set($event)">
+    <div class="notification-detail">
+      <div class="detail-meta"><ss-tag [status]="selectedNotification()?.type ?? 'default'">{{ selectedNotification()?.category }}</ss-tag><span>{{ selectedNotification()?.createdAt }}</span></div>
+      <p>{{ selectedNotification()?.content }}</p>
+      <div dialog-footer class="dialog-actions"><ss-button color="primary" htmlType="button" (onClick)="closeDetail()">Đóng</ss-button></div>
+    </div>
+  </ss-dialog>
+</main>

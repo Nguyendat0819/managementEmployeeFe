@@ -1,0 +1,38 @@
+<main class="profile-page">
+  <section class="profile-hero">
+    <div class="avatar">MA</div>
+    <div class="identity"><h2>{{ profile.fullName }}</h2><p>{{ profile.position }}</p><span>{{ profile.department }} · {{ profile.employeeCode }}</span></div>
+    <ss-tag status="success">{{ profile.status }}</ss-tag>
+    <ss-button variant="soft" color="primary" icon="edit" (onClick)="openUpdateDialog()">Đề nghị cập nhật thông tin</ss-button>
+  </section>
+
+  <section class="content-grid">
+    <ss-card title="Thông tin cá nhân" description="Thông tin định danh và liên hệ" icon="user" iconColor="#1677ff">
+      <div class="details-grid"><div><span>Họ và tên</span><strong>{{ profile.fullName }}</strong></div><div><span>Tên gọi</span><strong>{{ profile.preferredName }}</strong></div><div><span>Ngày sinh</span><strong>{{ profile.birthDate }}</strong></div><div><span>Giới tính</span><strong>{{ profile.gender }}</strong></div><div><span>Số CCCD</span><strong>{{ profile.idCard }}</strong></div><div><span>Số điện thoại</span><strong>{{ profile.phone }}</strong></div><div><span>Email công việc</span><strong>{{ profile.email }}</strong></div><div><span>Địa chỉ</span><strong>{{ profile.address }}</strong></div></div>
+      <div cardFooterStart class="card-note">Thông tin cá nhân được bảo mật theo chính sách của công ty.</div>
+    </ss-card>
+
+    <ss-card title="Thông tin công việc" description="Vị trí hiện tại của bạn" icon="solution" iconColor="#722ed1">
+      <div class="details-list"><div><span>Mã nhân viên</span><strong>{{ profile.employeeCode }}</strong></div><div><span>Phòng ban</span><strong>{{ profile.department }}</strong></div><div><span>Chức danh</span><strong>{{ profile.position }}</strong></div><div><span>Loại hình</span><strong>{{ profile.employmentType }}</strong></div><div><span>Ngày vào làm</span><strong>{{ profile.hireDate }}</strong></div><div><span>Trạng thái</span><ss-tag status="success">{{ profile.status }}</ss-tag></div></div>
+    </ss-card>
+  </section>
+
+  <ss-card class="contract-card" title="Hợp đồng lao động hiện tại" description="Thông tin hợp đồng đang có hiệu lực" icon="file-text" iconColor="#13c2c2">
+    <div class="contract-layout">
+      <div class="contract-heading"><div><strong>{{ contract.contractNo }}</strong><span>{{ contract.contractType }}</span></div><ss-tag [status]="contract.statusType">{{ contract.status }}</ss-tag></div>
+      <div class="contract-grid"><div><span>Ngày bắt đầu</span><strong>{{ contract.startDate }}</strong></div><div><span>Ngày kết thúc</span><strong>{{ contract.endDate }}</strong></div><div><span>Ngày ký</span><strong>{{ contract.signedDate }}</strong></div><div><span>Mức lương thực nhận</span><strong>{{ contract.salary }}</strong></div><div><span>Phòng ban</span><strong>{{ contract.department }}</strong></div><div><span>Chức danh</span><strong>{{ contract.position }}</strong></div></div>
+    </div>
+    <div cardFooterStart class="card-note">Bản hợp đồng điện tử đã được lưu trên hệ thống.</div>
+    <ss-button variant="text" color="primary" icon="download">Tải bản hợp đồng</ss-button>
+  </ss-card>
+
+  <ss-dialog [visible]="dialogVisible()" [title]="'Đề nghị cập nhật thông tin'" [width]="560" [maskClosable]="false" (visibleChange)="dialogVisible.set($event)">
+    <form class="profile-form" (ngSubmit)="saveProfile()">
+      <p class="dialog-description">Cập nhật thông tin liên hệ để bộ phận Nhân sự xác nhận.</p>
+      <div class="form-field"><label for="profile-phone">Số điện thoại</label><input id="profile-phone" name="phone" type="tel" [(ngModel)]="profileForm.phone" required></div>
+      <div class="form-field"><label for="profile-email">Email công việc</label><input id="profile-email" name="email" type="email" [(ngModel)]="profileForm.email" required></div>
+      <div class="form-field"><label for="profile-address">Địa chỉ</label><textarea id="profile-address" name="address" rows="3" [(ngModel)]="profileForm.address" required></textarea></div>
+      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeUpdateDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit">Lưu</ss-button></div>
+    </form>
+  </ss-dialog>
+</main>

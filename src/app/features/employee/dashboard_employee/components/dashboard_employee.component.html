@@ -1,0 +1,67 @@
+<main class="dashboard-page">
+  <section class="welcome-panel">
+    <div>
+      <p class="eyebrow">KHU VỰC CÁ NHÂN</p>
+      <h1>Chào buổi sáng, {{ displayName }} <span aria-hidden="true">👋</span></h1>
+      <p class="welcome-copy">Chúc bạn một ngày làm việc hiệu quả và nhiều năng lượng.</p>
+    </div>
+    <div class="today"><span class="today-label">Hôm nay</span><strong>{{ today }}</strong></div>
+  </section>
+
+  <section class="stats-grid" aria-label="Tổng quan cá nhân">
+    <ss-stat label="Ngày công tháng này" [value]="18" suffix="/ 22 ngày" hint="Đúng tiến độ" tone="primary" icon="calendar"></ss-stat>
+    <ss-stat label="Ngày phép còn lại" [value]="12" suffix="ngày" hint="Tính đến hôm nay" tone="success" icon="solution"></ss-stat>
+    <ss-stat label="Giờ làm hôm nay" [value]="'08:00'" suffix="- 17:00" hint="Ca hành chính" tone="info" icon="clock-circle"></ss-stat>
+    <ss-stat label="Thông báo chưa đọc" [value]="3" suffix="tin" hint="Cần xem xét" tone="warning" icon="bell"></ss-stat>
+  </section>
+
+  <section class="content-grid">
+    <ss-card class="attendance-card" title="Lịch làm việc hôm nay" description="Ca hành chính · Hôm nay" icon="calendar" iconColor="#1677ff">
+      <div class="attendance-status">
+        <div class="status-icon"><span aria-hidden="true">✓</span></div>
+        <div><strong>Đã check-in</strong><p>07:58 · Văn phòng chính</p></div>
+        <ss-tag status="success">Đúng giờ</ss-tag>
+      </div>
+      <div class="time-line">
+        <div><span>Check-in</span><strong>07:58</strong></div>
+        <div><span>Check-out dự kiến</span><strong>17:00</strong></div>
+        <div><span>Tổng thời gian</span><strong>08:00</strong></div>
+      </div>
+      <div cardFooterStart class="card-note">Ca hành chính · Nghỉ trưa 12:00 - 13:00</div>
+      <ss-button variant="outline" color="primary" icon="arrow-right" (onClick)="open('/user/attendance')">Xem chi tiết</ss-button>
+    </ss-card>
+
+    <ss-card title="Số dư nghỉ phép" description="Năm 2025" icon="solution" iconColor="#722ed1">
+      <div class="leave-summary">
+        <div class="leave-total"><strong>12</strong><span>ngày còn lại</span></div>
+        <div class="leave-breakdown"><div><span>Phép năm</span><strong>10 ngày</strong></div><div><span>Phép ốm</span><strong>02 ngày</strong></div></div>
+      </div>
+      <div cardFooterStart class="card-note">Đã sử dụng 02 / 14 ngày phép năm</div>
+      <ss-button variant="text" color="primary" icon="plus" (onClick)="open('/user/leaves')">Tạo đơn nghỉ phép</ss-button>
+    </ss-card>
+  </section>
+
+  <section class="lower-grid">
+    <ss-card title="Truy cập nhanh" description="Các tác vụ thường dùng" icon="appstore" iconColor="#13c2c2">
+      <div class="quick-actions">
+        <button class="quick-action" type="button" *ngFor="let action of quickActions" (click)="open(action.path)">
+          <span class="quick-icon"><span nz-icon [nzType]="action.icon"></span></span>
+          <span class="quick-copy"><strong>{{ action.label }}</strong><small>{{ action.description }}</small></span>
+          <span class="quick-arrow" aria-hidden="true">›</span>
+        </button>
+      </div>
+    </ss-card>
+
+    <ss-card title="Thông báo mới nhất" description="Cập nhật dành cho bạn" icon="bell" iconColor="#faad14">
+      <div class="announcement-list">
+        <button class="announcement" type="button" *ngFor="let item of announcements" (click)="open('/user/notifications')">
+          <span class="announcement-dot" aria-hidden="true"></span>
+          <span class="announcement-copy"><strong>{{ item.title }}</strong><small>{{ item.date }}</small></span>
+          <ss-tag [status]="item.statusType">{{ item.status }}</ss-tag>
+        </button>
+      </div>
+      <div cardFooterStart class="card-note">Bạn còn 3 thông báo chưa đọc</div>
+      <ss-button variant="text" color="primary" icon="arrow-right" (onClick)="open('/user/notifications')">Xem tất cả</ss-button>
+    </ss-card>
+  </section>
+</main>

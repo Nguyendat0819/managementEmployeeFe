@@ -1,0 +1,22 @@
+<main class="payslip-page">
+  <section class="stats-grid" aria-label="Tổng quan thu nhập">
+    <ss-stat label="Thực nhận tháng gần nhất" [value]="'21,85'" suffix="triệu VNĐ" hint="Kỳ lương tháng 09/2025" tone="success" icon="dollar"></ss-stat>
+    <ss-stat label="Tổng thu nhập năm" [value]="'196,42'" suffix="triệu VNĐ" hint="Tính đến tháng 09/2025" tone="primary" icon="fund"></ss-stat>
+    <ss-stat label="Số phiếu lương" [value]="9" suffix="phiếu" hint="Trong năm 2025" tone="info" icon="file-text"></ss-stat>
+    <ss-stat label="Ngày thanh toán" [value]="'05'" suffix="hàng tháng" hint="Theo lịch công ty" tone="warning" icon="calendar"></ss-stat>
+  </section>
+
+  <section class="payslip-table" aria-label="Phiếu lương và thông tin thanh toán">
+    <ss-data-table [data]="payslips" [columns]="payslipColumns" [settings]="payslipTableSettings" (actionClick)="openDetail($event)"></ss-data-table>
+  </section>
+
+  <ss-dialog [visible]="detailVisible()" [title]="'Chi tiết phiếu lương tháng ' + (selectedPayslip()?.month ?? '')" [width]="720" [maskClosable]="false" (visibleChange)="detailVisible.set($event)">
+    <div class="detail-dialog">
+      <div class="detail-summary"><div><span>Thực nhận</span><strong>{{ latestDetail.netSalary }}</strong></div><ss-tag status="success">{{ selectedPayslip()?.status }}</ss-tag></div>
+      <div class="payment-summary"><div><span>Ngân hàng</span><strong>{{ selectedPayslip()?.bankName }}</strong></div><div><span>Tài khoản</span><strong>{{ selectedPayslip()?.accountNumber }}</strong></div><div><span>Ngày thanh toán</span><strong>{{ selectedPayslip()?.paymentDate }}</strong></div></div>
+      <div class="salary-section"><h3>Khoản thu nhập</h3><div><span>Lương cơ bản</span><strong>{{ latestDetail.baseSalary }}</strong></div><div><span>Phụ cấp chức vụ</span><strong>{{ latestDetail.positionAllowance }}</strong></div><div><span>Phụ cấp ăn trưa</span><strong>{{ latestDetail.lunchAllowance }}</strong></div><div><span>Tiền làm thêm giờ</span><strong>{{ latestDetail.overtime }}</strong></div><div class="total-row"><span>Tổng thu nhập</span><strong>{{ latestDetail.grossSalary }}</strong></div></div>
+      <div class="salary-section deduction"><h3>Khoản khấu trừ</h3><div><span>Bảo hiểm xã hội</span><strong>{{ latestDetail.socialInsurance }}</strong></div><div><span>Bảo hiểm y tế</span><strong>{{ latestDetail.healthInsurance }}</strong></div><div><span>Thuế thu nhập cá nhân</span><strong>{{ latestDetail.personalTax }}</strong></div><div class="total-row"><span>Tổng khấu trừ</span><strong>{{ latestDetail.totalDeduction }}</strong></div></div>
+      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeDetail()">Đóng</ss-button><ss-button color="primary" icon="download" (onClick)="downloadPayslip()">Tải phiếu lương</ss-button></div>
+    </div>
+  </ss-dialog>
+</main>

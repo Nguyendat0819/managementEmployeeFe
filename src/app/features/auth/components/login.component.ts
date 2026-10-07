@@ -55,7 +55,7 @@ export class LoginComponent {
           username: this.form.controls.username.value,
           password: this.form.controls.password.value,
         });
-        await this.router.navigateByUrl('/dashboard');
+        await this.router.navigateByUrl('/user/dashboard');
       } else {
         this.register();
         this.setMode('login');

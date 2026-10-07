@@ -1,0 +1,35 @@
+<main class="attendance-page">
+  <section class="stats-grid" aria-label="Tổng quan chấm công">
+    <ss-stat label="Ngày công tháng này" [value]="18" suffix="/ 22 ngày" hint="Đúng tiến độ" tone="primary" icon="calendar"></ss-stat>
+    <ss-stat label="Giờ làm tháng này" [value]="144" suffix="giờ" hint="Tăng 4 giờ so với tháng trước" tone="info" icon="clock-circle"></ss-stat>
+    <ss-stat label="Ngày đi muộn" [value]="1" suffix="ngày" hint="Trong tháng này" tone="warning" icon="exclamation-circle"></ss-stat>
+    <ss-stat label="Tăng ca" [value]="6" suffix="giờ" hint="Đã được ghi nhận" tone="success" icon="plus-circle"></ss-stat>
+  </section>
+
+  <section class="top-grid">
+    <ss-card title="Chấm công hôm nay" description="Ca hành chính · 08:00 - 17:00" icon="clock-circle" iconColor="#1677ff">
+      <div class="current-attendance" [class.is-out]="!checkedIn()">
+        <div class="attendance-icon"><span aria-hidden="true">{{ checkedIn() ? '✓' : '—' }}</span></div>
+        <div class="attendance-copy"><strong>{{ checkedIn() ? 'Đã check-in' : 'Chưa check-in' }}</strong><span>{{ checkedIn() ? 'Bắt đầu lúc ' + checkInTime() + ' · Văn phòng chính' : 'Bạn chưa bắt đầu ca làm việc hôm nay' }}</span></div>
+        <ss-tag [status]="checkedIn() ? 'success' : 'warning'">{{ checkedIn() ? 'Đang làm việc' : 'Chờ check-in' }}</ss-tag>
+      </div>
+      <div class="attendance-times">
+        <div><span>Check-in thực tế</span><strong>{{ checkInTime() }}</strong></div>
+        <div><span>Check-out thực tế</span><strong>{{ checkOutTime() }}</strong></div>
+        <div><span>{{ timeStatusTitle() }}</span><strong>{{ timeStatusValue() }}</strong></div>
+      </div>
+      <div cardFooterStart class="card-note">Dữ liệu được ghi nhận theo thiết bị chấm công tại văn phòng.</div>
+      <ss-button [disabled]="checkedOut()" [color]="checkedIn() ? 'danger' : 'success'" [icon]="checkedIn() ? 'logout' : 'login'" (onClick)="toggleAttendance()">{{ checkedOut() ? 'Đã hoàn tất' : checkedIn() ? 'Check-out' : 'Check-in' }}</ss-button>
+    </ss-card>
+
+    <ss-card title="Ca làm việc hiện tại" description="Phân công cá nhân" icon="schedule" iconColor="#722ed1">
+      <div class="shift-summary"><div class="shift-badge">HC</div><div><strong>Ca hành chính</strong><span>Thứ Hai - Thứ Sáu</span></div></div>
+      <div class="shift-details"><div><span>Thời gian</span><strong>08:00 - 17:00</strong></div><div><span>Địa điểm</span><strong>Văn phòng chính</strong></div><div><span>Nghỉ trưa</span><strong>12:00 - 13:00</strong></div></div>
+      <div cardFooterStart class="card-note">Ca áp dụng từ 01/01/2025 đến 31/12/2025</div>
+    </ss-card>
+  </section>
+
+  <section class="attendance-table" aria-label="Lịch chấm công">
+    <ss-data-table [data]="records" [columns]="attendanceColumns" [settings]="attendanceTableSettings"></ss-data-table>
+  </section>
+</main>
