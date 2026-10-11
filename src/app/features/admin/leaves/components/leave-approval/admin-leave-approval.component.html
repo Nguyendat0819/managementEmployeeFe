@@ -1,0 +1,60 @@
+<main class="admin-leave-page">
+  <section class="stats-grid" aria-label="Tổng quan duyệt đơn nghỉ phép">
+    <ss-stat label="Đơn đang chờ duyệt" [value]="pendingCount" suffix="đơn" hint="Ưu tiên xử lý hôm nay" tone="warning" icon="clock-circle"></ss-stat>
+    <ss-stat label="Tổng ngày cần duyệt" [value]="pendingDays" suffix="ngày" hint="Trên các đơn đang chờ" tone="primary" icon="calendar"></ss-stat>
+    <ss-stat label="Đã duyệt trong kỳ" [value]="approvedCount" suffix="đơn" hint="Tỷ lệ xử lý 75%" tone="success" icon="check-circle"></ss-stat>
+    <ss-stat label="Đã từ chối" [value]="rejectedCount" suffix="đơn" hint="Có ghi nhận lý do" tone="error" icon="close-circle"></ss-stat>
+  </section>
+
+  <section class="approval-grid" aria-label="Trung tâm xử lý đơn">
+    <ss-card title="Bàn xử lý ưu tiên" description="Các nhóm đơn cần sự chú ý của quản trị viên" icon="thunderbolt" iconColor="#f59f3d">
+      <div class="review-list">
+        @for (item of reviewQueue; track item.label) {
+          <div class="review-row"><span class="review-icon" [class]="'review-icon ' + item.tone"><span nz-icon [nzType]="item.icon"></span></span><span class="review-copy"><strong>{{ item.label }}</strong><small>{{ item.caption }}</small></span><strong class="review-value">{{ item.value }}</strong><span class="review-chevron">›</span></div>
+        }
+      </div>
+      <div class="review-footer"><span class="priority-mark">!</span><span>Khuyến nghị xử lý các đơn có ngày bắt đầu trong 48 giờ tới trước.</span></div>
+    </ss-card>
+
+    <ss-card title="Dòng chảy phê duyệt" description="Tình hình đơn nghỉ trong tháng hiện tại" icon="bar-chart" iconColor="#4d8dff">
+      <div class="flow-total"><div><strong>{{ requests().length }}</strong><span>đơn trong kỳ</span></div><ss-tag status="success">Ổn định</ss-tag></div>
+      <div class="flow-list">
+        @for (item of approvalFlow; track item.label) {
+          <div class="flow-row"><div class="flow-label"><span>{{ item.label }}</span><strong>{{ item.value }}</strong></div><div class="flow-track"><span [style.width.%]="item.percentage" [style.background]="item.color"></span></div></div>
+        }
+      </div>
+      <div class="flow-note"><span class="trend-up">↑ 18%</span><span>so với kỳ nghỉ phép tháng trước</span></div>
+    </ss-card>
+  </section>
+
+  <section class="leave-table" aria-label="Hàng đợi duyệt đơn nghỉ phép">
+    <ss-data-table [data]="requests()" [columns]="leaveColumns" [settings]="leaveTableSettings" (primaryClick)="onPrimaryClick($event)" (actionClick)="onActionClick($event)"></ss-data-table>
+  </section>
+
+  <ss-dialog [visible]="detailVisible()" [title]="'Chi tiết đơn · ' + (selectedRequest()?.requestCode ?? '')" [width]="760" [maskClosable]="false" (visibleChange)="detailVisible.set($event)">
+    @if (selectedRequest(); as request) {
+      <div class="detail-dialog">
+        <div class="detail-hero"><div class="avatar">{{ initials(request.employeeName) }}</div><div class="detail-name"><strong>{{ request.employeeName }}</strong><span>{{ request.employeeCode }} · {{ request.position }}</span></div><ss-tag [status]="statusTone(request.status)">{{ request.status }}</ss-tag></div>
+        <div class="request-banner"><span class="request-code">{{ request.requestCode }}</span><span>{{ request.submittedAt }}</span><span class="banner-divider"></span><span>{{ request.type }}</span></div>
+        <div class="detail-grid"><div><span>Phòng ban</span><strong>{{ request.department }}</strong></div><div><span>Thời gian nghỉ</span><strong>{{ request.startDate }} - {{ request.endDate }}</strong></div><div><span>Số ngày nghỉ</span><strong>{{ request.days }} ngày</strong></div><div><span>Người phê duyệt</span><strong>{{ request.approver || 'Chưa xử lý' }}</strong></div></div>
+        <div class="reason-box"><span>Lý do nghỉ phép</span><strong>{{ request.reason }}</strong></div>
+        @if (request.decisionNote) { <div class="decision-box"><span>Ghi chú xử lý</span><strong>{{ request.decisionNote }}</strong></div> }
+        <div dialog-footer class="dialog-actions">
+          <ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeDetail()">Đóng</ss-button>
+          @if (request.status === 'Chờ duyệt') {
+            <ss-button variant="outline" color="danger" htmlType="button" (onClick)="closeDetail(); openRejectDialog(request)">Từ chối</ss-button>
+            <ss-button color="primary" htmlType="button" icon="check" (onClick)="closeDetail(); approveRequest(request)">Duyệt đơn</ss-button>
+          }
+        </div>
+      </div>
+    }
+  </ss-dialog>
+
+  <ss-dialog [visible]="rejectVisible()" [title]="'Từ chối đơn · ' + (selectedRequest()?.requestCode ?? '')" [width]="580" [maskClosable]="false" (visibleChange)="rejectVisible.set($event)">
+    <form #rejectFormRef="ngForm" class="reject-form" (ngSubmit)="saveRejection(rejectFormRef.valid)">
+      <div class="reject-callout"><span class="callout-icon">!</span><div><strong>Đơn sẽ chuyển sang trạng thái từ chối</strong><p>Hãy ghi rõ lý do để nhân viên và quản lý liên quan có thể theo dõi.</p></div></div>
+      <div class="form-field"><label for="leave-reject-reason">Lý do từ chối <b>*</b></label><textarea id="leave-reject-reason" name="reason" rows="4" maxlength="500" [(ngModel)]="rejectForm.reason" placeholder="Nhập lý do từ chối đơn nghỉ phép" required></textarea></div>
+      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeRejectDialog()">Hủy</ss-button><ss-button color="danger" htmlType="submit" [disabled]="rejectFormRef.invalid">Xác nhận từ chối</ss-button></div>
+    </form>
+  </ss-dialog>
+</main>

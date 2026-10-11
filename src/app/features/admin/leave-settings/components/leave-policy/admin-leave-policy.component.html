@@ -1,0 +1,67 @@
+<main class="admin-leave-settings-page">
+
+  <section class="stats-grid" aria-label="Tổng quan cấu hình nghỉ phép">
+    <ss-stat label="Loại phép đang dùng" [value]="activePolicyCount" suffix="loại" hint="Được cấp cho nhân sự" tone="primary" icon="solution"></ss-stat>
+    <ss-stat label="Tổng hạn mức năm" [value]="totalAnnualQuota" suffix="ngày" hint="Theo các loại đang áp dụng" tone="info" icon="calendar"></ss-stat>
+    <ss-stat label="Có hưởng lương" [value]="paidPolicyCount" suffix="loại" hint="Trong danh mục hiện tại" tone="success" icon="dollar"></ss-stat>
+    <ss-stat label="Có chuyển ngày dư" [value]="carryoverPolicyCount" suffix="loại" hint="Cần theo dõi cuối năm" tone="warning" icon="rollback"></ss-stat>
+  </section>
+
+  <section class="configuration-grid" aria-label="Thiết lập chính sách chung">
+    <ss-card title="Bản đồ chính sách" description="Nhìn nhanh các lớp quyền lợi đang được cấu hình" icon="deployment-unit" iconColor="#722ed1">
+      <div class="policy-map">
+        @for (policy of policies(); track policy.id) {
+          <div class="policy-chip" [class.is-disabled]="policy.status === 'Tạm khóa'">
+            <span class="policy-chip-code">{{ policy.code }}</span>
+            <strong>{{ policy.name }}</strong>
+            <span>{{ policy.annualQuota }} ngày / năm</span>
+            <ss-tag [status]="statusTone(policy.status)">{{ policy.status }}</ss-tag>
+          </div>
+        }
+      </div>
+      <div class="map-footnote"><span class="map-dot"></span><span>Chính sách tạm khóa vẫn được lưu để bảo toàn lịch sử dữ liệu.</span></div>
+    </ss-card>
+
+    <ss-card title="Quy tắc xử lý đơn" description="Thiết lập mặc định cho toàn công ty" icon="setting" iconColor="#f59f3d">
+      <form class="rules-form" (ngSubmit)="saveGeneralSettings()">
+        <div class="rule-field"><label for="advance-notice-days">Báo trước tối thiểu</label><div class="input-with-suffix"><input id="advance-notice-days" name="advanceNoticeDays" type="number" min="0" max="30" [(ngModel)]="generalSettings.advanceNoticeDays"><span>ngày</span></div></div>
+        <div class="rule-field"><label for="approval-level">Cấp phê duyệt mặc định</label><select id="approval-level" name="approvalLevel" [(ngModel)]="generalSettings.approvalLevel"><option>Quản lý trực tiếp</option><option>Trưởng bộ phận</option><option>Quản lý trực tiếp + Nhân sự</option></select></div>
+        <div class="rule-field"><label for="count-mode">Cách tính ngày nghỉ</label><select id="count-mode" name="countMode" [(ngModel)]="generalSettings.countMode"><option>Ngày làm việc</option><option>Ngày lịch</option></select></div>
+        <div class="rule-field"><label for="closing-day">Ngày chốt dữ liệu tháng</label><div class="input-with-suffix"><input id="closing-day" name="closingDay" type="number" min="1" max="31" [(ngModel)]="generalSettings.closingDay"><span>hàng tháng</span></div></div>
+        <div class="rules-footer"><span>Thay đổi sẽ áp dụng cho các đơn tạo mới.</span><ss-button color="primary" htmlType="submit" icon="save">Lưu cấu hình</ss-button></div>
+      </form>
+    </ss-card>
+  </section>
+
+  <section class="policy-table" aria-label="Danh mục loại phép">
+    <ss-data-table [data]="policies()" [columns]="policyColumns" [settings]="policyTableSettings" (primaryClick)="onPrimaryClick($event)" (actionClick)="onActionClick($event)"></ss-data-table>
+  </section>
+
+  <ss-dialog [visible]="detailVisible()" [title]="selectedPolicy()?.name ?? 'Chi tiết loại phép'" [width]="700" [maskClosable]="false" (visibleChange)="detailVisible.set($event)">
+    @if (selectedPolicy(); as policy) {
+      <div class="detail-dialog">
+        <div class="detail-hero"><div class="policy-avatar">{{ policy.code.slice(0, 2) }}</div><div class="detail-name"><strong>{{ policy.name }}</strong><span>{{ policy.code }} · Chính sách nghỉ phép</span></div><ss-tag [status]="statusTone(policy.status)">{{ policy.status }}</ss-tag></div>
+        <div class="detail-grid"><div><span>Hạn mức mỗi năm</span><strong>{{ policy.annualQuota }} ngày</strong></div><div><span>Chuyển sang năm sau</span><strong>{{ policy.carryoverDays ? policy.carryoverDays + ' ngày' : 'Không áp dụng' }}</strong></div><div><span>Chế độ lương</span><strong>{{ policy.paidLeave ? 'Có hưởng lương' : 'Không hưởng lương' }}</strong></div><div><span>Hồ sơ đính kèm</span><strong>{{ policy.requireDocument ? 'Bắt buộc' : 'Không bắt buộc' }}</strong></div></div>
+        <div class="description-box"><span>Mô tả chính sách</span><strong>{{ policy.description || 'Chưa có mô tả cho loại phép này.' }}</strong></div>
+        <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeDetail()">Đóng</ss-button><ss-button color="primary" icon="edit" htmlType="button" (onClick)="closeDetail(); openEditDialog(policy)">Sửa chính sách</ss-button></div>
+      </div>
+    }
+  </ss-dialog>
+
+  <ss-dialog [visible]="formVisible()" [title]="editingPolicy() ? 'Sửa loại phép' : 'Thêm loại phép'" [width]="720" [maskClosable]="false" (visibleChange)="formVisible.set($event)">
+    <form #policyFormRef="ngForm" class="policy-form" (ngSubmit)="savePolicy(policyFormRef.valid)">
+      <p class="dialog-description">Cấu hình các thông tin sẽ được dùng khi nhân sự tạo đơn nghỉ phép.</p>
+      <div class="form-grid">
+        <div class="form-field"><label for="policy-code">Mã chính sách <b>*</b></label><input id="policy-code" name="code" [(ngModel)]="policyForm.code" required maxlength="30" placeholder="VD: ANNUAL"></div>
+        <div class="form-field"><label for="policy-name">Tên loại phép <b>*</b></label><input id="policy-name" name="name" [(ngModel)]="policyForm.name" required maxlength="100" placeholder="VD: Phép năm"></div>
+        <div class="form-field"><label for="policy-quota">Hạn mức mỗi năm <b>*</b></label><div class="input-with-suffix"><input id="policy-quota" name="annualQuota" type="number" min="0" required [(ngModel)]="policyForm.annualQuota"><span>ngày</span></div></div>
+        <div class="form-field"><label for="policy-carryover">Số ngày được chuyển</label><div class="input-with-suffix"><input id="policy-carryover" name="carryoverDays" type="number" min="0" [(ngModel)]="policyForm.carryoverDays"><span>ngày</span></div></div>
+        <div class="form-field"><label for="policy-paid-leave">Chế độ lương <b>*</b></label><select id="policy-paid-leave" name="paidLeave" [(ngModel)]="policyForm.paidLeave" required><option [ngValue]="true">Có hưởng lương</option><option [ngValue]="false">Không hưởng lương</option></select></div>
+        <div class="form-field"><label for="policy-require-document">Hồ sơ đính kèm <b>*</b></label><select id="policy-require-document" name="requireDocument" [(ngModel)]="policyForm.requireDocument" required><option [ngValue]="false">Không bắt buộc</option><option [ngValue]="true">Bắt buộc</option></select></div>
+        <div class="form-field"><label for="policy-status">Trạng thái <b>*</b></label><select id="policy-status" name="status" [(ngModel)]="policyForm.status" required><option>Đang áp dụng</option><option>Tạm khóa</option></select></div>
+        <div class="form-field form-field-wide"><label for="policy-description">Mô tả chính sách</label><textarea id="policy-description" name="description" rows="3" maxlength="500" [(ngModel)]="policyForm.description" placeholder="Mô tả điều kiện hoặc trường hợp áp dụng"></textarea></div>
+      </div>
+      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeFormDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="policyFormRef.invalid">{{ editingPolicy() ? 'Cập nhật chính sách' : 'Lưu loại phép' }}</ss-button></div>
+    </form>
+  </ss-dialog>
+</main>

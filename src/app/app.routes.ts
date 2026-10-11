@@ -14,6 +14,8 @@ import { shiftAdminRoutes } from './features/admin/shifts/shifts.routes';
 import { shiftRosterAdminRoutes } from './features/admin/shift-roster/shift-roster.routes';
 import { holidayAdminRoutes } from './features/admin/holidays/holidays.routes';
 import { attendanceAdminRoutes } from './features/admin/attendance/attendance.routes';
+import { leaveAdminRoutes } from './features/admin/leaves/leaves.routes';
+import { leaveSettingsAdminRoutes } from './features/admin/leave-settings/leave-settings.routes';
 import { LayoutComponent } from './layout/layout.component';
 
 export const routes: Routes = [
@@ -88,6 +90,14 @@ export const routes: Routes = [
           {
             path: 'attendance',
             children: attendanceAdminRoutes,
+          },
+          {
+            path: 'leaves',
+            children: leaveAdminRoutes,
+          },
+          {
+            path: 'leave-settings',
+            children: leaveSettingsAdminRoutes,
           },
         ],
       },
