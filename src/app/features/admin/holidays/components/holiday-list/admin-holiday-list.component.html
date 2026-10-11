@@ -1,0 +1,44 @@
+<main class="admin-holiday-page">
+  <section class="page-heading">
+    <div>
+      <h1>Ngày nghỉ lễ</h1>
+      <p>Thiết lập lịch nghỉ lễ và các ngày nghỉ đặc biệt áp dụng cho toàn công ty.</p>
+    </div>
+  </section>
+
+  <section class="stats-grid" aria-label="Tổng quan ngày nghỉ lễ">
+    <ss-stat label="Tổng ngày nghỉ" [value]="holidays().length" suffix="ngày lịch" hint="Đang được cấu hình" tone="primary" icon="calendar"></ss-stat>
+    <ss-stat label="Ngày nghỉ sắp tới" [value]="upcomingCount" suffix="đợt" hint="Cần thông báo nhân sự" tone="info" icon="notification"></ss-stat>
+    <ss-stat label="Tổng số ngày nghỉ" [value]="totalDays" suffix="ngày" hint="Theo lịch hiện tại" tone="success" icon="check-circle"></ss-stat>
+    <ss-stat label="Ngày lễ quốc gia" [value]="nationalHolidayCount" suffix="đợt" hint="Theo lịch nhà nước" tone="warning" icon="flag"></ss-stat>
+  </section>
+
+  <section class="holiday-table" aria-label="Danh sách ngày nghỉ lễ">
+    <ss-data-table [data]="holidays()" [columns]="holidayColumns" [settings]="holidayTableSettings" (primaryClick)="onPrimaryClick($event)" (actionClick)="onActionClick($event)"></ss-data-table>
+  </section>
+
+  <ss-dialog [visible]="detailVisible()" [title]="selectedHoliday()?.name ?? 'Chi tiết ngày nghỉ'" [width]="680" [maskClosable]="false" (visibleChange)="detailVisible.set($event)">
+    @if (selectedHoliday(); as holiday) {
+      <div class="detail-dialog">
+        <div class="detail-hero"><div class="holiday-icon">★</div><div><strong>{{ holiday.name }}</strong><span>{{ holiday.holidayType }} · {{ holiday.dayCount }} ngày nghỉ</span></div><ss-tag [status]="holidayStatusType(holiday.status)">{{ holiday.status }}</ss-tag></div>
+        <div class="details-grid"><div><span>Ngày bắt đầu</span><strong>{{ holiday.holidayDate }}</strong></div><div><span>Ngày kết thúc</span><strong>{{ holiday.holidayDateEnd }}</strong></div><div><span>Số ngày nghỉ</span><strong>{{ holiday.dayCount }} ngày</strong></div><div><span>Loại ngày nghỉ</span><strong>{{ holiday.holidayType }}</strong></div><div class="detail-wide"><span>Ghi chú</span><strong>{{ holiday.notes || 'Không có ghi chú' }}</strong></div></div>
+        <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeDetail()">Đóng</ss-button></div>
+      </div>
+    }
+  </ss-dialog>
+
+  <ss-dialog [visible]="formVisible()" [title]="editingHoliday() ? 'Sửa ngày nghỉ lễ' : 'Thêm ngày nghỉ lễ'" [width]="700" [maskClosable]="false" (visibleChange)="formVisible.set($event)">
+    <form #holidayFormRef="ngForm" class="holiday-form" (ngSubmit)="saveHoliday(holidayFormRef.valid)">
+      <p class="dialog-description">Nhập khoảng thời gian nghỉ và thông tin hiển thị trên lịch công ty.</p>
+      <div class="form-grid">
+        <div class="form-field form-field-wide"><label for="holiday-name">Tên ngày nghỉ <b>*</b></label><input id="holiday-name" name="name" [(ngModel)]="holidayForm.name" required maxlength="200" placeholder="VD: Tết Dương lịch"></div>
+        <div class="form-field"><label for="holiday-type">Loại ngày nghỉ <b>*</b></label><select id="holiday-type" name="holidayType" [(ngModel)]="holidayForm.holidayType" required>@for (type of holidayTypes; track type) { <option>{{ type }}</option> }</select></div>
+        <div class="form-field"><label for="holiday-status">Trạng thái <b>*</b></label><select id="holiday-status" name="status" [(ngModel)]="holidayForm.status" required><option>Sắp tới</option><option>Đang diễn ra</option><option>Đã qua</option></select></div>
+        <div class="form-field"><label for="holiday-start-date">Ngày bắt đầu <b>*</b></label><input id="holiday-start-date" name="holidayDate" type="date" [(ngModel)]="holidayForm.holidayDate" required></div>
+        <div class="form-field"><label for="holiday-end-date">Ngày kết thúc <b>*</b></label><input id="holiday-end-date" name="holidayDateEnd" type="date" [(ngModel)]="holidayForm.holidayDateEnd" required></div>
+        <div class="form-field form-field-wide"><label for="holiday-notes">Ghi chú</label><textarea id="holiday-notes" name="notes" [(ngModel)]="holidayForm.notes" maxlength="500" rows="3" placeholder="Thông tin bổ sung về ngày nghỉ"></textarea></div>
+      </div>
+      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeFormDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="holidayFormRef.invalid">{{ editingHoliday() ? 'Cập nhật' : 'Lưu ngày nghỉ' }}</ss-button></div>
+    </form>
+  </ss-dialog>
+</main>

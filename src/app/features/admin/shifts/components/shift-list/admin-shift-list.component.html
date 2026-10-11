@@ -1,0 +1,43 @@
+<main class="admin-shift-page">
+  <section class="page-heading">
+    <div>
+      <h1>Ca làm việc</h1>
+      <p>Thiết lập khung giờ và ngày áp dụng cho các ca làm việc trong công ty.</p>
+    </div>
+  </section>
+
+  <section class="stats-grid" aria-label="Tổng quan ca làm việc">
+    <ss-stat label="Tổng số ca" [value]="shifts().length" suffix="ca" hint="Đang được cấu hình" tone="primary" icon="clock-circle"></ss-stat>
+    <ss-stat label="Đang hoạt động" [value]="activeCount" suffix="ca" hint="Có thể phân công" tone="success" icon="check-circle"></ss-stat>
+    <ss-stat label="Nhân sự đã phân ca" [value]="assignedCount" suffix="người" hint="Theo cấu hình hiện tại" tone="info" icon="team"></ss-stat>
+    <ss-stat label="Ca tạm ngưng" [value]="shifts().length - activeCount" suffix="ca" hint="Cần rà soát" tone="warning" icon="pause-circle"></ss-stat>
+  </section>
+
+  <section class="shift-table" aria-label="Danh sách ca làm việc">
+    <ss-data-table [data]="shifts()" [columns]="shiftColumns" [settings]="shiftTableSettings" (primaryClick)="onPrimaryClick($event)" (actionClick)="onActionClick($event)"></ss-data-table>
+  </section>
+
+  <ss-dialog [visible]="detailVisible()" [title]="'Ca ' + (selectedShift()?.shiftName ?? '')" [width]="640" [maskClosable]="false" (visibleChange)="detailVisible.set($event)">
+    @if (selectedShift(); as shift) {
+      <div class="detail-dialog">
+        <div class="detail-hero"><div class="shift-icon">⌚</div><div><strong>{{ shift.shiftName }}</strong><span>{{ shift.startTime }} - {{ shift.endTime }} · {{ shift.dayLabel }}</span></div><ss-tag [status]="shiftStatusType(shift.status)">{{ shift.status }}</ss-tag></div>
+        <div class="details-grid"><div><span>Giờ bắt đầu</span><strong>{{ shift.startTime }}</strong></div><div><span>Giờ kết thúc</span><strong>{{ shift.endTime }}</strong></div><div><span>Ngày áp dụng</span><strong>{{ shift.dayLabel }}</strong></div><div><span>Nhân sự đã phân ca</span><strong>{{ shift.assignedCount }} người</strong></div><div><span>Trạng thái</span><strong>{{ shift.status }}</strong></div></div>
+        <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeDetail()">Đóng</ss-button></div>
+      </div>
+    }
+  </ss-dialog>
+
+  <ss-dialog [visible]="formVisible()" [title]="editingShift() ? 'Sửa ca làm việc' : 'Thêm ca làm việc'" [width]="680" [maskClosable]="false" (visibleChange)="formVisible.set($event)">
+    <form #shiftFormRef="ngForm" class="shift-form" (ngSubmit)="saveShift(shiftFormRef.valid)">
+      <p class="dialog-description">Cấu hình khung giờ và các ngày được áp dụng cho ca làm việc.</p>
+      <div class="form-grid">
+        <div class="form-field form-field-wide"><label for="shift-name">Tên ca làm việc <b>*</b></label><input id="shift-name" name="shiftName" [(ngModel)]="shiftForm.shiftName" required maxlength="100" placeholder="VD: Ca hành chính"></div>
+        <div class="form-field"><label for="shift-start-time">Giờ bắt đầu <b>*</b></label><input id="shift-start-time" name="startTime" type="time" [(ngModel)]="shiftForm.startTime" required></div>
+        <div class="form-field"><label for="shift-end-time">Giờ kết thúc <b>*</b></label><input id="shift-end-time" name="endTime" type="time" [(ngModel)]="shiftForm.endTime" required></div>
+        <div class="form-field form-field-wide"><label>Ngày áp dụng <b>*</b></label><div class="day-options">@for (day of dayOptions; track day) { <label class="day-option"><input type="checkbox" [checked]="isDaySelected(day)" (change)="toggleDay(day)"><span>{{ day }}</span></label> }</div></div>
+        <div class="form-field"><label for="shift-status">Trạng thái <b>*</b></label><select id="shift-status" name="status" [(ngModel)]="shiftForm.status" required><option>Đang hoạt động</option><option>Tạm ngưng</option></select></div>
+      </div>
+      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeFormDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="shiftFormRef.invalid">{{ editingShift() ? 'Cập nhật' : 'Lưu ca' }}</ss-button></div>
+    </form>
+  </ss-dialog>
+</main>
