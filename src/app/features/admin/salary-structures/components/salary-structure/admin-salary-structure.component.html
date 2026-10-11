@@ -1,0 +1,45 @@
+<main class="admin-salary-page">
+
+  <section class="stats-grid" aria-label="Tổng quan thang bảng lương">
+    <ss-stat label="Cấu trúc đang áp dụng" [value]="activeCount" suffix="cấu trúc" hint="Theo chức danh" tone="primary" icon="database"></ss-stat>
+    <ss-stat label="Lương cơ bản bình quân" [value]="formatCurrency(averageBaseSalary)" hint="Trên các cấu trúc đang dùng" tone="info" icon="fund"></ss-stat>
+    <ss-stat label="Chờ áp dụng" [value]="upcomingCount" suffix="cấu trúc" hint="Đang chờ kỳ hiệu lực" tone="warning" icon="clock-circle"></ss-stat>
+    <ss-stat label="Mức cao nhất" [value]="formatCurrency(highestSalary)" hint="Chưa bao gồm phụ cấp" tone="success" icon="rise"></ss-stat>
+  </section>
+
+
+  <section class="salary-table" aria-label="Danh sách thang bảng lương">
+    <ss-data-table [data]="structures()" [columns]="structureColumns" [settings]="structureTableSettings" (primaryClick)="onPrimaryClick($event)" (actionClick)="onActionClick($event)"></ss-data-table>
+  </section>
+
+  <ss-dialog [visible]="detailVisible()" [title]="selectedStructure()?.positionName ?? 'Chi tiết cấu trúc lương'" [width]="740" [maskClosable]="false" (visibleChange)="detailVisible.set($event)">
+    @if (selectedStructure(); as structure) {
+      <div class="detail-dialog">
+        <div class="detail-hero"><div class="structure-avatar">{{ structure.grade.replace('Bậc ', 'B') }}</div><div class="detail-name"><strong>{{ structure.positionName }}</strong><span>{{ structure.positionCode }} · {{ structure.effectiveDate }}</span></div><ss-tag [status]="statusTone(structure.status)">{{ structure.status }}</ss-tag></div>
+        <div class="detail-salary"><div><span>Lương cơ bản</span><strong>{{ formatCurrency(structure.baseSalary) }}</strong></div><div><span>Tổng phụ cấp</span><strong>{{ formatCurrency(structure.allowanceTotal) }}</strong></div><div><span>Tổng dự kiến</span><strong>{{ formatCurrency(structure.baseSalary + structure.allowanceTotal) }}</strong></div></div>
+        <div class="detail-grid"><div><span>Bậc lương</span><strong>{{ structure.grade }}</strong></div><div><span>Ngày hiệu lực</span><strong>{{ structure.effectiveDate }}</strong></div><div><span>Khoản phụ cấp</span><strong>{{ structure.allowanceSummary || 'Chưa cấu hình' }}</strong></div><div><span>Công thức</span><strong>{{ structure.formula }}</strong></div></div>
+        <div class="note-box"><span>Ghi chú</span><strong>{{ structure.note || 'Chưa có ghi chú cho cấu trúc này.' }}</strong></div>
+        <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeDetail()">Đóng</ss-button><ss-button color="primary" icon="edit" htmlType="button" (onClick)="closeDetail(); openEditDialog(structure)">Sửa cấu trúc</ss-button></div>
+      </div>
+    }
+  </ss-dialog>
+
+  <ss-dialog [visible]="formVisible()" [title]="editingStructure() ? 'Sửa cấu trúc lương' : 'Thêm cấu trúc lương'" [width]="740" [maskClosable]="false" (visibleChange)="formVisible.set($event)">
+    <form #structureFormRef="ngForm" class="structure-form" (ngSubmit)="saveStructure(structureFormRef.valid)">
+      <p class="dialog-description">Nhập thông tin lương cơ bản, phụ cấp và ngày bắt đầu áp dụng cho chức danh.</p>
+      <div class="form-grid">
+        <div class="form-field"><label for="salary-position-code">Mã chức danh <b>*</b></label><input id="salary-position-code" name="positionCode" [(ngModel)]="structureForm.positionCode" required maxlength="50" placeholder="VD: DEV-JUNIOR"></div>
+        <div class="form-field"><label for="salary-position-name">Tên chức danh <b>*</b></label><input id="salary-position-name" name="positionName" [(ngModel)]="structureForm.positionName" required maxlength="150" placeholder="VD: Lập trình viên Junior"></div>
+        <div class="form-field"><label for="salary-grade">Bậc lương <b>*</b></label><select id="salary-grade" name="grade" [(ngModel)]="structureForm.grade" required><option>Bậc 1</option><option>Bậc 2</option><option>Bậc 3</option><option>Bậc 4</option><option>Bậc 5</option></select></div>
+        <div class="form-field"><label for="salary-effective-date">Ngày hiệu lực <b>*</b></label><input id="salary-effective-date" name="effectiveDate" type="date" [(ngModel)]="structureForm.effectiveDate" required></div>
+        <div class="form-field"><label for="salary-base">Lương cơ bản <b>*</b></label><div class="input-with-suffix"><input id="salary-base" name="baseSalary" type="number" min="0" step="100000" [(ngModel)]="structureForm.baseSalary" required><span>VNĐ</span></div></div>
+        <div class="form-field"><label for="salary-allowance">Tổng phụ cấp</label><div class="input-with-suffix"><input id="salary-allowance" name="allowanceTotal" type="number" min="0" step="100000" [(ngModel)]="structureForm.allowanceTotal"><span>VNĐ</span></div></div>
+        <div class="form-field"><label for="salary-status">Trạng thái <b>*</b></label><select id="salary-status" name="status" [(ngModel)]="structureForm.status" required><option>Đang áp dụng</option><option>Chờ áp dụng</option><option>Ngừng áp dụng</option></select></div>
+        <div class="form-field"><label for="salary-formula">Công thức tính</label><input id="salary-formula" name="formula" [(ngModel)]="structureForm.formula" maxlength="200" placeholder="VD: Lương cơ bản + phụ cấp"></div>
+        <div class="form-field form-field-wide"><label for="salary-allowance-summary">Chi tiết phụ cấp</label><input id="salary-allowance-summary" name="allowanceSummary" [(ngModel)]="structureForm.allowanceSummary" maxlength="250" placeholder="VD: Ăn trưa · Đi lại · Chức vụ"></div>
+        <div class="form-field form-field-wide"><label for="salary-note">Ghi chú</label><textarea id="salary-note" name="note" rows="3" maxlength="500" [(ngModel)]="structureForm.note" placeholder="Thông tin bổ sung về cấu trúc lương"></textarea></div>
+      </div>
+      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeFormDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="structureFormRef.invalid">{{ editingStructure() ? 'Cập nhật cấu trúc' : 'Lưu cấu trúc' }}</ss-button></div>
+    </form>
+  </ss-dialog>
+</main>

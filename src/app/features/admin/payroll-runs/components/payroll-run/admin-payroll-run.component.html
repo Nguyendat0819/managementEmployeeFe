@@ -1,0 +1,60 @@
+<main class="admin-payroll-page">
+  <section class="payroll-hero" aria-labelledby="payroll-heading">
+    <div class="hero-copy">
+      <p class="hero-eyebrow">PAYROLL CONTROL</p>
+      <h1 id="payroll-heading">Kỳ tính lương</h1>
+      <p class="hero-description">Tạo và theo dõi từng kỳ lương theo đúng thang bảng lương, từ lúc khởi tạo đến khi hoàn tất chi trả.</p>
+      <div class="hero-meta"><span class="live-dot"></span><span>Đang dùng {{ structureVersion }}</span><span class="hero-divider"></span><span>{{ activeSalaryStructureCount }} cấu trúc lương hoạt động</span></div>
+    </div>
+    <div class="hero-period"><span class="period-label">Kỳ đang xử lý</span><strong>{{ currentRun?.periodLabel || 'Chưa có kỳ lương' }}</strong><span class="period-status">{{ currentRun?.status || 'Chưa khởi tạo' }}</span><div class="period-progress"><span [style.width.%]="currentRun ? progressForStatus(currentRun.status) : 0"></span></div></div>
+  </section>
+
+  <section class="stats-grid" aria-label="Tổng quan kỳ tính lương">
+    <ss-stat label="Kỳ lương đang xử lý" [value]="currentRun?.periodLabel || '—'" hint="Theo thang bảng lương hiện tại" tone="primary" icon="calculator"></ss-stat>
+    <ss-stat label="Chờ duyệt" [value]="waitingApprovalCount" suffix="kỳ" hint="Cần phê duyệt trước khi trả" tone="warning" icon="clock-circle"></ss-stat>
+    <ss-stat label="Đã trả" [value]="paidCount" suffix="kỳ" hint="Đã hoàn tất chi trả" tone="success" icon="check-circle"></ss-stat>
+    <ss-stat label="Tổng Net kỳ hiện tại" [value]="formatCurrency(currentNet)" hint="Sau khấu trừ bảo hiểm và thuế" tone="info" icon="dollar"></ss-stat>
+  </section>
+
+  <section class="payroll-overview" aria-label="Tóm tắt kỳ lương hiện tại">
+    <ss-card title="Tiến trình kỳ lương" description="Luồng xử lý chuẩn từ dữ liệu đầu vào đến chi trả" icon="steps" iconColor="#1677ff">
+      @if (currentRun; as run) {
+        <div class="run-heading"><div><strong>{{ run.periodLabel }}</strong><span>{{ run.employeeCount }} nhân sự · {{ run.salaryStructureLabel }}</span></div><ss-tag [status]="statusTone(run.status)">{{ run.status }}</ss-tag></div>
+        <div class="steps-line"><div class="step-item active"><span>01</span><strong>Khởi tạo</strong><small>Đã tạo kỳ</small></div><div class="step-connector" [class.filled]="run.status !== 'Nháp'"></div><div class="step-item" [class.active]="run.status !== 'Nháp'"><span>02</span><strong>Tính lương</strong><small>Dữ liệu công & phép</small></div><div class="step-connector" [class.filled]="run.status === 'Đã duyệt' || run.status === 'Đã trả'"></div><div class="step-item" [class.active]="run.status === 'Đã duyệt' || run.status === 'Đã trả'"><span>03</span><strong>Phê duyệt</strong><small>Kiểm tra tổng hợp</small></div><div class="step-connector" [class.filled]="run.status === 'Đã trả'"></div><div class="step-item" [class.active]="run.status === 'Đã trả'"><span>04</span><strong>Chi trả</strong><small>Hoàn tất kỳ lương</small></div></div>
+        <div class="run-metrics"><div><span>Tổng Gross</span><strong>{{ formatCurrency(run.totalGross) }}</strong></div><div><span>Khấu trừ</span><strong>{{ formatCurrency(run.totalDeduction) }}</strong></div><div><span>Tổng Net</span><strong>{{ formatCurrency(run.totalNet) }}</strong></div></div>
+      } @else { <div class="empty-current-run">Chưa có kỳ lương để hiển thị.</div> }
+    </ss-card>
+
+    <ss-card title="Nguồn tính lương" description="Tham chiếu từ thang bảng lương" icon="database" iconColor="#722ed1">
+      <div class="source-card"><div class="source-icon">2025</div><div><strong>{{ structureVersion }}</strong><span>{{ activeSalaryStructureCount }} cấu trúc chức danh đang áp dụng</span></div></div>
+      <div class="source-list"><div><span>Ngày hiệu lực</span><strong>01/01/2025</strong></div><div><span>Nhân sự dự kiến</span><strong>248 người</strong></div><div><span>Đơn vị tiền tệ</span><strong>VNĐ / tháng</strong></div></div>
+      <div class="source-note"><span class="live-dot small"></span><span>Mức lương được lấy theo cấu trúc tại thời điểm kỳ lương được tính.</span></div>
+    </ss-card>
+  </section>
+
+  <section class="payroll-table" aria-label="Danh sách kỳ tính lương">
+    <ss-data-table [data]="runs()" [columns]="runColumns" [settings]="runTableSettings" (primaryClick)="onPrimaryClick($event)" (actionClick)="onActionClick($event)"></ss-data-table>
+  </section>
+
+  <ss-dialog [visible]="detailVisible()" [title]="selectedRun()?.periodLabel ?? 'Chi tiết kỳ lương'" [width]="760" [maskClosable]="false" (visibleChange)="detailVisible.set($event)">
+    @if (selectedRun(); as run) {
+      <div class="detail-dialog">
+        <div class="detail-hero"><div class="run-avatar">{{ run.periodMonth }}</div><div class="detail-name"><strong>{{ run.periodLabel }}</strong><span>{{ run.salaryStructureLabel }} · Tạo lúc {{ run.createdAt }}</span></div><ss-tag [status]="statusTone(run.status)">{{ run.status }}</ss-tag></div>
+        <div class="detail-money"><div><span>Tổng Gross</span><strong>{{ formatCurrency(run.totalGross) }}</strong></div><div><span>Khấu trừ</span><strong>{{ formatCurrency(run.totalDeduction) }}</strong></div><div><span>Tổng Net</span><strong>{{ formatCurrency(run.totalNet) }}</strong></div></div>
+        <div class="detail-grid"><div><span>Số nhân sự</span><strong>{{ run.employeeCount }} người</strong></div><div><span>Thang bảng lương</span><strong>{{ run.salaryStructureLabel }}</strong></div><div><span>Người duyệt</span><strong>{{ run.approvedBy || 'Chưa duyệt' }}</strong></div><div><span>Ngày trả lương</span><strong>{{ run.paidAt || 'Chưa chi trả' }}</strong></div></div>
+        <div class="note-box"><span>Ghi chú</span><strong>{{ run.note || 'Chưa có ghi chú cho kỳ lương này.' }}</strong></div>
+        <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeDetail()">Đóng</ss-button>@if (run.status === 'Nháp') {<ss-button color="primary" icon="calculator" htmlType="button" (onClick)="closeDetail(); calculateRun(run)">Tính lương</ss-button>} @if (run.status === 'Chờ duyệt') {<ss-button color="primary" icon="check" htmlType="button" (onClick)="closeDetail(); approveRun(run)">Duyệt kỳ lương</ss-button>} @if (run.status === 'Đã duyệt') {<ss-button color="success" icon="bank" htmlType="button" (onClick)="closeDetail(); markAsPaid(run)">Đánh dấu đã trả</ss-button>}</div>
+      </div>
+    }
+  </ss-dialog>
+
+  <ss-dialog [visible]="formVisible()" [title]="'Tạo kỳ tính lương'" [width]="560" [maskClosable]="false" (visibleChange)="formVisible.set($event)">
+    <form #runFormRef="ngForm" class="run-form" (ngSubmit)="saveRun(runFormRef.valid)">
+      <p class="dialog-description">Kỳ mới sẽ sử dụng {{ structureVersion }} và danh sách nhân sự hiện tại.</p>
+      <div class="form-grid"><div class="form-field"><label for="run-year">Năm <b>*</b></label><input id="run-year" name="periodYear" type="number" min="2020" max="2100" [(ngModel)]="runForm.periodYear" required></div><div class="form-field"><label for="run-month">Tháng <b>*</b></label><select id="run-month" name="periodMonth" [(ngModel)]="runForm.periodMonth" required>@for (month of [1,2,3,4,5,6,7,8,9,10,11,12]; track month) { <option [ngValue]="month">Tháng {{ month }}</option> }</select></div></div>
+      <div class="period-preview"><span class="preview-icon">↗</span><div><strong>Tháng {{ runForm.periodMonth }}/{{ runForm.periodYear }}</strong><small>{{ activeSalaryStructureCount }} cấu trúc lương · 248 nhân sự dự kiến</small></div></div>
+      <div class="form-field"><label for="run-note">Ghi chú</label><textarea id="run-note" name="note" rows="3" maxlength="500" [(ngModel)]="runForm.note" placeholder="Ghi chú cho kỳ lương nếu cần"></textarea></div>
+      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeFormDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="runFormRef.invalid">Tạo kỳ lương</ss-button></div>
+    </form>
+  </ss-dialog>
+</main>
