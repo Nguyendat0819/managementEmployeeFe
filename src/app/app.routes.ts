@@ -9,6 +9,7 @@ import { payslipEmployeeRoutes } from './features/employee/payslip_employee/pays
 import { notificationEmployeeRoutes } from './features/employee/notification_employee/notification_employee.routes';
 import { dashboardAdminRoutes } from './features/admin/dashboard_admin/dashboard_admin.routes';
 import { organizationRoutes } from './features/admin/organization/organization.routes';
+import { employeeAdminRoutes } from './features/admin/employees/employees.routes';
 import { LayoutComponent } from './layout/layout.component';
 
 export const routes: Routes = [
@@ -67,6 +68,7 @@ export const routes: Routes = [
             path: 'departments',
             children: organizationRoutes,
           },
+          ...employeeAdminRoutes,
         ],
       },
     ],
