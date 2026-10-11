@@ -1,0 +1,23 @@
+<main class="role-permission-page">
+  <header class="page-heading">
+    <div>
+      <span class="page-eyebrow">Bảo mật hệ thống</span>
+      <h1>Vai trò &amp; Phân quyền</h1>
+      <p>Thiết lập nhóm truy cập và quyền sử dụng tính năng cho từng vai trò.</p>
+    </div>
+    <div class="heading-metrics">
+      <strong>{{ roles().length }}</strong>
+      <span>vai trò</span>
+    </div>
+  </header>
+
+  <ss-tabs [selectedIndex]="selectedTabIndex" [lazy]="false" [fill]="false" (selectedIndexChange)="onTabChange($event)">
+    <ss-tab label="Vai trò" [badgeCount]="roles().length">
+      <app-admin-role-list (permissionsRequested)="onPermissionsRequested($event)"></app-admin-role-list>
+    </ss-tab>
+
+    <ss-tab label="Phân quyền">
+      <app-admin-permission-list [activeRoleCode]="selectedRoleCode()" (activeRoleCodeChange)="onRoleCodeChange($event)"></app-admin-permission-list>
+    </ss-tab>
+  </ss-tabs>
+</main>

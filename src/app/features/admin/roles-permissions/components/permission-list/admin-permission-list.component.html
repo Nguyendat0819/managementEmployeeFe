@@ -1,0 +1,79 @@
+<section class="permission-card">
+  <div class="permission-heading">
+    <div>
+      <span class="page-eyebrow">Cấu hình quyền truy cập</span>
+      <h2>Phân quyền theo vai trò</h2>
+      <p>Chọn vai trò, sau đó thêm hoặc bỏ các quyền được phép sử dụng.</p>
+    </div>
+    <label class="role-picker">
+      <span>Vai trò đang cấu hình</span>
+      <select [ngModel]="activeRoleCode" (ngModelChange)="onRoleChange($event)">
+        @for (role of roles(); track role.id) {
+          <option [value]="role.code">{{ role.name }} ({{ role.code }})</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  <div class="permission-summary">
+    <span class="summary-icon">✓</span>
+    <div>
+      <strong>{{ selectedPermissions().length }} quyền đang được cấp</strong>
+      <span>{{ roleName(activeRoleCode) }} có thể truy cập các chức năng đã chọn bên dưới.</span>
+    </div>
+  </div>
+
+  <ss-transfer
+    label="Danh sách quyền"
+    sourceTitle="Quyền khả dụng"
+    targetTitle="Quyền đã cấp"
+    searchPlaceholder="Tìm theo tên quyền hoặc mã quyền"
+    emptySelectedText="Vai trò chưa được cấp quyền"
+    emptyResultText="Không tìm thấy quyền phù hợp"
+    hintText="Nhấn tìm để xem danh sách quyền"
+    [selected]="selectedPermissions()"
+    [searchResults]="permissionResults()"
+    [totalFound]="permissionResults().length"
+    (selectedChange)="onPermissionChange($event)"
+    (search)="onPermissionSearch($event)"
+  ></ss-transfer>
+
+  <footer class="permission-actions">
+    <span>Thay đổi chỉ được áp dụng sau khi lưu.</span>
+    <ss-button color="primary" (onClick)="savePermissions()">Lưu phân quyền</ss-button>
+  </footer>
+</section>
+
+<div class="permission-catalog">
+  <ss-data-table
+    [data]="permissionCatalog()"
+    [columns]="permissionColumns"
+    [settings]="permissionTableSettings"
+    (primaryClick)="onPermissionPrimaryClick($event)"
+    (actionClick)="onPermissionActionClick($event)"
+  ></ss-data-table>
+</div>
+
+<ss-dialog [visible]="permissionDialogVisible()" [title]="editingPermission() ? 'Sửa quyền' : 'Thêm quyền'" [width]="620" [maskClosable]="false" (visibleChange)="permissionDialogVisible.set($event)">
+  <form #permissionFormRef="ngForm" class="permission-form" (ngSubmit)="savePermission(permissionFormRef.valid)">
+    <p class="dialog-description">Khai báo quyền để có thể cấp cho một hoặc nhiều vai trò.</p>
+    <div class="form-grid">
+      <div class="form-field form-field-wide">
+        <label for="permission-code">Mã quyền <b>*</b></label>
+        <input id="permission-code" name="permissionCode" [(ngModel)]="permissionForm.code" required maxlength="100" [disabled]="!!editingPermission()" placeholder="VD: employee.export">
+      </div>
+      <div class="form-field form-field-wide">
+        <label for="permission-name">Tên quyền <b>*</b></label>
+        <input id="permission-name" name="permissionName" [(ngModel)]="permissionForm.name" required maxlength="150" placeholder="VD: Xuất danh sách nhân viên">
+      </div>
+      <div class="form-field form-field-wide">
+        <label for="permission-description">Mô tả</label>
+        <textarea id="permission-description" name="permissionDescription" [(ngModel)]="permissionForm.description" rows="3" maxlength="255" placeholder="Mô tả chức năng mà quyền này cho phép"></textarea>
+      </div>
+    </div>
+    <div dialog-footer class="dialog-actions">
+      <ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closePermissionDialog()">Hủy</ss-button>
+      <ss-button color="primary" htmlType="submit" [disabled]="permissionFormRef.invalid">{{ editingPermission() ? 'Lưu thay đổi' : 'Tạo quyền' }}</ss-button>
+    </div>
+  </form>
+</ss-dialog>

@@ -18,6 +18,9 @@ import { leaveAdminRoutes } from './features/admin/leaves/leaves.routes';
 import { leaveSettingsAdminRoutes } from './features/admin/leave-settings/leave-settings.routes';
 import { salaryStructureAdminRoutes } from './features/admin/salary-structures/salary-structures.routes';
 import { payrollRunAdminRoutes } from './features/admin/payroll-runs/payroll-runs.routes';
+import { userAdminRoutes } from './features/admin/users/users.routes';
+import { rolesPermissionsAdminRoutes } from './features/admin/roles-permissions/roles-permissions.routes';
+import { auditLogAdminRoutes } from './features/admin/audit-logs/audit-logs.routes';
 import { LayoutComponent } from './layout/layout.component';
 
 export const routes: Routes = [
@@ -108,6 +111,18 @@ export const routes: Routes = [
           {
             path: 'payroll-runs',
             children: payrollRunAdminRoutes,
+          },
+          {
+            path: 'users',
+            children: userAdminRoutes,
+          },
+          {
+            path: 'roles-permissions',
+            children: rolesPermissionsAdminRoutes,
+          },
+          {
+            path: 'audit-logs',
+            children: auditLogAdminRoutes,
           },
         ],
       },

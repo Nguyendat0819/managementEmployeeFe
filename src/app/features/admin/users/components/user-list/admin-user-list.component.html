@@ -1,0 +1,19 @@
+<main class="admin-user-page">
+  <ss-data-table [data]="users()" [columns]="userColumns" [settings]="userTableSettings" (primaryClick)="onPrimaryClick($event)" (actionClick)="onActionClick($event)"></ss-data-table>
+
+  <ss-dialog [visible]="createVisible()" title="Thêm tài khoản người dùng" [width]="680" [maskClosable]="false" (visibleChange)="createVisible.set($event)">
+    <form #userFormRef="ngForm" class="user-form" (ngSubmit)="saveUser(userFormRef.valid)">
+      <p class="dialog-description">Nhập thông tin đăng nhập và phân quyền ban đầu cho tài khoản mới.</p>
+      <div class="form-grid">
+        <div class="form-field"><label for="user-name">Tên đăng nhập <b>*</b></label><input id="user-name" name="userName" [(ngModel)]="userForm.userName" required maxlength="100" placeholder="VD: nguyen.van.a"></div>
+        <div class="form-field"><label for="user-full-name">Họ và tên <b>*</b></label><input id="user-full-name" name="fullName" [(ngModel)]="userForm.fullName" required maxlength="200" placeholder="Nhập họ và tên"></div>
+        <div class="form-field form-field-wide"><label for="user-email">Email <b>*</b></label><input id="user-email" name="email" type="email" [(ngModel)]="userForm.email" required maxlength="255" placeholder="name@company.vn"></div>
+        <div class="form-field"><label for="user-password">Mật khẩu <b>*</b></label><input id="user-password" name="password" type="password" [(ngModel)]="userForm.password" required minlength="8" placeholder="Tối thiểu 8 ký tự"></div>
+        <div class="form-field"><label for="user-password-confirm">Xác nhận mật khẩu <b>*</b></label><input id="user-password-confirm" name="passwordConfirm" type="password" [(ngModel)]="userForm.passwordConfirm" required minlength="8" placeholder="Nhập lại mật khẩu"></div>
+        <div class="form-field"><label for="user-role">Vai trò <b>*</b></label><select id="user-role" name="roleCode" [(ngModel)]="userForm.roleCode" required>@for (role of roleOptions; track role.value) { <option [ngValue]="role.value">{{ role.label }}</option> }</select></div>
+        <div class="form-field"><label for="user-status">Trạng thái <b>*</b></label><select id="user-status" name="status" [(ngModel)]="userForm.status" required><option>Hoạt động</option><option>Tạm khóa</option></select></div>
+      </div>
+      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeCreateDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="userFormRef.invalid">Tạo tài khoản</ss-button></div>
+    </form>
+  </ss-dialog>
+</main>

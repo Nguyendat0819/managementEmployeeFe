@@ -1,0 +1,41 @@
+<main class="audit-log-page">
+  <div class="audit-intro">
+    <div>
+      <span class="page-eyebrow">Kiểm soát hệ thống</span>
+      <h1>Audit Log</h1>
+      <p>Lưu vết đầy đủ các thao tác quan trọng để kiểm tra, truy vết và bảo đảm an toàn dữ liệu.</p>
+    </div>
+    <button type="button" class="export-button" (click)="exportLogs()">
+      <span>↓</span>
+      Xuất báo cáo
+    </button>
+  </div>
+
+  <div class="audit-signal-grid">
+    <div class="audit-signal audit-signal-blue"><span>◷</span><div><strong>{{ logs().length }}</strong><small>Sự kiện gần đây</small></div></div>
+    <div class="audit-signal audit-signal-green"><span>✓</span><div><strong>{{ successfulCount }}</strong><small>Thao tác thành công</small></div></div>
+    <div class="audit-signal audit-signal-red"><span>!</span><div><strong>{{ failedCount }}</strong><small>Cảnh báo cần xem</small></div></div>
+    <div class="audit-signal audit-signal-purple"><span>◉</span><div><strong>{{ securityEventCount }}</strong><small>Sự kiện bảo mật</small></div></div>
+  </div>
+
+  <ss-data-table [data]="logs()" [columns]="columns" [settings]="settings" (actionClick)="onActionClick($event)"></ss-data-table>
+
+  <ss-dialog [visible]="detailVisible()" [title]="'Chi tiết audit · ' + (selectedLog()?.action ?? '')" [width]="720" [maskClosable]="false" (visibleChange)="detailVisible.set($event)">
+    @if (selectedLog(); as log) {
+      <div class="detail-content">
+        <div class="detail-banner" [class.detail-banner-failed]="log.result === 'Thất bại'">
+          <span class="detail-result-icon">{{ log.result === 'Thành công' ? '✓' : '!' }}</span>
+          <div><strong>{{ log.result }}</strong><span>{{ log.occurredAt }}</span></div>
+        </div>
+        <div class="detail-grid">
+          <div><span>Người thực hiện</span><strong>{{ log.actorName }}</strong><small>{{ log.actor }}</small></div>
+          <div><span>Hành động</span><strong>{{ log.action }}</strong><small>{{ log.module }}</small></div>
+          <div><span>Đối tượng</span><strong>{{ log.target }}</strong></div>
+          <div><span>Địa chỉ IP</span><strong>{{ log.ipAddress }}</strong><small>{{ log.device }}</small></div>
+        </div>
+        <div class="detail-description"><span>Chi tiết thao tác</span><p>{{ log.details }}</p></div>
+        <div dialog-footer class="dialog-actions"><button type="button" class="close-button" (click)="closeDetail()">Đóng</button></div>
+      </div>
+    }
+  </ss-dialog>
+</main>

@@ -1,0 +1,28 @@
+:host { display: block; }
+.audit-log-page { width: 100%; max-width: 1440px; min-width: 0; margin: 0 auto; padding: 8px 0 32px; box-sizing: border-box; }
+.audit-intro { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 18px; }
+.audit-intro h1 { margin: 0; color: var(--color-text-heading); font-size: 24px; font-weight: 700; }
+.audit-intro p { max-width: 720px; margin: 6px 0 0; color: var(--color-text-secondary); font-size: 13px; }
+.page-eyebrow { display: block; margin-bottom: 6px; color: #1677ff; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.export-button { display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border: 1px solid #1677ff; border-radius: 6px; color: #1677ff; background: #fff; font: inherit; font-size: 13px; cursor: pointer; }
+.export-button:hover { background: #f0f7ff; }
+.export-button span { font-size: 17px; font-weight: 700; line-height: 1; }
+.audit-signal-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+.audit-signal { display: flex; align-items: center; gap: 12px; padding: 13px 15px; border: 1px solid var(--color-border); border-radius: 9px; background: var(--color-bg-container, #fff); }
+.audit-signal > span { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 9px; font-size: 17px; font-weight: 700; }
+.audit-signal strong, .audit-signal small { display: block; }
+.audit-signal strong { color: var(--color-text-heading); font-size: 20px; line-height: 1; }
+.audit-signal small { margin-top: 4px; color: var(--color-text-secondary); font-size: 11px; }
+.audit-signal-blue > span { color: #1677ff; background: #e6f4ff; }.audit-signal-green > span { color: #239b5c; background: #e8f8ef; }.audit-signal-red > span { color: #cf1322; background: #fff1f0; }.audit-signal-purple > span { color: #722ed1; background: #f4edff; }
+.audit-log-page ss-data-table { display: block; width: 100%; min-width: 0; max-width: 100%; }
+.detail-content { display: grid; gap: 18px; }
+.detail-banner { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid #b7ebc6; border-radius: 9px; background: #f3fff6; }
+.detail-banner-failed { border-color: #ffccc7; background: #fff2f0; }
+.detail-result-icon { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 50%; color: #fff; background: #32b36b; font-weight: 700; }
+.detail-banner-failed .detail-result-icon { background: #ff4d4f; }
+.detail-banner strong, .detail-banner span { display: block; }.detail-banner strong { color: var(--color-text-heading); font-size: 14px; }.detail-banner div span { margin-top: 3px; color: var(--color-text-secondary); font-size: 12px; }
+.detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 22px; }
+.detail-grid div { min-width: 0; padding-bottom: 12px; border-bottom: 1px solid var(--color-border-secondary, var(--color-border)); }.detail-grid span, .detail-grid strong, .detail-grid small { display: block; }.detail-grid span, .detail-description > span { margin-bottom: 5px; color: var(--color-text-secondary); font-size: 12px; }.detail-grid strong { overflow: hidden; color: var(--color-text-heading); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }.detail-grid small { margin-top: 4px; color: var(--color-text-tertiary, var(--color-text-secondary)); font-size: 11px; }
+.detail-description { padding: 13px 14px; border-radius: 8px; background: #f7faff; }.detail-description p { margin: 0; color: var(--color-text); font-size: 13px; line-height: 1.55; }.dialog-actions { display: flex; justify-content: flex-end; }.close-button { padding: 8px 16px; border: 1px solid var(--color-border); border-radius: 6px; color: var(--color-text); background: #fff; font: inherit; cursor: pointer; }
+@media (max-width: 860px) { .audit-signal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .audit-intro { align-items: stretch; flex-direction: column; }.export-button { align-self: flex-start; }.audit-signal-grid, .detail-grid { grid-template-columns: 1fr; } }

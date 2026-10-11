@@ -1,0 +1,38 @@
+<ss-data-table
+  [data]="roles()"
+  [columns]="roleColumns"
+  [settings]="roleTableSettings"
+  (primaryClick)="onPrimaryClick($event)"
+  (actionClick)="onActionClick($event)"
+></ss-data-table>
+
+<ss-dialog [visible]="roleDialogVisible()" [title]="editingRole() ? 'Sửa vai trò' : 'Thêm vai trò'" [width]="620" [maskClosable]="false" (visibleChange)="roleDialogVisible.set($event)">
+  <form #roleFormRef="ngForm" class="role-form" (ngSubmit)="saveRole(roleFormRef.valid)">
+    <p class="dialog-description">Khai báo thông tin nhóm quyền để sử dụng trong hệ thống.</p>
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="role-code">Mã vai trò <b>*</b></label>
+        <input id="role-code" name="code" [(ngModel)]="roleForm.code" required maxlength="50" [disabled]="!!editingRole()" placeholder="VD: HR_MANAGER">
+      </div>
+      <div class="form-field">
+        <label for="role-name">Tên vai trò <b>*</b></label>
+        <input id="role-name" name="name" [(ngModel)]="roleForm.name" required maxlength="100" placeholder="Nhập tên vai trò">
+      </div>
+      <div class="form-field form-field-wide">
+        <label for="role-description">Mô tả</label>
+        <textarea id="role-description" name="description" [(ngModel)]="roleForm.description" rows="3" maxlength="255" placeholder="Mô tả phạm vi sử dụng của vai trò"></textarea>
+      </div>
+      <div class="form-field">
+        <label for="role-status">Trạng thái <b>*</b></label>
+        <select id="role-status" name="status" [(ngModel)]="roleForm.status" required>
+          <option>Đang hoạt động</option>
+          <option>Tạm khóa</option>
+        </select>
+      </div>
+    </div>
+    <div dialog-footer class="dialog-actions">
+      <ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeRoleDialog()">Hủy</ss-button>
+      <ss-button color="primary" htmlType="submit" [disabled]="roleFormRef.invalid">{{ editingRole() ? 'Lưu thay đổi' : 'Tạo vai trò' }}</ss-button>
+    </div>
+  </form>
+</ss-dialog>
