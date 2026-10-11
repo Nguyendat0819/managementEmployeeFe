@@ -7,6 +7,8 @@ import { leaveEmployeeRoutes } from './features/employee/leave_employee/leave_em
 import { profileEmployeeRoutes } from './features/employee/profile_employee/profile_employee.routes';
 import { payslipEmployeeRoutes } from './features/employee/payslip_employee/payslip_employee.routes';
 import { notificationEmployeeRoutes } from './features/employee/notification_employee/notification_employee.routes';
+import { dashboardAdminRoutes } from './features/admin/dashboard_admin/dashboard_admin.routes';
+import { organizationRoutes } from './features/admin/organization/organization.routes';
 import { LayoutComponent } from './layout/layout.component';
 
 export const routes: Routes = [
@@ -51,6 +53,19 @@ export const routes: Routes = [
           {
             path: 'notifications',
             children: notificationEmployeeRoutes,
+          },
+        ],
+      },
+      {
+        path: 'admin',
+        children: [
+          {
+            path: 'dashboard',
+            children: dashboardAdminRoutes,
+          },
+          {
+            path: 'departments',
+            children: organizationRoutes,
           },
         ],
       },

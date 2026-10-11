@@ -1,0 +1,11 @@
+:host { display: block; }
+.org-unit-list-page {
+  width: 100%;
+  min-width: 0;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 8px 0 32px;
+  box-sizing: border-box;
+}
+.org-unit-list-page ::ng-deep .ss-tree-table__table th { white-space: nowrap; }
+.org-unit-list-page ::ng-deep .ss-tree-table__table td { font-size: 12px; }

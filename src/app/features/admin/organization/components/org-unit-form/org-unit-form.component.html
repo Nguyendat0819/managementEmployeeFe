@@ -1,0 +1,54 @@
+<div class="modal-backdrop" (click)="cancel.emit()">
+  <section class="department-modal" role="dialog" aria-modal="true" aria-labelledby="org-unit-form-title" (click)="$event.stopPropagation()">
+    <div class="modal-heading">
+      <div>
+        <span class="modal-eyebrow">departments</span>
+        <h2 id="org-unit-form-title">{{ title }}</h2>
+        <p>{{ description }}</p>
+      </div>
+      <button type="button" class="modal-close" aria-label="Đóng" (click)="cancel.emit()">×</button>
+    </div>
+
+    <form #departmentForm="ngForm" (ngSubmit)="submit(departmentForm.valid)" class="department-form">
+      <div class="form-grid">
+        <label class="form-field">
+          <span>deptCode <b>*</b></span>
+          <input name="deptCode" [(ngModel)]="form.deptCode" required maxlength="50" [readonly]="fieldsReadOnly" placeholder="VD: IT" />
+        </label>
+        <label class="form-field">
+          <span>parentCode</span>
+          <input name="parentCode" [(ngModel)]="form.parentCode" maxlength="50" [readonly]="parentCodeReadOnly" placeholder="VD: BLOCK-01" />
+        </label>
+        <label class="form-field form-field-wide">
+          <span>name <b>*</b></span>
+          <input name="name" [(ngModel)]="form.name" required maxlength="150" [readonly]="fieldsReadOnly" placeholder="Tên đơn vị" />
+        </label>
+        <label class="form-field">
+          <span>code <b>*</b></span>
+          <input name="code" [(ngModel)]="form.code" required maxlength="50" [readonly]="fieldsReadOnly" placeholder="Mã đơn vị" />
+        </label>
+        <label class="form-field">
+          <span>headCode</span>
+          <input name="headCode" [(ngModel)]="form.headCode" maxlength="50" [readonly]="fieldsReadOnly" placeholder="Mã người phụ trách" />
+        </label>
+        <label class="form-field">
+          <span>level <b>*</b></span>
+          <input name="level" type="number" [(ngModel)]="form.level" required min="1" max="10" [readonly]="fieldsReadOnly" />
+        </label>
+        <label class="form-checkbox form-field-wide">
+          <input name="isDeleted" type="checkbox" [(ngModel)]="form.isDeleted" [disabled]="fieldsReadOnly" />
+          <span>isDeleted — đánh dấu đơn vị đã xóa</span>
+        </label>
+      </div>
+
+      <div class="form-error" *ngIf="formError">{{ formError }}</div>
+
+      <div class="modal-actions">
+        <button type="button" class="modal-secondary" (click)="cancel.emit()">Đóng</button>
+        <button *ngIf="!readOnly" type="submit" class="modal-primary" [disabled]="departmentForm.invalid">
+          {{ mode === 'edit' ? 'Lưu thay đổi' : mode === 'relocate' ? 'Chuyển đơn vị' : 'Lưu' }}
+        </button>
+      </div>
+    </form>
+  </section>
+</div>
