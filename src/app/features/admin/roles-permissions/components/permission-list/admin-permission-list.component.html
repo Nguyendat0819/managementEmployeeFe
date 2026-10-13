@@ -40,7 +40,7 @@
 
   <footer class="permission-actions">
     <span>Thay đổi chỉ được áp dụng sau khi lưu.</span>
-    <ss-button color="primary" (onClick)="savePermissions()">Lưu phân quyền</ss-button>
+    <ss-button color="primary" [loading]="savingPermissions()" loadingText="Đang lưu..." (onClick)="savePermissions()">Lưu phân quyền</ss-button>
   </footer>
 </section>
 
@@ -49,6 +49,7 @@
     [data]="permissionCatalog()"
     [columns]="permissionColumns"
     [settings]="permissionTableSettings"
+    (searchChange)="onPermissionTableSearch($event)"
     (primaryClick)="onPermissionPrimaryClick($event)"
     (actionClick)="onPermissionActionClick($event)"
   ></ss-data-table>
@@ -64,7 +65,7 @@
       </div>
       <div class="form-field form-field-wide">
         <label for="permission-name">Tên quyền <b>*</b></label>
-        <input id="permission-name" name="permissionName" [(ngModel)]="permissionForm.name" required maxlength="150" placeholder="VD: Xuất danh sách nhân viên">
+        <input id="permission-name" name="permissionName" [(ngModel)]="permissionForm.name" required maxlength="50" placeholder="VD: Xuất danh sách nhân viên">
       </div>
       <div class="form-field form-field-wide">
         <label for="permission-description">Mô tả</label>

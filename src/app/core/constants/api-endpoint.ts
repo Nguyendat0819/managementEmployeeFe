@@ -20,6 +20,16 @@ export class API_ENDPOINTS {
     POSITIONS: '/positions',
   };
 
+  public static readonly Permission = {
+    BASE: 'api/permission',
+    DETAIL: (id: number) => `/${id}`,
+    SEARCH: '/search',
+  };
+
+  public static readonly RolePermission = {
+    BASE: 'api/role-permission',
+  };
+
   public static readonly Position = {
     BASE: 'api/position',
     DETAIL: (id: number) => `/${id}`,

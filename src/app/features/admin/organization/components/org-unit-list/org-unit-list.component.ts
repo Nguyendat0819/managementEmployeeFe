@@ -99,7 +99,7 @@ export class OrgUnitListComponent implements OnInit {
         visible: true,
         placeholder: 'Tìm theo mã, tên, tên viết tắt rồi nhấn Enter...',
         mode: 'server',
-        trigger: 'input',
+        trigger: 'submit',
         clearable: true,
       },
       filter: { mode: 'server' },

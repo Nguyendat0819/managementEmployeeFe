@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { finalize } from 'rxjs/operators';
 import {
   SsButtonComponent,
   SsConfirmService,
@@ -15,11 +16,16 @@ import {
   SsTransferItem,
 } from '@platform/ui-kit';
 import { AdminRoleService } from '../../services/admin-role.service';
+import { PermissionCreateRequest, PermissionResponse, PermissionUpdateRequest } from '../../models/admin-permission.model';
 
 interface PermissionForm {
   code: string;
   name: string;
   description: string;
+}
+
+interface PermissionItem extends SsTransferItem {
+  id: number;
 }
 
 @Component({
@@ -39,26 +45,27 @@ export class AdminPermissionListComponent implements OnChanges {
   @Output() readonly activeRoleCodeChange = new EventEmitter<string>();
 
   readonly roles = this.roleService.roles;
-  readonly permissionCatalog = this.roleService.permissions;
+  readonly permissionCatalog = signal<PermissionItem[]>([]);
   readonly selectedPermissions = signal<SsTransferItem[]>([]);
-  readonly permissionResults = signal<SsTransferItem[]>(this.permissionCatalog());
+  readonly permissionResults = signal<SsTransferItem[]>([]);
   readonly permissionDialogVisible = signal(false);
-  readonly editingPermission = signal<SsTransferItem | null>(null);
+  readonly editingPermission = signal<PermissionItem | null>(null);
+  readonly savingPermissions = signal(false);
   readonly permissionForm: PermissionForm = this.emptyPermissionForm();
   permissionKeyword = '';
 
-  readonly permissionColumns: SsDtColumn<SsTransferItem>[] = [
+  readonly permissionColumns: SsDtColumn<PermissionItem>[] = [
     { key: 'value', header: 'Mã quyền', field: 'value', width: '190px', sortable: true, filterable: true },
     { key: 'label', header: 'Tên quyền', field: 'label', width: '250px', sortable: true, filterable: true },
     { key: 'description', header: 'Mô tả', field: 'description', width: '420px', filterable: true },
   ];
 
-  permissionTableSettings: SsDtConfig<SsTransferItem> = {
-    rowKey: 'value',
+  permissionTableSettings: SsDtConfig<PermissionItem> = {
+    rowKey: 'id',
     title: 'Danh mục quyền',
     description: 'Tạo và quản lý các quyền có thể gán cho vai trò',
     cardIcon: 'lock',
-    cardStatusLabel: `${this.permissionCatalog().length} quyền`,
+    cardStatusLabel: '0 quyền',
     cardStatusType: 'info',
     primaryButtons: [{ key: 'create-permission', label: 'Thêm quyền', type: 'primary', icon: 'plus' }],
     searchable: true,
@@ -80,7 +87,7 @@ export class AdminPermissionListComponent implements OnChanges {
   };
 
   constructor() {
-    this.loadPermissionsForRole(this.activeRoleCode);
+    this.loadPermissionCatalog();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -94,8 +101,22 @@ export class AdminPermissionListComponent implements OnChanges {
   }
 
   onPermissionSearch(keyword: string): void {
-    this.permissionKeyword = keyword.trim().toLowerCase();
-    this.filterPermissionResults();
+    this.permissionKeyword = keyword.trim();
+    this.roleService.searchPermissions({ page: 0, size: 200, search: this.permissionKeyword || undefined, isDeleted: false }).subscribe({
+      next: (response) => this.permissionResults.set((response.data?.content ?? []).map((item) => this.toPermissionItem(item))),
+    });
+  }
+
+  onPermissionTableSearch(keyword: string): void {
+    const search = keyword.trim();
+    this.roleService.searchPermissions({ page: 0, size: 200, search: search || undefined, isDeleted: false }).subscribe({
+      next: (response) => {
+        const items = (response.data?.content ?? []).map((item) => this.toPermissionItem(item));
+        this.permissionCatalog.set(items);
+        this.permissionResults.set(items);
+        this.permissionTableSettings = { ...this.permissionTableSettings, cardStatusLabel: `${response.data?.totalElements ?? items.length} quyền` };
+      },
+    });
   }
 
   onPermissionChange(items: SsTransferItem[]): void {
@@ -103,10 +124,28 @@ export class AdminPermissionListComponent implements OnChanges {
   }
 
   savePermissions(): void {
+    if (this.savingPermissions()) return;
+
     const roleCode = this.activeRoleCode;
-    this.roleService.rolePermissions.update((permissions) => ({ ...permissions, [roleCode]: this.selectedPermissions().map((permission) => permission.value) }));
-    this.roleService.roles.update((roles) => roles.map((role) => role.code === roleCode ? { ...role, permissionCount: this.selectedPermissions().length, updatedAt: '07/10/2025' } : role));
-    this.toast.show({ severity: 'success', summary: 'Đã lưu phân quyền', detail: `Vai trò ${this.roleName(roleCode)} đã được cập nhật quyền truy cập.` });
+    const permissionCodes = this.selectedPermissions().map((permission) => permission.value);
+    const savedPermissionCodes = this.roleService.rolePermissions()[roleCode] ?? [];
+    if (this.hasSamePermissionCodes(savedPermissionCodes, permissionCodes)) {
+      this.toast.show({ severity: 'info', summary: 'Không có thay đổi', detail: 'Danh sách phân quyền chưa thay đổi.' });
+      return;
+    }
+
+    this.savingPermissions.set(true);
+    this.roleService.updateRolePermissions(roleCode, permissionCodes).pipe(
+      finalize(() => this.savingPermissions.set(false)),
+    ).subscribe({
+      next: () => {
+        this.roleService.rolePermissions.update((permissions) => ({ ...permissions, [roleCode]: permissionCodes }));
+        this.roleService.roles.update((roles) => roles.map((role) => role.code === roleCode
+          ? { ...role, permissionCount: permissionCodes.length }
+          : role));
+        this.toast.show({ severity: 'success', summary: 'Đã lưu phân quyền', detail: `Vai trò ${this.roleName(roleCode)} đã được cập nhật quyền truy cập.` });
+      },
+    });
   }
 
   onPermissionPrimaryClick(button: SsDtButton): void {
@@ -116,7 +155,7 @@ export class AdminPermissionListComponent implements OnChanges {
     this.permissionDialogVisible.set(true);
   }
 
-  onPermissionActionClick(event: SsDtActionClick<SsTransferItem>): void {
+  onPermissionActionClick(event: SsDtActionClick<PermissionItem>): void {
     if (event.action.key === 'edit') {
       Object.assign(this.permissionForm, { code: event.row.value, name: event.row.label, description: event.row.description ?? '' });
       this.editingPermission.set(event.row);
@@ -134,67 +173,92 @@ export class AdminPermissionListComponent implements OnChanges {
     if (!formValid) return;
     const code = this.permissionForm.code.trim().toLowerCase().replace(/\s+/g, '.');
     const name = this.permissionForm.name.trim();
+    const description = this.permissionForm.description.trim() || null;
     const editingPermission = this.editingPermission();
-    if (this.permissionCatalog().some((permission) => permission.value !== editingPermission?.value && permission.value.toLowerCase() === code.toLowerCase())) {
-      this.toast.show({ severity: 'warning', summary: 'Mã quyền đã tồn tại', detail: 'Vui lòng sử dụng một mã quyền khác.' });
-      return;
-    }
-    const permission: SsTransferItem = { value: code, label: name, description: this.permissionForm.description.trim() };
-    this.permissionCatalog.update((permissions) => editingPermission
-      ? permissions.map((item) => item.value === editingPermission.value ? permission : item)
-      : [...permissions, permission]);
-    if (editingPermission) this.selectedPermissions.update((permissions) => permissions.map((item) => item.value === editingPermission.value ? permission : item));
-    this.filterPermissionResults();
-    this.refreshPermissionTableStatus();
-    this.closePermissionDialog();
-    this.toast.show({ severity: 'success', summary: editingPermission ? 'Đã cập nhật quyền' : 'Đã thêm quyền', detail: `Quyền ${name} đã được ${editingPermission ? 'cập nhật' : 'tạo mới'}.` });
+    const operation = editingPermission
+      ? this.roleService.updatePermission(editingPermission.id, { permissionName: name, description } satisfies PermissionUpdateRequest)
+      : this.roleService.createPermission({ permissionCode: code, permissionName: name, description } satisfies PermissionCreateRequest);
+
+    operation.subscribe({
+      next: (response) => {
+        const savedPermission = response.data ? this.toPermissionItem(response.data) : null;
+        if (savedPermission) {
+          this.permissionCatalog.update((items) => editingPermission
+            ? items.map((item) => item.id === savedPermission.id ? savedPermission : item)
+            : [savedPermission, ...items]);
+          this.permissionResults.set(this.permissionCatalog());
+          this.permissionTableSettings = { ...this.permissionTableSettings, cardStatusLabel: `${this.permissionCatalog().length} quyền` };
+        }
+        this.closePermissionDialog();
+        this.toast.show({ severity: 'success', summary: editingPermission ? 'Đã cập nhật quyền' : 'Đã thêm quyền', detail: `Quyền ${name} đã được ${editingPermission ? 'cập nhật' : 'tạo mới'}.` });
+      },
+    });
   }
 
   roleName(roleCode: string): string {
     return this.roles().find((role) => role.code === roleCode)?.name ?? roleCode;
   }
 
+  private loadPermissionCatalog(): void {
+    this.roleService.searchPermissions({ page: 0, size: 200, isDeleted: false }).subscribe({
+      next: (response) => {
+        const items = (response.data?.content ?? []).map((item) => this.toPermissionItem(item));
+        this.permissionCatalog.set(items);
+        this.permissionResults.set(items);
+        this.permissionTableSettings = { ...this.permissionTableSettings, cardStatusLabel: `${response.data?.totalElements ?? items.length} quyền` };
+        this.loadPermissionsForRole(this.activeRoleCode);
+      },
+    });
+  }
+
   private loadPermissionsForRole(roleCode: string): void {
-    const selectedValues = new Set(this.roleService.rolePermissions()[roleCode] ?? []);
-    this.selectedPermissions.set(this.permissionCatalog().filter((permission) => selectedValues.has(permission.value)));
-    this.permissionKeyword = '';
-    this.permissionResults.set(this.permissionCatalog());
+    this.roleService.getPermissionsByRole(roleCode).subscribe({
+      next: (response) => {
+        const selectedValues = new Set((response.data ?? []).flatMap((item) => item.permissions));
+        this.roleService.rolePermissions.update((permissions) => ({ ...permissions, [roleCode]: [...selectedValues] }));
+        this.selectedPermissions.set(this.permissionCatalog().filter((permission) => selectedValues.has(permission.value)));
+        this.permissionKeyword = '';
+        this.permissionResults.set(this.permissionCatalog());
+      },
+    });
   }
 
-  private filterPermissionResults(): void {
-    if (!this.permissionKeyword) {
-      this.permissionResults.set(this.permissionCatalog());
-      return;
-    }
-    this.permissionResults.set(this.permissionCatalog().filter((permission) => `${permission.label} ${permission.description} ${permission.value}`.toLowerCase().includes(this.permissionKeyword)));
-  }
-
-  private async deletePermission(permission: SsTransferItem): Promise<void> {
-    const assignedRoleCount = this.roles().filter((role) => (this.roleService.rolePermissions()[role.code] ?? []).includes(permission.value)).length;
+  private async deletePermission(permission: PermissionItem): Promise<void> {
     const confirmed = await this.confirmService.confirm(
       'Xác nhận xóa quyền',
-      `Bạn có chắc muốn xóa quyền "${permission.label}" không?${assignedRoleCount ? ` Quyền này đang được cấp cho ${assignedRoleCount} vai trò.` : ''}`,
+      `Bạn có chắc muốn xóa quyền "${permission.label}" không? Quyền sẽ bị gỡ khỏi các vai trò đang được cấp.`,
       { type: 'danger', okText: 'Xóa' },
     );
     if (!confirmed) return;
-    this.permissionCatalog.update((permissions) => permissions.filter((item) => item.value !== permission.value));
-    this.roleService.rolePermissions.update((permissions) => {
-      const next = { ...permissions };
-      Object.keys(next).forEach((roleCode) => { next[roleCode] = (next[roleCode] ?? []).filter((code) => code !== permission.value); });
-      return next;
+    this.roleService.deletePermission(permission.id).subscribe({
+      next: () => {
+        this.roleService.rolePermissions.update((permissions) => Object.fromEntries(
+          Object.entries(permissions).map(([roleCode, codes]) => [roleCode, codes.filter((code) => code !== permission.value)]),
+        ));
+        this.permissionCatalog.update((items) => items.filter((item) => item.id !== permission.id));
+        this.permissionResults.set(this.permissionCatalog());
+        this.permissionTableSettings = { ...this.permissionTableSettings, cardStatusLabel: `${this.permissionCatalog().length} quyền` };
+        this.toast.show({ severity: 'success', summary: 'Đã xóa quyền', detail: `Quyền ${permission.label} đã được xóa khỏi danh mục.` });
+      },
     });
-    this.selectedPermissions.update((permissions) => permissions.filter((item) => item.value !== permission.value));
-    this.roleService.roles.update((roles) => roles.map((role) => ({ ...role, permissionCount: (this.roleService.rolePermissions()[role.code] ?? []).length })));
-    this.filterPermissionResults();
-    this.refreshPermissionTableStatus();
-    this.toast.show({ severity: 'success', summary: 'Đã xóa quyền', detail: `Quyền ${permission.label} đã được xóa khỏi danh mục.` });
   }
 
-  private refreshPermissionTableStatus(): void {
-    this.permissionTableSettings = { ...this.permissionTableSettings, cardStatusLabel: `${this.permissionCatalog().length} quyền` };
+  private toPermissionItem(item: PermissionResponse): PermissionItem {
+    return {
+      id: item.id,
+      value: item.permissionCode,
+      label: item.permissionName,
+      description: item.description ?? '',
+    };
   }
 
   private emptyPermissionForm(): PermissionForm {
     return { code: '', name: '', description: '' };
+  }
+
+  private hasSamePermissionCodes(left: string[], right: string[]): boolean {
+    if (left.length !== right.length) return false;
+    const rightCodes = new Set(right);
+    return left.every((code) => rightCodes.has(code));
   }
 }

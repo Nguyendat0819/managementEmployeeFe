@@ -4,11 +4,15 @@ import { API_ENDPOINTS } from '@core/constants/api-endpoint';
 import { PageRequest } from '@core/models/api-request.interface';
 import { ApiResponse, Page } from '@core/models/api-response.interface';
 import { BaseService } from '@core/services/base.service';
-import { ADMIN_PERMISSIONS, ADMIN_ROLE_PERMISSIONS } from '../data/admin-role.mock';
 import { AdminRole, PositionOption, RoleCreateRequest, RoleResponse, RoleUpdateRequest } from '../models/admin-role.model';
+import { PermissionCreateRequest, PermissionResponse, PermissionUpdateRequest, RolePermissionDto } from '../models/admin-permission.model';
 
 export interface RoleSearchRequest extends PageRequest {
   roleCode?: string;
+  isDeleted?: boolean;
+}
+
+export interface PermissionSearchRequest extends PageRequest {
   isDeleted?: boolean;
 }
 
@@ -16,10 +20,8 @@ export interface RoleSearchRequest extends PageRequest {
 export class AdminRoleService extends BaseService {
   readonly roles = signal<AdminRole[]>([]);
   readonly totalRoles = signal(0);
-  readonly permissions = signal(ADMIN_PERMISSIONS.map((permission) => ({ ...permission })));
-  readonly rolePermissions = signal<Record<string, string[]>>(Object.fromEntries(
-    Object.entries(ADMIN_ROLE_PERMISSIONS).map(([roleCode, permissionCodes]) => [roleCode, [...permissionCodes]]),
-  ));
+  readonly permissions = signal<PermissionResponse[]>([]);
+  readonly rolePermissions = signal<Record<string, string[]>>({});
   private readonly endpoint = API_ENDPOINTS.Role;
 
   searchRoles(request: RoleSearchRequest): Observable<ApiResponse<Page<RoleResponse>>> {
@@ -50,6 +52,60 @@ export class AdminRoleService extends BaseService {
     return this.get<ApiResponse<PositionOption[]>>(
       this.endpoint.POSITIONS,
       this.endpoint.BASE,
+    );
+  }
+
+  searchPermissions(request: PermissionSearchRequest): Observable<ApiResponse<Page<PermissionResponse>>> {
+    return this.post<ApiResponse<Page<PermissionResponse>>>(
+      API_ENDPOINTS.Permission.SEARCH,
+      request,
+      API_ENDPOINTS.Permission.BASE,
+    );
+  }
+
+  createPermission(request: PermissionCreateRequest): Observable<ApiResponse<PermissionResponse>> {
+    return this.post<ApiResponse<PermissionResponse>>('', request, API_ENDPOINTS.Permission.BASE);
+  }
+
+  updatePermission(id: number, request: PermissionUpdateRequest): Observable<ApiResponse<PermissionResponse>> {
+    return this.put<ApiResponse<PermissionResponse>>(API_ENDPOINTS.Permission.DETAIL(id), request, API_ENDPOINTS.Permission.BASE);
+  }
+
+  deletePermission(id: number): Observable<ApiResponse<void>> {
+    return this.delete<ApiResponse<void>>(API_ENDPOINTS.Permission.DETAIL(id), API_ENDPOINTS.Permission.BASE);
+  }
+
+  getPermissionsByRole(roleCode: string): Observable<ApiResponse<RolePermissionDto[]>> {
+    return this.get<ApiResponse<RolePermissionDto[]>>(
+      '',
+      API_ENDPOINTS.RolePermission.BASE,
+      { params: { roleCodes: roleCode } },
+    );
+  }
+
+  updateRolePermissions(roleCode: string, permissionCodes: string[]): Observable<ApiResponse<void>> {
+    return this.put<ApiResponse<void>>(
+      '',
+      { permissionCodes },
+      API_ENDPOINTS.RolePermission.BASE,
+      { params: { roleCode } },
+    );
+  }
+
+  assignRolePermission(roleCode: string, permissionCode: string): Observable<ApiResponse<void>> {
+    return this.post<ApiResponse<void>>(
+      '',
+      { permissionCode },
+      API_ENDPOINTS.RolePermission.BASE,
+      { params: { roleCode } },
+    );
+  }
+
+  deleteRolePermission(roleCode: string, permissionCode: string): Observable<ApiResponse<void>> {
+    return this.delete<ApiResponse<void>>(
+      '',
+      API_ENDPOINTS.RolePermission.BASE,
+      { params: { roleCode, permissionCode } },
     );
   }
 }
