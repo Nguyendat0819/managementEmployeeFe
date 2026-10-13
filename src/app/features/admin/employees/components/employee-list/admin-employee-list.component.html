@@ -7,10 +7,10 @@
   </section>
 
   <section class="stats-grid" aria-label="Tổng quan nhân sự">
-    <ss-stat label="Tổng nhân sự" [value]="employees().length" suffix="người" hint="Trong toàn hệ thống" tone="primary" icon="team"></ss-stat>
+    <ss-stat label="Tổng nhân sự" [value]="totalEmployees()" suffix="người" hint="Theo bộ lọc hiện tại" tone="primary" icon="team"></ss-stat>
     <ss-stat label="Đang làm việc" [value]="workingCount" suffix="người" hint="Nhân sự chính thức" tone="success" icon="check-circle"></ss-stat>
     <ss-stat label="Đang thử việc" [value]="probationCount" suffix="người" hint="Cần theo dõi chuyển đổi" tone="info" icon="user-add"></ss-stat>
-    <ss-stat label="Hợp đồng sắp hạn" [value]="3" suffix="hợp đồng" hint="Trong 60 ngày tới" tone="warning" icon="exclamation-circle"></ss-stat>
+    <ss-stat label="Hợp đồng sắp hạn" [value]="expiringCount" suffix="hợp đồng" hint="Trong 60 ngày tới" tone="warning" icon="exclamation-circle"></ss-stat>
   </section>
 
   <section class="employee-table" aria-label="Danh sách hồ sơ nhân sự">
@@ -27,7 +27,7 @@
         </div>
         <div class="detail-section"><h3>Thông tin cá nhân</h3><div class="details-grid"><div><span>Ngày sinh</span><strong>{{ employee.birthDate }}</strong></div><div><span>Giới tính</span><strong>{{ employee.gender }}</strong></div><div><span>Số CCCD</span><strong>{{ employee.idCard }}</strong></div><div><span>Số điện thoại</span><strong>{{ employee.phone }}</strong></div><div><span>Email</span><strong>{{ employee.email }}</strong></div></div></div>
         <div class="detail-section"><h3>Thông tin công việc</h3><div class="details-grid"><div><span>Phòng ban</span><strong>{{ employee.department }}</strong></div><div><span>Chức danh</span><strong>{{ employee.position }}</strong></div><div><span>Loại hình</span><strong>{{ employee.employmentType }}</strong></div><div><span>Ngày vào làm</span><strong>{{ employee.hireDate }}</strong></div><div><span>Hạn hợp đồng</span><strong>{{ employee.contractEnd }}</strong></div></div></div>
-        <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeDetail()">Đóng</ss-button><ss-button color="primary" icon="file-text" htmlType="button">Xem hợp đồng</ss-button></div>
+        <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeDetail()">Đóng</ss-button></div>
       </div>
     }
   </ss-dialog>
@@ -38,14 +38,17 @@
       <div class="form-grid">
         <div class="form-field"><label for="employee-code">Mã nhân viên <b>*</b></label><input id="employee-code" name="employeeCode" [(ngModel)]="employeeForm.employeeCode" required maxlength="50" placeholder="VD: NV-000136"></div>
         <div class="form-field"><label for="employee-name">Họ và tên <b>*</b></label><input id="employee-name" name="fullName" [(ngModel)]="employeeForm.fullName" required maxlength="200" placeholder="Nhập họ và tên"></div>
-        <div class="form-field"><label for="employee-department">Phòng ban <b>*</b></label><select id="employee-department" name="department" [(ngModel)]="employeeForm.department" required><option>Phòng Công nghệ thông tin</option><option>Phòng Kinh doanh</option><option>Phòng Nhân sự</option><option>Phòng Tài chính - Kế toán</option><option>Phòng Marketing</option><option>Phòng Vận hành</option></select></div>
-        <div class="form-field"><label for="employee-position">Chức danh <b>*</b></label><input id="employee-position" name="position" [(ngModel)]="employeeForm.position" required maxlength="200" placeholder="Nhập chức danh"></div>
+        <div class="form-field"><label for="employee-department">Phòng ban <b>*</b></label><select id="employee-department" name="departmentCode" [(ngModel)]="employeeForm.departmentCode" required><option value="" disabled>Chọn phòng ban</option>@for (department of departments; track department.deptCode) { <option [value]="department.deptCode">{{ department.name }}</option> }</select></div>
+        <div class="form-field"><label for="employee-position">Chức danh <b>*</b></label><select id="employee-position" name="positionCode" [(ngModel)]="employeeForm.positionCode" required><option value="" disabled>Chọn chức danh</option>@for (position of positions; track position.positionCode) { <option [value]="position.positionCode">{{ position.title }}</option> }</select></div>
         <div class="form-field"><label for="employee-type">Loại hình <b>*</b></label><select id="employee-type" name="employmentType" [(ngModel)]="employeeForm.employmentType" required><option>Toàn thời gian</option><option>Bán thời gian</option><option>Thử việc</option></select></div>
         <div class="form-field"><label for="employee-status">Trạng thái <b>*</b></label><select id="employee-status" name="status" [(ngModel)]="employeeForm.status" required><option>Đang làm việc</option><option>Đang thử việc</option><option>Tạm nghỉ</option></select></div>
         <div class="form-field"><label for="employee-hire-date">Ngày vào làm <b>*</b></label><input id="employee-hire-date" name="hireDate" type="date" [(ngModel)]="employeeForm.hireDate" required></div>
         <div class="form-field"><label for="employee-phone">Số điện thoại</label><input id="employee-phone" name="phone" type="tel" [(ngModel)]="employeeForm.phone" placeholder="Nhập số điện thoại"></div>
         <div class="form-field"><label for="employee-email">Email</label><input id="employee-email" name="email" type="email" [(ngModel)]="employeeForm.email" placeholder="name@company.vn"></div>
         <div class="form-field"><label for="employee-birth-date">Ngày sinh</label><input id="employee-birth-date" name="birthDate" type="date" [(ngModel)]="employeeForm.birthDate"></div>
+        <div class="form-field"><label for="employee-gender">Giới tính</label><select id="employee-gender" name="gender" [(ngModel)]="employeeForm.gender"><option value="">Chưa cập nhật</option><option value="Nam">Nam</option><option value="Nữ">Nữ</option></select></div>
+        <div class="form-field"><label for="employee-id-card">Số CCCD</label><input id="employee-id-card" name="idCard" [(ngModel)]="employeeForm.idCard" maxlength="20"></div>
+        <div class="form-field"><label for="employee-contract-end">Hạn hợp đồng</label><input id="employee-contract-end" name="contractEnd" type="date" [(ngModel)]="employeeForm.contractEnd"></div>
       </div>
       <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeCreateDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="employeeFormRef.invalid">{{ editingEmployee() ? 'Cập nhật' : 'Lưu hồ sơ' }}</ss-button></div>
     </form>

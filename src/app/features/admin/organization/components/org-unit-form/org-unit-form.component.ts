@@ -1,17 +1,22 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { SsSelectComponent } from '@platform/ui-kit';
+import { finalize } from 'rxjs';
 import { DepartmentFormValue, OrganizationFormMode } from '../../models/request.model';
 import { DepartmentResponse } from '../../models/response.model';
+import { OrgUnitService } from '../../services/org-unit.service';
 
 @Component({
   selector: 'app-org-unit-form',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SsSelectComponent],
   templateUrl: './org-unit-form.component.html',
   styleUrl: './org-unit-form.component.css',
 })
-export class OrgUnitFormComponent implements OnChanges {
+export class OrgUnitFormComponent implements OnChanges, OnInit {
+  private readonly orgUnitService = inject(OrgUnitService);
+
   @Input() mode: OrganizationFormMode = 'create';
   @Input() department: DepartmentResponse | null = null;
   @Input() parentDepartment: DepartmentResponse | null = null;
@@ -20,6 +25,8 @@ export class OrgUnitFormComponent implements OnChanges {
 
   form: DepartmentFormValue = this.emptyForm();
   formError = '';
+  employeeOptions: { label: string; value: string }[] = [];
+  employeeLoading = false;
 
   get title(): string {
     if (this.mode === 'child') return 'Thêm đơn vị con';
@@ -43,8 +50,26 @@ export class OrgUnitFormComponent implements OnChanges {
     return this.mode === 'view' || this.mode === 'relocate';
   }
 
+  get identityFieldsReadOnly(): boolean {
+    return this.mode === 'view' || this.mode === 'edit' || this.mode === 'relocate';
+  }
+
   get parentCodeReadOnly(): boolean {
-    return this.mode === 'view' || this.mode === 'child';
+    return this.mode === 'view' || this.mode === 'child' || this.mode === 'edit';
+  }
+
+  ngOnInit(): void {
+    this.employeeLoading = true;
+    this.orgUnitService.getEmployees()
+      .pipe(finalize(() => this.employeeLoading = false))
+      .subscribe({
+        next: (response) => {
+          this.employeeOptions = (response.data ?? []).map((employee) => ({
+            label: `${employee.employeeCode} - ${employee.fullName}`,
+            value: employee.employeeCode,
+          }));
+        },
+      });
   }
 
   ngOnChanges(changes: SimpleChanges): void {

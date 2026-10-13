@@ -9,12 +9,14 @@ import {
   SsTreeTableComponent,
   SsTreeTableConfig,
   SsTreeTableNode,
+  SsTreeTableQueryChangeEvent,
   SsTreeTableToolbarActionEvent,
   SsTreeTableToolbarPrimaryAction,
 } from '@platform/ui-kit';
-import { DepartmentFormValue, OrganizationFormMode } from '../../models/request.model';
-import { DepartmentResponse, OrganizationTreeRow } from '../../models/response.model';
-import { OrgUnitService } from '../../services/org-unit.service';
+import { finalize } from 'rxjs';
+import { DepartmentCreateRequest, DepartmentFormValue, DepartmentUpdateRequest, OrganizationFormMode } from '../../models/request.model';
+import { DepartmentResponse, EmployeeResponse, OrganizationTreeRow } from '../../models/response.model';
+import { DepartmentQuery, OrgUnitService } from '../../services/org-unit.service';
 import { OrgUnitFormComponent } from '../org-unit-form/org-unit-form.component';
 
 @Component({
@@ -38,6 +40,11 @@ export class OrgUnitListComponent implements OnInit {
   formMode: OrganizationFormMode = 'create';
   formDepartment: DepartmentResponse | null = null;
   formParentDepartment: DepartmentResponse | null = null;
+  employees: EmployeeResponse[] = [];
+  employeesLoading = false;
+  employeesDepartment: DepartmentResponse | null = null;
+  employeesOpen = false;
+  private currentQuery: DepartmentQuery = {};
 
   readonly primaryActions: SsTreeTableToolbarPrimaryAction[] = [
     { key: 'create', label: 'Thêm mới', icon: 'plus', type: 'primary' },
@@ -46,8 +53,8 @@ export class OrgUnitListComponent implements OnInit {
   readonly rowActions: SsTreeTableAction<OrganizationTreeRow>[] = [
     { key: 'create-child', label: 'Thêm đơn vị con', icon: 'plus' },
     { key: 'view', label: 'Xem', icon: 'eye' },
+    { key: 'employees', label: 'Xem nhân sự', icon: 'user' },
     { key: 'edit', label: 'Sửa', icon: 'edit' },
-    { key: 'relocate', label: 'Chuyển đơn vị', icon: 'swap' },
     { key: 'delete', label: 'Xóa', icon: 'delete', danger: true },
   ];
 
@@ -84,19 +91,19 @@ export class OrgUnitListComponent implements OnInit {
     expandOnLabelClick: true,
     striped: true,
     hoverable: true,
-    queryMode: 'client',
+    queryMode: 'server',
     emptyText: 'Không có dữ liệu đơn vị tổ chức',
     columns: { resizable: true, defaultWidth: '160px', minWidth: 96, maxWidth: 720 },
     toolbar: {
       search: {
         visible: true,
         placeholder: 'Tìm theo mã, tên, tên viết tắt rồi nhấn Enter...',
-        mode: 'client',
+        mode: 'server',
         trigger: 'input',
         clearable: true,
       },
-      filter: true,
-      sort: true,
+      filter: { mode: 'server' },
+      sort: { mode: 'client' },
       settings: { visible: true, badge: false },
       primary: true,
       primaryActions: this.primaryActions,
@@ -125,7 +132,7 @@ export class OrgUnitListComponent implements OnInit {
 
   loadDepartments(): void {
     this.loading = true;
-    this.orgUnitService.getDepartments().subscribe({
+    this.orgUnitService.getDepartments(this.currentQuery).subscribe({
       next: (response) => {
         this.departments = response.data ?? [];
         this.refreshNodes();
@@ -139,6 +146,24 @@ export class OrgUnitListComponent implements OnInit {
         this.changeDetectorRef.markForCheck();
       },
     });
+  }
+
+  onQueryChange(event: SsTreeTableQueryChangeEvent): void {
+    const filters = new Map(event.filters.map((filter) => [filter.key, filter.value]));
+    const levelValue = filters.get('level');
+    const statusValue = filters.get('statusLabel');
+    const level = typeof levelValue === 'number' ? levelValue : Number(levelValue);
+
+    this.currentQuery = {
+      search: event.search || undefined,
+      level: Number.isFinite(level) && level > 0 ? level : undefined,
+      isDeleted: statusValue === 'Đã xóa'
+        ? true
+        : statusValue === 'Đang hoạt động'
+          ? false
+          : undefined,
+    };
+    this.loadDepartments();
   }
 
   onToolbarAction(event: SsTreeTableToolbarActionEvent): void {
@@ -157,61 +182,46 @@ export class OrgUnitListComponent implements OnInit {
       case 'view':
         this.openForm('view', department);
         break;
+      case 'employees':
+        this.loadEmployees(department);
+        break;
       case 'edit':
         this.openForm('edit', department);
         break;
-      case 'relocate':
-        this.openForm('relocate', department);
-        break;
       case 'delete':
-        void this.deleteMockDepartment(department);
+        void this.deleteDepartment(department);
         break;
     }
   }
 
   onFormSave(value: DepartmentFormValue): void {
-    if (this.formMode === 'relocate') {
-      this.departments = this.departments.map((department) => department.deptCode === this.formDepartment?.deptCode
-        ? { ...department, parentCode: value.parentCode.trim() || null }
-        : department);
-      this.toast.show({ severity: 'success', summary: 'Thành công', detail: 'Đã chuyển đơn vị trong dữ liệu mock.' });
-      this.closeForm();
-      this.refreshNodes();
-      return;
-    }
+    const request: DepartmentCreateRequest | DepartmentUpdateRequest = this.formDepartment
+      ? { name: value.name, level: value.level }
+      : {
+          deptCode: value.deptCode,
+          parentCode: value.parentCode || null,
+          name: value.name,
+          code: value.code,
+          headCode: value.headCode || null,
+          level: value.level,
+        };
 
-    if (this.departments.some((department) => department.deptCode === value.deptCode && department.deptCode !== this.formDepartment?.deptCode)) {
-      return;
-    }
+    this.loading = true;
+    const request$ = this.formDepartment
+      ? this.orgUnitService.updateDepartment(this.formDepartment.deptCode, request as DepartmentUpdateRequest)
+      : this.orgUnitService.createDepartment(request as DepartmentCreateRequest);
 
-    const department: DepartmentResponse = {
-      id: this.formDepartment?.id ?? Date.now(),
-      deptCode: value.deptCode,
-      parentCode: value.parentCode || null,
-      name: value.name,
-      code: value.code,
-      headCode: value.headCode || null,
-      level: value.level,
-      isDeleted: value.isDeleted,
-      employeeCount: this.formDepartment?.employeeCount ?? 0,
-    };
-
-    if (this.formDepartment) {
-      const previousCode = this.formDepartment.deptCode;
-      this.departments = this.departments.map((item) => item.deptCode === previousCode ? department : item);
-      if (previousCode !== department.deptCode) {
-        this.departments = this.departments.map((item) => item.parentCode === previousCode
-          ? { ...item, parentCode: department.deptCode }
-          : item);
-      }
-      this.toast.show({ severity: 'success', summary: 'Thành công', detail: 'Đã cập nhật đơn vị mock.' });
-    } else {
-      this.departments = [...this.departments, department];
-      this.toast.show({ severity: 'success', summary: 'Thành công', detail: 'Đã thêm đơn vị mock.' });
-    }
-
-    this.closeForm();
-    this.refreshNodes();
+    request$.pipe(finalize(() => this.loading = false)).subscribe({
+      next: () => {
+        this.toast.show({
+          severity: 'success',
+          summary: 'Thành công',
+          detail: this.formDepartment ? 'Đã cập nhật đơn vị.' : 'Đã thêm đơn vị.',
+        });
+        this.closeForm();
+        this.loadDepartments();
+      },
+    });
   }
 
   closeForm(): void {
@@ -229,26 +239,44 @@ export class OrgUnitListComponent implements OnInit {
     this.changeDetectorRef.markForCheck();
   }
 
-  private async deleteMockDepartment(department: DepartmentResponse): Promise<void> {
-    if (this.departments.some((item) => item.parentCode === department.deptCode)) {
-      this.toast.show({ severity: 'warning', summary: 'Không thể xóa', detail: 'Đơn vị vẫn còn đơn vị con.' });
-      return;
-    }
-    if (department.employeeCount > 0) {
-      this.toast.show({ severity: 'warning', summary: 'Không thể xóa', detail: 'Đơn vị vẫn còn nhân sự.' });
-      return;
-    }
-
+  private async deleteDepartment(department: DepartmentResponse): Promise<void> {
     const confirmed = await this.confirmService.confirm(
       'Xác nhận xóa',
-      `Bạn có chắc muốn xóa đơn vị "${department.name}" khỏi dữ liệu mock không?`,
+      `Bạn có chắc muốn xóa mềm đơn vị "${department.name}" không?`,
       { type: 'danger', okText: 'Xóa' },
     );
     if (!confirmed) return;
 
-    this.departments = this.departments.filter((item) => item.deptCode !== department.deptCode);
-    this.refreshNodes();
-    this.toast.show({ severity: 'success', summary: 'Thành công', detail: 'Đã xóa đơn vị khỏi dữ liệu mock.' });
+    this.loading = true;
+    this.orgUnitService.deleteDepartment(department.deptCode)
+      .pipe(finalize(() => this.loading = false))
+      .subscribe({
+        next: () => {
+          this.toast.show({ severity: 'success', summary: 'Thành công', detail: 'Đã xóa mềm đơn vị.' });
+          this.loadDepartments();
+        },
+      });
+  }
+
+  private loadEmployees(department: DepartmentResponse): void {
+    this.employeesDepartment = department;
+    this.employeesOpen = true;
+    this.employeesLoading = true;
+    this.employees = [];
+    this.orgUnitService.getEmployeesByDepartment(department.deptCode)
+      .pipe(finalize(() => this.employeesLoading = false))
+      .subscribe({
+        next: (response) => {
+          this.employees = response.data ?? [];
+          this.changeDetectorRef.markForCheck();
+        },
+      });
+  }
+
+  closeEmployees(): void {
+    this.employeesOpen = false;
+    this.employeesDepartment = null;
+    this.employees = [];
     this.changeDetectorRef.markForCheck();
   }
 
@@ -257,15 +285,24 @@ export class OrgUnitListComponent implements OnInit {
   }
 
   private buildNodes(items: DepartmentResponse[]): SsTreeTableNode<OrganizationTreeRow>[] {
-    const childrenByParent = new Map<string | null, DepartmentResponse[]>();
-    for (const department of items) {
-      const parent = department.parentCode || null;
-      childrenByParent.set(parent, [...(childrenByParent.get(parent) ?? []), department]);
+    const existingCodes = new Set(items.map((department) => department.deptCode));
+    const visibleItems = items.map((department) => ({
+      ...department,
+      parentCode: department.parentCode && existingCodes.has(department.parentCode)
+        ? department.parentCode
+        : null,
+    }));
+    const visibleChildrenByParent = new Map<string | null, DepartmentResponse[]>();
+    for (const department of visibleItems) {
+      visibleChildrenByParent.set(
+        department.parentCode,
+        [...(visibleChildrenByParent.get(department.parentCode) ?? []), department],
+      );
     }
 
-    const buildChildren = (parentCode: string | null): SsTreeTableNode<OrganizationTreeRow>[] =>
-      (childrenByParent.get(parentCode) ?? []).map((department) => {
-        const children = buildChildren(department.deptCode);
+    const buildVisibleChildren = (parentCode: string | null): SsTreeTableNode<OrganizationTreeRow>[] =>
+      (visibleChildrenByParent.get(parentCode) ?? []).map((department) => {
+        const children = buildVisibleChildren(department.deptCode);
         return {
           ...this.toNode(department),
           type: children.length ? 'folder' : 'leaf',
@@ -274,7 +311,7 @@ export class OrgUnitListComponent implements OnInit {
         };
       });
 
-    return buildChildren(null);
+    return buildVisibleChildren(null);
   }
 
   private toNode(department: DepartmentResponse): SsTreeTableNode<OrganizationTreeRow> {

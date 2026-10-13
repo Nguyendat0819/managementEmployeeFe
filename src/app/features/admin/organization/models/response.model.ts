@@ -10,6 +10,25 @@ export interface DepartmentResponse {
   employeeCount: number;
 }
 
+export interface EmployeeResponse {
+  id: number;
+  employeeCode: string;
+  user: number | null;
+  fullName: string;
+  birthDate: string | null;
+  gender: string | null;
+  idCard: string | null;
+  phone: string | null;
+  email: string | null;
+  departmentCode: string | null;
+  positionCode: string | null;
+  employmentType: string;
+  hireDate: string | null;
+  contractEnd: string | null;
+  status: string;
+  isDeleted: boolean;
+}
+
 export interface OrganizationTreeRow {
   deptCode: string;
   parentCode: string;

@@ -9,3 +9,17 @@ export interface DepartmentFormValue {
   level: number;
   isDeleted: boolean;
 }
+
+export interface DepartmentCreateRequest {
+  deptCode: string;
+  parentCode: string | null;
+  name: string;
+  code: string;
+  headCode: string | null;
+  level: number;
+}
+
+export interface DepartmentUpdateRequest {
+  name: string;
+  level: number;
+}
