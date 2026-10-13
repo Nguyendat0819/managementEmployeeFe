@@ -1,0 +1,16 @@
+:host { display: block; }
+.position-form { display: grid; gap: 18px; }
+.dialog-description { margin: 0; color: var(--color-text-secondary); font-size: 13px; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.form-field { display: grid; gap: 6px; }
+.form-field label { color: var(--color-text-heading); font-size: 13px; font-weight: 600; }
+.form-field label b { color: #ff4d4f; }
+.form-field input, .form-field select { width: 100%; padding: 9px 11px; border: 1px solid var(--color-border); border-radius: 6px; color: var(--color-text); background: var(--color-bg-container, #fff); font: inherit; font-size: 13px; box-sizing: border-box; }
+.form-field input:focus, .form-field select:focus { border-color: #1677ff; outline: 0; box-shadow: 0 0 0 3px rgba(22, 119, 255, .12); }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; width: 100%; }
+.position-detail { display: grid; gap: 20px; }
+.position-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.position-detail-grid > div { display: grid; gap: 5px; }
+.position-detail-grid span { color: var(--color-text-secondary); font-size: 12px; }
+.position-detail-grid strong { color: var(--color-text-heading); font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+@media (max-width: 620px) { .form-grid, .position-detail-grid { grid-template-columns: 1fr; } }

@@ -16,6 +16,7 @@ export class AdminRolePermissionManagementComponent {
   private readonly roleService = inject(AdminRoleService);
 
   readonly roles = this.roleService.roles;
+  readonly totalRoles = this.roleService.totalRoles;
   readonly selectedRoleCode = signal('ADMIN');
   selectedTabIndex = 0;
 

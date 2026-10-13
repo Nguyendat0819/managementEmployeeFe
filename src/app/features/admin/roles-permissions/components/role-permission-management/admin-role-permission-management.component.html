@@ -6,13 +6,13 @@
       <p>Thiết lập nhóm truy cập và quyền sử dụng tính năng cho từng vai trò.</p>
     </div>
     <div class="heading-metrics">
-      <strong>{{ roles().length }}</strong>
+      <strong>{{ totalRoles() }}</strong>
       <span>vai trò</span>
     </div>
   </header>
 
   <ss-tabs [selectedIndex]="selectedTabIndex" [lazy]="false" [fill]="false" (selectedIndexChange)="onTabChange($event)">
-    <ss-tab label="Vai trò" [badgeCount]="roles().length">
+    <ss-tab label="Vai trò" [badgeCount]="totalRoles()">
       <app-admin-role-list (permissionsRequested)="onPermissionsRequested($event)"></app-admin-role-list>
     </ss-tab>
 

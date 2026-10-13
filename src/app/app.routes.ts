@@ -10,6 +10,7 @@ import { notificationEmployeeRoutes } from './features/employee/notification_emp
 import { dashboardAdminRoutes } from './features/admin/dashboard_admin/dashboard_admin.routes';
 import { organizationRoutes } from './features/admin/organization/organization.routes';
 import { employeeAdminRoutes } from './features/admin/employees/employees.routes';
+import { positionAdminRoutes } from './features/admin/positions/positions.routes';
 import { shiftAdminRoutes } from './features/admin/shifts/shifts.routes';
 import { shiftRosterAdminRoutes } from './features/admin/shift-roster/shift-roster.routes';
 import { holidayAdminRoutes } from './features/admin/holidays/holidays.routes';
@@ -80,6 +81,10 @@ export const routes: Routes = [
             children: organizationRoutes,
           },
           ...employeeAdminRoutes,
+          {
+            path: 'positions',
+            children: positionAdminRoutes,
+          },
           {
             path: 'shifts',
             children: shiftAdminRoutes,

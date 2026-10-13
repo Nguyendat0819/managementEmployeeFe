@@ -1,0 +1,62 @@
+<ss-data-table
+  [data]="positions()"
+  [columns]="positionColumns"
+  [settings]="positionTableSettings"
+  (primaryClick)="onPrimaryClick($event)"
+  (actionClick)="onActionClick($event)"
+></ss-data-table>
+
+<ss-dialog [visible]="detailVisible()" [title]="'Chi tiết chức vụ ' + (selectedPosition()?.title ?? '')" [width]="680" [maskClosable]="false" (visibleChange)="detailVisible.set($event)">
+  @if (selectedPosition(); as position) {
+    <div class="position-detail">
+      <div class="position-detail-grid">
+        <div><span>Mã chức vụ</span><strong>{{ position.code }}</strong></div>
+        <div><span>Tên chức vụ</span><strong>{{ position.title }}</strong></div>
+        <div><span>Cấp bậc</span><strong>{{ position.level }}</strong></div>
+        <div><span>Nhân viên đang dùng</span><strong>{{ position.employeeCount }} người</strong></div>
+        <div><span>Lương tối thiểu</span><strong>{{ formatSalary(position.baseSalaryMin) }}</strong></div>
+        <div><span>Lương tối đa</span><strong>{{ formatSalary(position.baseSalaryMax) }}</strong></div>
+        <div><span>Trạng thái</span><strong>{{ position.status }}</strong></div>
+        <div><span>Cập nhật</span><strong>{{ position.updatedAt }}</strong></div>
+      </div>
+      <div dialog-footer class="dialog-actions">
+        <ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeDetail()">Đóng</ss-button>
+      </div>
+    </div>
+  }
+</ss-dialog>
+
+<ss-dialog [visible]="formVisible()" [title]="editingPosition() ? 'Sửa chức vụ' : 'Thêm chức vụ'" [width]="680" [maskClosable]="false" (visibleChange)="formVisible.set($event)">
+  <form #positionFormRef="ngForm" class="position-form" (ngSubmit)="savePosition(positionFormRef.valid)">
+    <p class="dialog-description">Khai báo cấp bậc và khoảng lương chuẩn cho chức vụ.</p>
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="position-code">Mã chức vụ <b>*</b></label>
+        <input id="position-code" name="code" [(ngModel)]="positionForm.code" required maxlength="255" pattern="[A-Za-z0-9_-]+" [disabled]="!!editingPosition()" placeholder="VD: SENIOR_SPECIALIST">
+      </div>
+      <div class="form-field">
+        <label for="position-title">Tên chức vụ <b>*</b></label>
+        <input id="position-title" name="title" [(ngModel)]="positionForm.title" required maxlength="200" placeholder="Nhập tên chức vụ">
+      </div>
+      <div class="form-field">
+        <label for="position-level">Cấp bậc <b>*</b></label>
+        <select id="position-level" name="level" [(ngModel)]="positionForm.level" required>
+          @for (level of levelOptions; track level) { <option [value]="level">{{ level }}</option> }
+        </select>
+      </div>
+      <div class="form-field"><span></span></div>
+      <div class="form-field">
+        <label for="position-min-salary">Lương tối thiểu <b>*</b></label>
+        <input id="position-min-salary" name="baseSalaryMin" type="number" min="0" step="100000" [(ngModel)]="positionForm.baseSalaryMin" required placeholder="Ví dụ: 10000000">
+      </div>
+      <div class="form-field">
+        <label for="position-max-salary">Lương tối đa <b>*</b></label>
+        <input id="position-max-salary" name="baseSalaryMax" type="number" min="0" step="100000" [(ngModel)]="positionForm.baseSalaryMax" required placeholder="Ví dụ: 20000000">
+      </div>
+    </div>
+    <div dialog-footer class="dialog-actions">
+      <ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeFormDialog()">Hủy</ss-button>
+      <ss-button color="primary" htmlType="submit" [disabled]="positionFormRef.invalid">{{ editingPosition() ? 'Lưu thay đổi' : 'Tạo chức vụ' }}</ss-button>
+    </div>
+  </form>
+</ss-dialog>

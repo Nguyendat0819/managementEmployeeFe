@@ -152,6 +152,16 @@ export class MenuService {
               roles: ['ADMIN'],
               permissions: ['employee:contract:read'],
             },
+            {
+              id: 'admin-positions',
+              label: 'Danh mục chức vụ',
+              icon: 'solution',
+              iconColor: '#13c2c2',
+              path: '/admin/positions',
+              order: 30,
+              roles: ['ADMIN'],
+              permissions: ['employee:employee:read'],
+            },
           ],
         },
 

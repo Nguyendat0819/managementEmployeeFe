@@ -1,13 +1,4 @@
 import { SsTransferItem } from '@platform/ui-kit';
-import { AdminRole } from '../models/admin-role.model';
-
-export const ADMIN_ROLES: AdminRole[] = [
-  { id: 1, code: 'ADMIN', name: 'Quản trị viên', description: 'Toàn quyền cấu hình và vận hành hệ thống', userCount: 1, permissionCount: 22, status: 'Đang hoạt động', updatedAt: '07/10/2025' },
-  { id: 2, code: 'HR', name: 'Nhân sự', description: 'Quản lý hồ sơ, nghỉ phép và chấm công', userCount: 1, permissionCount: 14, status: 'Đang hoạt động', updatedAt: '05/10/2025' },
-  { id: 3, code: 'MANAGER', name: 'Quản lý', description: 'Theo dõi đội nhóm và duyệt yêu cầu nhân viên', userCount: 2, permissionCount: 9, status: 'Đang hoạt động', updatedAt: '03/10/2025' },
-  { id: 4, code: 'EMPLOYEE', name: 'Nhân viên', description: 'Sử dụng các chức năng cá nhân cơ bản', userCount: 2, permissionCount: 5, status: 'Đang hoạt động', updatedAt: '01/10/2025' },
-  { id: 5, code: 'ACCOUNTANT', name: 'Kế toán', description: 'Theo dõi dữ liệu lương và kỳ tính lương', userCount: 0, permissionCount: 6, status: 'Tạm khóa', updatedAt: '28/09/2025' },
-];
 
 export const ADMIN_PERMISSIONS: SsTransferItem[] = [
   { value: 'dashboard.read', label: 'Xem tổng quan', description: 'Truy cập dashboard quản trị' },

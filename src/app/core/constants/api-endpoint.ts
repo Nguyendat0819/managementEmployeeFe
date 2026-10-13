@@ -15,7 +15,15 @@ export class API_ENDPOINTS {
 
   public static readonly Role = {
     BASE: 'api/role',
+    DETAIL: (id: number) => `/${id}`,
+    SEARCH: '/search',
     POSITIONS: '/positions',
+  };
+
+  public static readonly Position = {
+    BASE: 'api/position',
+    DETAIL: (id: number) => `/${id}`,
+    SEARCH: '/search',
   };
 
   public static readonly Template = {

@@ -11,4 +11,10 @@
 .form-field input:focus, .form-field select:focus, .form-field textarea:focus { border-color: #1677ff; outline: 0; box-shadow: 0 0 0 3px rgba(22, 119, 255, .12); }
 .form-field textarea { resize: vertical; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; width: 100%; }
+.role-detail { display: grid; gap: 20px; }
+.role-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.role-detail-grid > div { display: grid; gap: 5px; }
+.role-detail-grid span { color: var(--color-text-secondary); font-size: 12px; }
+.role-detail-grid strong { color: var(--color-text-heading); font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.role-detail-wide { grid-column: 1 / -1; }
 @media (max-width: 620px) { .form-grid { grid-template-columns: 1fr; }.form-field-wide { grid-column: auto; } }

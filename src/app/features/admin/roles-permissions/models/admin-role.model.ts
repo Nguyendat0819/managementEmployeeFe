@@ -1,4 +1,4 @@
-export type AdminRoleStatus = 'Đang hoạt động' | 'Tạm khóa';
+export type AdminRoleStatus = 'Đang hoạt động' | 'Đã xóa';
 
 export interface PositionOption {
   positionCode: string;
@@ -14,4 +14,27 @@ export interface AdminRole {
   permissionCount: number;
   status: AdminRoleStatus;
   updatedAt: string;
+}
+
+export interface RoleResponse {
+  id: number;
+  roleCode: string;
+  roleName: string;
+  description: string | null;
+  userCount: number;
+  permissionCount: number;
+  isDeleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RoleCreateRequest {
+  roleCode: string;
+  roleName: string;
+  description: string | null;
+}
+
+export interface RoleUpdateRequest {
+  roleName: string;
+  description: string | null;
 }
