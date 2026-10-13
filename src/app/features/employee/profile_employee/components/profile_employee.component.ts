@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { SsButtonComponent, SsCardComponent, SsCardFooterStartDirective, SsDialogComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
 import { ProfileEmployeeService } from '../service/profile_employee.service';
@@ -12,14 +12,24 @@ import { ProfileEmployeeService } from '../service/profile_employee.service';
   styleUrl: './profile_employee.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ProfileEmployeeComponent {
+export class ProfileEmployeeComponent implements OnInit {
   private readonly profileService = inject(ProfileEmployeeService);
   private readonly toast = inject(SsToastService);
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
 
   readonly profile = this.profileService.profile;
   readonly contract = this.profileService.contract;
   readonly dialogVisible = signal(false);
   readonly profileForm = { phone: '', email: '', address: '' };
+
+  ngOnInit(): void {
+    this.profileService.getCurrentProfile().subscribe({
+      next: (response) => {
+        this.profileService.applyResponse(response.data);
+        this.changeDetectorRef.markForCheck();
+      },
+    });
+  }
 
   openUpdateDialog(): void {
     this.profileForm.phone = this.profile.phone;

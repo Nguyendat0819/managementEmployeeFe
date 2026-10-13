@@ -4,11 +4,14 @@ export class API_ENDPOINTS {
     CREATE: '',
     UPDATE: (deptCode: string) => `/${encodeURIComponent(deptCode)}`,
     DELETE: (deptCode: string) => `/${encodeURIComponent(deptCode)}`,
-    GETEMPLOYEE:(deptCode: string) =>`/${encodeURIComponent(deptCode)}/employees`
+    GETEMPLOYEE: (deptCode: string) => `/${encodeURIComponent(deptCode)}/employees`,
   };
 
   public static readonly Employee = {
     BASE: 'api/employee',
+    ME: '/me',
+    MEPROFILE: '/profile-me',
+    CATALOGS: '/catalogs',
     DETAIL: (id: number) => `/${id}`,
     SEARCH: '/search',
   };

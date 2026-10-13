@@ -5,7 +5,7 @@ import { PageRequest } from '@core/models/api-request.interface';
 import { API_ENDPOINTS } from '@core/constants/api-endpoint';
 import { BaseService } from '@core/services/base.service';
 import { ADMIN_CONTRACTS } from '../data/admin-employee.mock';
-import { EmployeeRequest, EmployeeResponse } from '../models/admin-employee.model';
+import { EmployeeCatalogResponse, EmployeeRequest, EmployeeResponse } from '../models/admin-employee.model';
 
 export interface EmployeeQuery {
   search?: string;
@@ -33,6 +33,10 @@ export class AdminEmployeeService extends BaseService {
       if (value?.trim()) params[key] = value.trim();
     }
     return this.get<ApiResponse<EmployeeResponse[]>>('', this.endpoint.BASE, { params });
+  }
+
+  getCatalogs(): Observable<ApiResponse<EmployeeCatalogResponse>> {
+    return this.get<ApiResponse<EmployeeCatalogResponse>>(this.endpoint.CATALOGS, this.endpoint.BASE);
   }
 
   searchEmployees(request: EmployeeSearchRequest): Observable<ApiResponse<Page<EmployeeResponse>>> {

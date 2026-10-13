@@ -35,6 +35,9 @@ export class AdminEmployeeListComponent implements OnInit {
   readonly createVisible = signal(false);
   readonly editingEmployee = signal<AdminEmployee | null>(null);
   readonly employeeForm = this.emptyEmployeeForm();
+  genders = ['Nam', 'Nữ', 'Khác'];
+  employmentTypes = ['Toàn thời gian', 'Bán thời gian', 'Thử việc'];
+  statuses = ['Đang làm việc', 'Đang thử việc', 'Tạm nghỉ'];
   departments: DepartmentResponse[] = [];
   positions: PositionOption[] = [];
   readonly employeeColumns: SsDtColumn<AdminEmployee>[] = [
@@ -92,6 +95,15 @@ export class AdminEmployeeListComponent implements OnInit {
     this.orgUnitService.getDepartments().subscribe({
       next: (response) => {
         this.departments = (response.data ?? []).filter((department) => !department.isDeleted);
+        this.refreshQuickFilters();
+        this.changeDetectorRef.markForCheck();
+      },
+    });
+    this.employeeService.getCatalogs().subscribe({
+      next: (response) => {
+        this.genders = response.data?.genders?.length ? response.data.genders : this.genders;
+        this.employmentTypes = response.data?.employmentTypes?.length ? response.data.employmentTypes : this.employmentTypes;
+        this.statuses = response.data?.statuses?.length ? response.data.statuses : this.statuses;
         this.refreshQuickFilters();
         this.changeDetectorRef.markForCheck();
       },
@@ -242,9 +254,7 @@ export class AdminEmployeeListComponent implements OnInit {
       ...this.employeeTableSettings,
       quickFilters: [
         { key: 'status', placeholder: 'Tất cả trạng thái', options: [
-          { label: 'Đang làm việc', value: 'Đang làm việc' },
-          { label: 'Đang thử việc', value: 'Đang thử việc' },
-          { label: 'Tạm nghỉ', value: 'Tạm nghỉ' },
+          ...this.statuses.map((status) => ({ label: status, value: status })),
         ] },
         { key: 'departmentCode', placeholder: 'Tất cả phòng ban', options: this.departments.map((department) => ({
           label: department.name,
@@ -255,9 +265,7 @@ export class AdminEmployeeListComponent implements OnInit {
           value: position.positionCode,
         })) },
         { key: 'employmentType', placeholder: 'Tất cả loại hình', options: [
-          { label: 'Toàn thời gian', value: 'Toàn thời gian' },
-          { label: 'Bán thời gian', value: 'Bán thời gian' },
-          { label: 'Thử việc', value: 'Thử việc' },
+          ...this.employmentTypes.map((type) => ({ label: type, value: type })),
         ] },
       ],
     };

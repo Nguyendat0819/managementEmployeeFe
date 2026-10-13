@@ -1,23 +1,27 @@
 import { Injectable } from '@angular/core';
-import { EmployeeContract, EmployeeProfile } from '../model/profile_employee.model';
+import { Observable } from 'rxjs';
+import { API_ENDPOINTS } from '@core/constants/api-endpoint';
+import { ApiResponse } from '@core/models/api-response.interface';
+import { BaseService } from '@core/services/base.service';
+import { EmployeeContract, EmployeeProfile, EmployeeProfileResponse } from '../model/profile_employee.model';
 
 @Injectable({ providedIn: 'root' })
-export class ProfileEmployeeService {
+export class ProfileEmployeeService extends BaseService {
   readonly profile: EmployeeProfile = {
-    employeeCode: 'NV-000128',
-    fullName: 'Nguyễn Minh Anh',
-    preferredName: 'Minh Anh',
-    birthDate: '12/08/1995',
-    gender: 'Nữ',
-    idCard: '001095012345',
-    phone: '0901 234 567',
-    email: 'minhanh@employee.vn',
-    address: 'Quận Cầu Giấy, Hà Nội',
-    department: 'Phòng Công nghệ thông tin',
-    position: 'Chuyên viên phát triển phần mềm',
-    employmentType: 'Toàn thời gian',
-    hireDate: '04/03/2022',
-    status: 'Đang làm việc',
+    employeeCode: 'Đang tải...',
+    fullName: 'Đang tải...',
+    preferredName: 'Chưa cập nhật',
+    birthDate: 'Chưa cập nhật',
+    gender: 'Chưa cập nhật',
+    idCard: 'Chưa cập nhật',
+    phone: 'Chưa cập nhật',
+    email: 'Chưa cập nhật',
+    address: 'Chưa cập nhật',
+    department: 'Chưa cập nhật',
+    position: 'Chưa cập nhật',
+    employmentType: 'Chưa cập nhật',
+    hireDate: 'Chưa cập nhật',
+    status: 'Chưa cập nhật',
   };
 
   readonly contract: EmployeeContract = {
@@ -32,4 +36,35 @@ export class ProfileEmployeeService {
     status: 'Đang hiệu lực',
     statusType: 'success',
   };
+
+  getCurrentProfile(): Observable<ApiResponse<EmployeeProfileResponse>> {
+    return this.get<ApiResponse<EmployeeProfileResponse>>(API_ENDPOINTS.Employee.MEPROFILE, API_ENDPOINTS.Employee.BASE);
+  }
+
+  applyResponse(response: EmployeeProfileResponse): void {
+    const nameParts = response.fullName.trim().split(/\s+/);
+    Object.assign(this.profile, {
+      employeeCode: response.employeeCode,
+      fullName: response.fullName,
+      preferredName: nameParts.slice(-2).join(' '),
+      birthDate: this.formatDate(response.birthDate),
+      gender: response.gender ?? 'Chưa cập nhật',
+      idCard: response.idCard ?? 'Chưa cập nhật',
+      phone: response.phone ?? 'Chưa cập nhật',
+      email: response.email ?? 'Chưa cập nhật',
+      department: response.departmentName ?? response.departmentCode ?? 'Chưa cập nhật',
+      position: response.positionName ?? response.positionCode ?? 'Chưa cập nhật',
+      employmentType: response.employmentType,
+      hireDate: this.formatDate(response.hireDate),
+      status: response.status,
+    });
+    this.contract.department = this.profile.department;
+    this.contract.position = this.profile.position;
+  }
+
+  private formatDate(value: string | null): string {
+    if (!value) return 'Chưa cập nhật';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('vi-VN');
+  }
 }

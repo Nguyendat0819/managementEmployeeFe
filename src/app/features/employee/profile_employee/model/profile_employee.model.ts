@@ -15,6 +15,27 @@ export interface EmployeeProfile {
   status: string;
 }
 
+export interface EmployeeProfileResponse {
+  id: number;
+  employeeCode: string;
+  user: number | null;
+  fullName: string;
+  birthDate: string | null;
+  gender: string | null;
+  idCard: string | null;
+  phone: string | null;
+  email: string | null;
+  departmentCode: string | null;
+  departmentName: string | null;
+  positionCode: string | null;
+  positionName: string | null;
+  employmentType: string;
+  hireDate: string;
+  contractEnd: string | null;
+  status: string;
+  isDeleted: boolean;
+}
+
 export interface EmployeeContract {
   contractNo: string;
   contractType: string;

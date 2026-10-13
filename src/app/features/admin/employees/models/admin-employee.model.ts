@@ -54,6 +54,12 @@ export interface EmployeeRequest {
   status: string;
 }
 
+export interface EmployeeCatalogResponse {
+  genders: string[];
+  employmentTypes: string[];
+  statuses: string[];
+}
+
 export interface AdminContract {
   id: number;
   contractNo: string;
