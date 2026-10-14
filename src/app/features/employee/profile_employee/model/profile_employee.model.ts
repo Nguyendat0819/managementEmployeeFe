@@ -48,3 +48,15 @@ export interface EmployeeContract {
   status: string;
   statusType: 'success' | 'warning' | 'default';
 }
+
+export interface EmployeeContractResponse {
+  contractNo: string;
+  contractType: string;
+  startDate: string;
+  endDate: string | null;
+  signedDate: string | null;
+  actualSalary: number;
+  departmentName: string | null;
+  positionName: string | null;
+  status: string;
+}

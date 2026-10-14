@@ -18,6 +18,7 @@ export class API_ENDPOINTS {
 
   public static readonly EmployeeContract = {
     BASE: 'api/employee-contract',
+    CONTRACTME: '/contract-me',
     DETAIL: (id: number) => `/${id}`,
     SEARCH: '/search',
   };

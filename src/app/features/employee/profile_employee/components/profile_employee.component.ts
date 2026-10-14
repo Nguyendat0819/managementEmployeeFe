@@ -28,6 +28,22 @@ export class ProfileEmployeeComponent implements OnInit {
         this.profileService.applyResponse(response.data);
         this.changeDetectorRef.markForCheck();
       },
+      error: () => {
+        this.profileService.markProfileUnavailable();
+        this.changeDetectorRef.markForCheck();
+        this.toast.show({ severity: 'warning', summary: 'Không tải được hồ sơ', detail: 'Vui lòng kiểm tra tài khoản hoặc thử tải lại trang.' });
+      },
+    });
+    this.profileService.getCurrentContract().subscribe({
+      next: (response) => {
+        this.profileService.applyContractResponse(response.data);
+        this.changeDetectorRef.markForCheck();
+      },
+      error: () => {
+        this.profileService.applyContractResponse(null);
+        this.changeDetectorRef.markForCheck();
+        this.toast.show({ severity: 'warning', summary: 'Không tải được hợp đồng', detail: 'Vui lòng thử tải lại trang.' });
+      },
     });
   }
 
