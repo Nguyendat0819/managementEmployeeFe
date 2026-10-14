@@ -36,6 +36,7 @@ export class OrgUnitListComponent implements OnInit {
   departments: DepartmentResponse[] = [];
   nodes: SsTreeTableNode<OrganizationTreeRow>[] = [];
   loading = false;
+  saving = false;
   formOpen = false;
   formMode: OrganizationFormMode = 'create';
   formDepartment: DepartmentResponse | null = null;
@@ -196,7 +197,11 @@ export class OrgUnitListComponent implements OnInit {
 
   onFormSave(value: DepartmentFormValue): void {
     const request: DepartmentCreateRequest | DepartmentUpdateRequest = this.formDepartment
-      ? { name: value.name, level: value.level }
+        ? {
+          name: value.name,
+          parentCode: value.parentCode || null,
+          headCode: value.headCode || null,
+        }
       : {
           deptCode: value.deptCode,
           parentCode: value.parentCode || null,
@@ -206,12 +211,12 @@ export class OrgUnitListComponent implements OnInit {
           level: value.level,
         };
 
-    this.loading = true;
+    this.saving = true;
     const request$ = this.formDepartment
       ? this.orgUnitService.updateDepartment(this.formDepartment.deptCode, request as DepartmentUpdateRequest)
       : this.orgUnitService.createDepartment(request as DepartmentCreateRequest);
 
-    request$.pipe(finalize(() => this.loading = false)).subscribe({
+    request$.pipe(finalize(() => this.saving = false)).subscribe({
       next: () => {
         this.toast.show({
           severity: 'success',

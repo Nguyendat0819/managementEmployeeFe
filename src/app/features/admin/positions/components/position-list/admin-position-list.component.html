@@ -56,7 +56,7 @@
     </div>
     <div dialog-footer class="dialog-actions">
       <ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeFormDialog()">Hủy</ss-button>
-      <ss-button color="primary" htmlType="submit" [disabled]="positionFormRef.invalid">{{ editingPosition() ? 'Lưu thay đổi' : 'Tạo chức vụ' }}</ss-button>
+      <ss-button color="primary" htmlType="submit" [disabled]="positionFormRef.invalid" [loading]="savingPosition()" loadingText="Đang lưu...">{{ editingPosition() ? 'Lưu thay đổi' : 'Tạo chức vụ' }}</ss-button>
     </div>
   </form>
 </ss-dialog>

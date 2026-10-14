@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { finalize } from 'rxjs';
 import { Observable, map } from 'rxjs';
 import {
   SsButtonComponent,
@@ -47,6 +48,7 @@ export class AdminPositionListComponent {
   readonly detailVisible = signal(false);
   readonly formVisible = signal(false);
   readonly editingPosition = signal<AdminPosition | null>(null);
+  readonly savingPosition = signal(false);
   readonly positionForm: PositionForm = this.emptyPositionForm();
   readonly levelOptions = ['ENTRY', 'JUNIOR', 'MIDDLE', 'SENIOR', 'LEAD', 'MANAGER', 'DIRECTOR'];
 
@@ -135,7 +137,7 @@ export class AdminPositionListComponent {
   }
 
   savePosition(formValid: boolean): void {
-    if (!formValid) return;
+    if (!formValid || this.savingPosition()) return;
     const min = Number(this.positionForm.baseSalaryMin);
     const max = Number(this.positionForm.baseSalaryMax);
     if (!Number.isFinite(min) || !Number.isFinite(max) || min < 0 || max < min) {
@@ -150,7 +152,8 @@ export class AdminPositionListComponent {
       ? this.positionService.updatePosition(editingPosition.id, { title, level, baseSalaryMin: min, baseSalaryMax: max } satisfies PositionUpdateRequest)
       : this.positionService.createPosition({ positionCode: this.positionForm.code.trim().toUpperCase(), title, level, baseSalaryMin: min, baseSalaryMax: max } satisfies PositionCreateRequest);
 
-    operation.subscribe({
+    this.savingPosition.set(true);
+    operation.pipe(finalize(() => this.savingPosition.set(false))).subscribe({
       next: () => {
         this.closeFormDialog();
         this.positionTable?.retry();

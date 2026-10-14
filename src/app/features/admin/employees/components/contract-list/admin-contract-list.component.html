@@ -32,7 +32,7 @@
     <form #contractFormRef="ngForm" class="contract-form" (ngSubmit)="saveContract(contractFormRef.valid)">
       <p class="dialog-description">Nhập thông tin hợp đồng và thời hạn áp dụng cho nhân sự.</p>
       <div class="form-grid">
-        <div class="form-field"><label for="contract-no">Số hợp đồng <b>*</b></label><input id="contract-no" name="contractNo" [(ngModel)]="contractForm.contractNo" required maxlength="50" placeholder="VD: HDLD-2025-0136"></div>
+        <div class="form-field"><label for="contract-no">Số hợp đồng <b>*</b></label><input id="contract-no" name="contractNo" [(ngModel)]="contractForm.contractNo" required maxlength="50" [disabled]="!!editingContract()" placeholder="VD: HDLD-2025-0136"></div>
         <div class="form-field"><label for="contract-type">Loại hợp đồng <b>*</b></label><select id="contract-type" name="contractType" [(ngModel)]="contractForm.contractType" required><option>Không xác định thời hạn</option><option>Xác định thời hạn 12 tháng</option><option>Xác định thời hạn 24 tháng</option><option>Hợp đồng thử việc</option></select></div>
         <div class="form-field"><label for="contract-employee-code">Mã nhân viên <b>*</b></label><ss-select name="employeeCode" [(ngModel)]="contractForm.employeeCode" [options]="employeeOptions" [loading]="employeeLoading" [showSearch]="true" [allowClear]="true" required placeholder="Tìm theo mã hoặc tên nhân viên"></ss-select></div>
         <div class="form-field"><label for="contract-employment-type">Loại hình <b>*</b></label><select id="contract-employment-type" name="employmentType" [(ngModel)]="contractForm.employmentType" required><option>Toàn thời gian</option><option>Bán thời gian</option><option>Thử việc</option></select></div>
@@ -42,7 +42,7 @@
         <div class="form-field"><label>Ngày ký <b>*</b></label><ss-datepicker name="signedDate" [(ngModel)]="contractForm.signedDate" format="dd/MM/yyyy" valueFormat="yyyy-MM-dd" placeholder="dd/MM/yyyy" required></ss-datepicker></div>
         <div class="form-field"><label for="contract-status">Trạng thái <b>*</b></label><select id="contract-status" name="status" [(ngModel)]="contractForm.status" required><option>Đang hiệu lực</option><option>Sắp hết hạn</option><option>Đã hết hạn</option></select></div>
       </div>
-      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeFormDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="contractFormRef.invalid">{{ editingContract() ? 'Cập nhật' : 'Lưu hợp đồng' }}</ss-button></div>
+      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeFormDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="contractFormRef.invalid" [loading]="savingContract()" loadingText="Đang lưu...">{{ editingContract() ? 'Cập nhật' : 'Lưu hợp đồng' }}</ss-button></div>
     </form>
   </ss-dialog>
 </main>

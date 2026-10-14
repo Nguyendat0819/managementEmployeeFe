@@ -13,11 +13,20 @@
       <div class="form-grid">
         <label class="form-field">
           <span>Mã tổ chức <b>*</b></span>
-          <input name="deptCode" [(ngModel)]="form.deptCode" required maxlength="255" [readonly]="identityFieldsReadOnly" placeholder="VD: IT" />
+          <input name="deptCode" [(ngModel)]="form.deptCode" required maxlength="255" [disabled]="identityFieldsReadOnly" placeholder="VD: IT" />
         </label>
         <label class="form-field">
           <span>Mã đơn vị cha</span>
-          <input name="parentCode" [(ngModel)]="form.parentCode" maxlength="255" [readonly]="parentCodeReadOnly" placeholder="VD: BLOCK-01" />
+          <ss-select
+            name="parentCode"
+            [(ngModel)]="form.parentCode"
+            (ngModelChange)="onParentCodeChange($event)"
+            [options]="parentSelectOptions"
+            [showSearch]="true"
+            [allowClear]="false"
+            [disabled]="parentCodeReadOnly"
+            placeholder="Chọn đơn vị cha"
+          ></ss-select>
         </label>
         <label class="form-field form-field-wide">
           <span>Tên đơn vị <b>*</b></span>
@@ -25,7 +34,7 @@
         </label>
         <label class="form-field">
           <span>Mã đơn vị <b>*</b></span>
-          <input name="code" [(ngModel)]="form.code" required maxlength="20" [readonly]="identityFieldsReadOnly" placeholder="Mã đơn vị" />
+          <input name="code" [(ngModel)]="form.code" required maxlength="20" [disabled]="identityFieldsReadOnly" placeholder="Mã đơn vị" />
         </label>
         <label class="form-field">
           <span>Mã người phụ trách</span>
@@ -36,7 +45,7 @@
             [loading]="employeeLoading"
             [showSearch]="true"
             [allowClear]="true"
-            [disabled]="identityFieldsReadOnly"
+            [disabled]="fieldsReadOnly"
             placeholder="Chọn nhân viên"
           ></ss-select>
         </label>
@@ -50,9 +59,9 @@
 
       <div class="modal-actions">
         <button type="button" class="modal-secondary" (click)="cancel.emit()">Đóng</button>
-        <button *ngIf="!readOnly" type="submit" class="modal-primary" [disabled]="departmentForm.invalid">
+        <ss-button *ngIf="!readOnly" color="primary" htmlType="submit" [disabled]="departmentForm.invalid" [loading]="saving" loadingText="Đang lưu...">
           {{ mode === 'edit' ? 'Lưu thay đổi' : mode === 'relocate' ? 'Chuyển đơn vị' : 'Lưu' }}
-        </button>
+        </ss-button>
       </div>
     </form>
   </section>

@@ -51,6 +51,7 @@ export class AdminPermissionListComponent implements OnChanges {
   readonly permissionDialogVisible = signal(false);
   readonly editingPermission = signal<PermissionItem | null>(null);
   readonly savingPermissions = signal(false);
+  readonly savingPermission = signal(false);
   readonly permissionForm: PermissionForm = this.emptyPermissionForm();
   permissionKeyword = '';
 
@@ -170,7 +171,7 @@ export class AdminPermissionListComponent implements OnChanges {
   }
 
   savePermission(formValid: boolean): void {
-    if (!formValid) return;
+    if (!formValid || this.savingPermission()) return;
     const code = this.permissionForm.code.trim().toLowerCase().replace(/\s+/g, '.');
     const name = this.permissionForm.name.trim();
     const description = this.permissionForm.description.trim() || null;
@@ -179,7 +180,8 @@ export class AdminPermissionListComponent implements OnChanges {
       ? this.roleService.updatePermission(editingPermission.id, { permissionName: name, description } satisfies PermissionUpdateRequest)
       : this.roleService.createPermission({ permissionCode: code, permissionName: name, description } satisfies PermissionCreateRequest);
 
-    operation.subscribe({
+    this.savingPermission.set(true);
+    operation.pipe(finalize(() => this.savingPermission.set(false))).subscribe({
       next: (response) => {
         const savedPermission = response.data ? this.toPermissionItem(response.data) : null;
         if (savedPermission) {

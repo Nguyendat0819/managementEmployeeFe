@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, EventEmitter, inject, Output, signal, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Observable, map } from 'rxjs';
+import { Observable, finalize, map } from 'rxjs';
 import {
   SsButtonComponent,
   SsConfirmService,
@@ -47,6 +47,7 @@ export class AdminRoleListComponent {
   readonly detailVisible = signal(false);
   readonly roleDialogVisible = signal(false);
   readonly editingRole = signal<AdminRole | null>(null);
+  readonly savingRole = signal(false);
   readonly roleForm: RoleForm = this.emptyRoleForm();
 
   readonly roleColumns: SsDtColumn<AdminRole>[] = [
@@ -132,7 +133,7 @@ export class AdminRoleListComponent {
   }
 
   saveRole(formValid: boolean): void {
-    if (!formValid) return;
+    if (!formValid || this.savingRole()) return;
     const editingRole = this.editingRole();
     const code = this.roleForm.code.trim().toUpperCase().replace(/\s+/g, '_');
     const name = this.roleForm.name.trim();
@@ -141,7 +142,8 @@ export class AdminRoleListComponent {
       ? this.roleService.updateRole(editingRole.id, { roleName: name, description } satisfies RoleUpdateRequest)
       : this.roleService.createRole({ roleCode: code, roleName: name, description } satisfies RoleCreateRequest);
 
-    operation.subscribe({
+    this.savingRole.set(true);
+    operation.pipe(finalize(() => this.savingRole.set(false))).subscribe({
       next: () => {
         if (!editingRole) {
           this.roleService.rolePermissions.update((permissions) => ({ ...permissions, [code]: [] }));

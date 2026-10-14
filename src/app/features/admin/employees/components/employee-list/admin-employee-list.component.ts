@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Observable, map } from 'rxjs';
+import { Observable, finalize, map } from 'rxjs';
 import { SsButtonComponent, SsConfirmService, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsDtPage, SsDtQuery, SsStatComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
 import { AdminEmployee, EmployeeRequest, EmployeeResponse } from '../../models/admin-employee.model';
 import { AdminEmployeeService } from '../../services/admin-employee.service';
@@ -34,6 +34,7 @@ export class AdminEmployeeListComponent implements OnInit {
   readonly detailVisible = signal(false);
   readonly createVisible = signal(false);
   readonly editingEmployee = signal<AdminEmployee | null>(null);
+  readonly savingEmployee = signal(false);
   readonly employeeForm = this.emptyEmployeeForm();
   genders = ['Nam', 'Nữ', 'Khác'];
   employmentTypes = ['Toàn thời gian', 'Bán thời gian', 'Thử việc'];
@@ -173,7 +174,7 @@ export class AdminEmployeeListComponent implements OnInit {
   closeCreateDialog(): void { this.createVisible.set(false); }
 
   saveEmployee(formValid: boolean): void {
-    if (!formValid) return;
+    if (!formValid || this.savingEmployee()) return;
     const editingEmployee = this.editingEmployee();
     const request: EmployeeRequest = {
       employeeCode: this.employeeForm.employeeCode.trim(),
@@ -193,7 +194,8 @@ export class AdminEmployeeListComponent implements OnInit {
     const operation = editingEmployee
       ? this.employeeService.updateEmployee(editingEmployee.id, request)
       : this.employeeService.createEmployee(request);
-    operation.subscribe({
+    this.savingEmployee.set(true);
+    operation.pipe(finalize(() => this.savingEmployee.set(false))).subscribe({
       next: () => {
         this.closeCreateDialog();
         this.employeeTable?.retry();

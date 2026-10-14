@@ -57,6 +57,7 @@ export class AdminContractListComponent implements OnInit {
   readonly detailVisible = signal(false);
   readonly formVisible = signal(false);
   readonly editingContract = signal<AdminContract | null>(null);
+  readonly savingContract = signal(false);
   readonly contractForm: ContractForm = this.emptyContractForm();
   readonly contractColumns: SsDtColumn<AdminContract>[] = [
     { key: 'contractNo', header: 'Số hợp đồng', field: 'contractNo', width: '150px', sortable: true, filterable: true },
@@ -218,7 +219,7 @@ export class AdminContractListComponent implements OnInit {
   }
 
   saveContract(formValid: boolean): void {
-    if (!formValid) return;
+    if (!formValid || this.savingContract()) return;
     const editingContract = this.editingContract();
     const request: EmployeeContractRequest = {
       contractNo: this.contractForm.contractNo.trim(),
@@ -234,7 +235,8 @@ export class AdminContractListComponent implements OnInit {
     const operation = editingContract
       ? this.employeeService.updateContract(editingContract.id, request)
       : this.employeeService.createContract(request);
-    operation.subscribe({
+    this.savingContract.set(true);
+    operation.pipe(finalize(() => this.savingContract.set(false))).subscribe({
       next: () => {
         this.closeFormDialog();
         this.contractTable?.retry();

@@ -36,7 +36,7 @@
     <form #employeeFormRef="ngForm" class="create-form" (ngSubmit)="saveEmployee(employeeFormRef.valid)">
       <p class="dialog-description">Nhập thông tin cơ bản để tạo hồ sơ nhân sự mới.</p>
       <div class="form-grid">
-        <div class="form-field"><label for="employee-code">Mã nhân viên <b>*</b></label><input id="employee-code" name="employeeCode" [(ngModel)]="employeeForm.employeeCode" required maxlength="50" placeholder="VD: NV-000136"></div>
+        <div class="form-field"><label for="employee-code">Mã nhân viên <b>*</b></label><input id="employee-code" name="employeeCode" [(ngModel)]="employeeForm.employeeCode" required maxlength="50" [disabled]="!!editingEmployee()" placeholder="VD: NV-000136"></div>
         <div class="form-field"><label for="employee-name">Họ và tên <b>*</b></label><input id="employee-name" name="fullName" [(ngModel)]="employeeForm.fullName" required maxlength="200" placeholder="Nhập họ và tên"></div>
         <div class="form-field"><label for="employee-department">Phòng ban <b>*</b></label><select id="employee-department" name="departmentCode" [(ngModel)]="employeeForm.departmentCode" required><option value="" disabled>Chọn phòng ban</option>@for (department of departments; track department.deptCode) { <option [value]="department.deptCode">{{ department.name }}</option> }</select></div>
         <div class="form-field"><label for="employee-position">Chức danh <b>*</b></label><select id="employee-position" name="positionCode" [(ngModel)]="employeeForm.positionCode" required><option value="" disabled>Chọn chức danh</option>@for (position of positions; track position.positionCode) { <option [value]="position.positionCode">{{ position.title }}</option> }</select></div>
@@ -50,7 +50,7 @@
         <div class="form-field"><label for="employee-id-card">Số CCCD</label><input id="employee-id-card" name="idCard" [(ngModel)]="employeeForm.idCard" maxlength="20"></div>
         <div class="form-field"><label>Hạn hợp đồng</label><ss-datepicker name="contractEnd" [(ngModel)]="employeeForm.contractEnd" format="dd/MM/yyyy" valueFormat="yyyy-MM-dd" placeholder="dd/MM/yyyy"></ss-datepicker></div>
       </div>
-      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeCreateDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="employeeFormRef.invalid">{{ editingEmployee() ? 'Cập nhật' : 'Lưu hồ sơ' }}</ss-button></div>
+      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeCreateDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="employeeFormRef.invalid" [loading]="savingEmployee()" loadingText="Đang lưu...">{{ editingEmployee() ? 'Cập nhật' : 'Lưu hồ sơ' }}</ss-button></div>
     </form>
   </ss-dialog>
 </main>

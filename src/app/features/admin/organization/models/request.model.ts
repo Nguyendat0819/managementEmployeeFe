@@ -21,5 +21,6 @@ export interface DepartmentCreateRequest {
 
 export interface DepartmentUpdateRequest {
   name: string;
-  level: number;
+  parentCode: string | null;
+  headCode: string | null;
 }

@@ -51,3 +51,12 @@ a {
   color: var(--color-link);
   text-decoration: none;
 }
+body .form-field input:disabled,
+body .form-field select:disabled,
+body .form-field textarea:disabled {
+  color: #bfbfbf;
+  background-color: #f5f5f5;
+  border-color: #d9d9d9;
+  cursor: not-allowed;
+  opacity: 1;
+}
