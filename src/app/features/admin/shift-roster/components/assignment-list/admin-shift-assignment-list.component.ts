@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { SsButtonComponent, SsConfirmService, SsDataTableComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsStatComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
+import { SsButtonComponent, SsConfirmService, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsStatComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
 import { AdminShiftAssignment } from '../../models/admin-shift-assignment.model';
 import { AdminShiftRosterService } from '../../services/admin-shift-roster.service';
 
@@ -14,7 +14,7 @@ interface ShiftOption {
 @Component({
   selector: 'app-admin-shift-assignment-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, SsButtonComponent, SsDataTableComponent, SsDialogComponent, SsStatComponent, SsTagComponent],
+  imports: [CommonModule, FormsModule, SsButtonComponent, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsStatComponent, SsTagComponent],
   templateUrl: './admin-shift-assignment-list.component.html',
   styleUrl: './admin-shift-assignment-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

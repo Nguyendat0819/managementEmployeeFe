@@ -4,8 +4,13 @@ import { ApiResponse, Page } from '@core/models/api-response.interface';
 import { PageRequest } from '@core/models/api-request.interface';
 import { API_ENDPOINTS } from '@core/constants/api-endpoint';
 import { BaseService } from '@core/services/base.service';
-import { ADMIN_CONTRACTS } from '../data/admin-employee.mock';
-import { EmployeeCatalogResponse, EmployeeRequest, EmployeeResponse } from '../models/admin-employee.model';
+import {
+  EmployeeCatalogResponse,
+  EmployeeContractRequest,
+  EmployeeContractResponse,
+  EmployeeRequest,
+  EmployeeResponse,
+} from '../models/admin-employee.model';
 
 export interface EmployeeQuery {
   search?: string;
@@ -22,10 +27,18 @@ export interface EmployeeSearchRequest extends PageRequest {
   employmentType?: string;
 }
 
+export interface EmployeeContractSearchRequest extends PageRequest {
+  contractType?: string;
+  employeeCode?: string;
+  employmentType?: string;
+  status?: string;
+  isDeleted?: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminEmployeeService extends BaseService {
-  readonly contracts = ADMIN_CONTRACTS.map((contract) => ({ ...contract }));
   private readonly endpoint = API_ENDPOINTS.Employee;
+  private readonly contractEndpoint = API_ENDPOINTS.EmployeeContract;
 
   getEmployees(query: EmployeeQuery = {}): Observable<ApiResponse<EmployeeResponse[]>> {
     const params: Record<string, string> = {};
@@ -61,6 +74,37 @@ export class AdminEmployeeService extends BaseService {
 
   deleteEmployee(id: number): Observable<ApiResponse<void>> {
     return this.delete<ApiResponse<void>>(this.endpoint.DETAIL(id), this.endpoint.BASE);
+  }
+
+  searchContracts(request: EmployeeContractSearchRequest): Observable<ApiResponse<Page<EmployeeContractResponse>>> {
+    return this.post<ApiResponse<Page<EmployeeContractResponse>>>(
+      this.contractEndpoint.SEARCH,
+      request,
+      this.contractEndpoint.BASE,
+    );
+  }
+
+  getContract(id: number): Observable<ApiResponse<EmployeeContractResponse>> {
+    return this.get<ApiResponse<EmployeeContractResponse>>(
+      this.contractEndpoint.DETAIL(id),
+      this.contractEndpoint.BASE,
+    );
+  }
+
+  createContract(request: EmployeeContractRequest): Observable<ApiResponse<EmployeeContractResponse>> {
+    return this.post<ApiResponse<EmployeeContractResponse>>('', request, this.contractEndpoint.BASE);
+  }
+
+  updateContract(id: number, request: EmployeeContractRequest): Observable<ApiResponse<EmployeeContractResponse>> {
+    return this.put<ApiResponse<EmployeeContractResponse>>(
+      this.contractEndpoint.DETAIL(id),
+      request,
+      this.contractEndpoint.BASE,
+    );
+  }
+
+  deleteContract(id: number): Observable<ApiResponse<void>> {
+    return this.delete<ApiResponse<void>>(this.contractEndpoint.DETAIL(id), this.contractEndpoint.BASE);
   }
 
 }

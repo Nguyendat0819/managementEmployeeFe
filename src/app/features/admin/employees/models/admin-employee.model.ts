@@ -75,3 +75,39 @@ export interface AdminContract {
   signedDate: string;
   status: string;
 }
+
+export interface EmployeeContractResponse {
+  id: number;
+  contractNo: string;
+  contractType: string;
+  employeeCode: string;
+  fullName: string;
+  birthDate: string | null;
+  idCard: string | null;
+  departmentCode: string | null;
+  departmentName: string | null;
+  positionCode: string | null;
+  positionName: string | null;
+  actualSalary: number;
+  employmentType: string;
+  hireDate: string | null;
+  startDate: string;
+  endDate: string | null;
+  signedDate: string | null;
+  status: string;
+  isDeleted: boolean;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface EmployeeContractRequest {
+  contractNo: string;
+  contractType: string;
+  employeeCode: string;
+  actualSalary: number;
+  employmentType: string;
+  startDate: string;
+  endDate: string | null;
+  signedDate: string | null;
+  status: string;
+}

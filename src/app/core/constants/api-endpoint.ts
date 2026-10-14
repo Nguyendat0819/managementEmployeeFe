@@ -16,6 +16,12 @@ export class API_ENDPOINTS {
     SEARCH: '/search',
   };
 
+  public static readonly EmployeeContract = {
+    BASE: 'api/employee-contract',
+    DETAIL: (id: number) => `/${id}`,
+    SEARCH: '/search',
+  };
+
   public static readonly Role = {
     BASE: 'api/role',
     DETAIL: (id: number) => `/${id}`,

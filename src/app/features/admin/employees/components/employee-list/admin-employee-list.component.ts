@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Observable, map } from 'rxjs';
-import { SsButtonComponent, SsConfirmService, SsDataTableComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsDtPage, SsDtQuery, SsStatComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
+import { SsButtonComponent, SsConfirmService, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsDtPage, SsDtQuery, SsStatComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
 import { AdminEmployee, EmployeeRequest, EmployeeResponse } from '../../models/admin-employee.model';
 import { AdminEmployeeService } from '../../services/admin-employee.service';
 import { DepartmentResponse } from '../../../organization/models/response.model';
@@ -13,7 +13,7 @@ import { AdminRoleService } from '../../../roles-permissions/services/admin-role
 @Component({
   selector: 'app-admin-employee-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, SsButtonComponent, SsDataTableComponent, SsDialogComponent, SsStatComponent, SsTagComponent],
+  imports: [CommonModule, FormsModule, SsButtonComponent, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsStatComponent, SsTagComponent],
   templateUrl: './admin-employee-list.component.html',
   styleUrl: './admin-employee-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -138,8 +138,8 @@ export class AdminEmployeeListComponent implements OnInit {
     const deadline = new Date();
     deadline.setDate(deadline.getDate() + 60);
     return this.employees().filter((employee) => employee.contractEnd !== 'Chưa cập nhật'
-      && new Date(employee.contractEnd) >= new Date()
-      && new Date(employee.contractEnd) <= deadline).length;
+      && new Date(this.toInputDate(employee.contractEnd)) >= new Date()
+      && new Date(this.toInputDate(employee.contractEnd)) <= deadline).length;
   }
 
   openCreateDialog(): void {
@@ -154,7 +154,7 @@ export class AdminEmployeeListComponent implements OnInit {
     Object.assign(this.employeeForm, {
       employeeCode: employee.employeeCode,
       fullName: employee.fullName,
-      birthDate: employee.birthDate === 'Chưa cập nhật' ? '' : employee.birthDate,
+      birthDate: employee.birthDate === 'Chưa cập nhật' ? '' : this.toInputDate(employee.birthDate),
       gender: employee.gender === 'Chưa cập nhật' ? '' : employee.gender,
       idCard: employee.idCard === 'Chưa cập nhật' ? '' : employee.idCard,
       phone: employee.phone === 'Chưa cập nhật' ? '' : employee.phone,
@@ -162,8 +162,8 @@ export class AdminEmployeeListComponent implements OnInit {
       departmentCode: employee.departmentCode,
       positionCode: employee.positionCode,
       employmentType: employee.employmentType,
-      hireDate: employee.hireDate,
-      contractEnd: employee.contractEnd === 'Chưa cập nhật' ? '' : employee.contractEnd,
+      hireDate: this.toInputDate(employee.hireDate),
+      contractEnd: employee.contractEnd === 'Chưa cập nhật' ? '' : this.toInputDate(employee.contractEnd),
       status: employee.status,
     });
     this.editingEmployee.set(employee);
@@ -276,7 +276,7 @@ export class AdminEmployeeListComponent implements OnInit {
       id: employee.id,
       employeeCode: employee.employeeCode,
       fullName: employee.fullName,
-      birthDate: employee.birthDate ?? 'Chưa cập nhật',
+      birthDate: employee.birthDate ? this.formatDate(employee.birthDate) : 'Chưa cập nhật',
       gender: employee.gender ?? 'Chưa cập nhật',
       idCard: employee.idCard ?? 'Chưa cập nhật',
       phone: employee.phone ?? 'Chưa cập nhật',
@@ -286,8 +286,8 @@ export class AdminEmployeeListComponent implements OnInit {
       position: employee.positionName ?? employee.positionCode ?? 'Chưa cập nhật',
       positionCode: employee.positionCode ?? '',
       employmentType: employee.employmentType,
-      hireDate: employee.hireDate,
-      contractEnd: employee.contractEnd ?? 'Chưa cập nhật',
+      hireDate: this.formatDate(employee.hireDate),
+      contractEnd: employee.contractEnd ? this.formatDate(employee.contractEnd) : 'Chưa cập nhật',
       status: employee.status,
     };
   }
@@ -298,5 +298,19 @@ export class AdminEmployeeListComponent implements OnInit {
       departmentCode: '', positionCode: '', employmentType: 'Toàn thời gian', hireDate: '',
       contractEnd: '', status: 'Đang làm việc',
     };
+  }
+
+  private toInputDate(value: string): string {
+    if (!value || value === 'Chưa cập nhật') return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    const [day, month, year] = value.split('/');
+    return year ? `${year}-${month}-${day}` : value;
+  }
+
+  private formatDate(value: string): string {
+    if (!value) return 'Chưa cập nhật';
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) return value;
+    const [year, month, day] = value.slice(0, 10).split('-');
+    return year && month && day ? `${day}/${month}/${year}` : value;
   }
 }

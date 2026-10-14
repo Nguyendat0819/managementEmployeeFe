@@ -122,7 +122,7 @@ export class templateModule {
       category: 'Hạ tầng',
       price: 25000000,
       status: 'ACTIVE',
-      createdDate: '2026-09-01',
+      createdDate: '01/09/2026',
     },
     {
       id: 'MFE-002',
@@ -130,7 +130,7 @@ export class templateModule {
       category: 'Bảo mật',
       price: 18500000,
       status: 'ACTIVE',
-      createdDate: '2026-09-05',
+      createdDate: '05/09/2026',
     },
     {
       id: 'MFE-003',
@@ -138,7 +138,7 @@ export class templateModule {
       category: 'Giao diện',
       price: 12000000,
       status: 'PENDING',
-      createdDate: '2026-09-12',
+      createdDate: '12/09/2026',
     },
     {
       id: 'MFE-004',
@@ -146,7 +146,7 @@ export class templateModule {
       category: 'Tài chính',
       price: 32000000,
       status: 'INACTIVE',
-      createdDate: '2026-09-18',
+      createdDate: '18/09/2026',
     },
   ];
 

@@ -64,7 +64,10 @@ export class ProfileEmployeeService extends BaseService {
 
   private formatDate(value: string | null): string {
     if (!value) return 'Chưa cập nhật';
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) return value;
     const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('vi-VN');
+    return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat('vi-VN', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+    }).format(date);
   }
 }

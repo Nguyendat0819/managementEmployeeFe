@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { SsButtonComponent, SsConfirmService, SsDataTableComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsStatComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
+import { SsButtonComponent, SsConfirmService, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsStatComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
 import { AdminSalaryStructure, AdminSalaryStructureStatus } from '../../models/admin-salary-structure.model';
 import { AdminSalaryStructureService } from '../../services/admin-salary-structure.service';
 
@@ -21,7 +21,7 @@ interface SalaryStructureForm {
 @Component({
   selector: 'app-admin-salary-structure',
   standalone: true,
-  imports: [CommonModule, FormsModule, SsButtonComponent, SsDataTableComponent, SsDialogComponent, SsStatComponent, SsTagComponent],
+  imports: [CommonModule, FormsModule, SsButtonComponent, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsStatComponent, SsTagComponent],
   templateUrl: './admin-salary-structure.component.html',
   styleUrl: './admin-salary-structure.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

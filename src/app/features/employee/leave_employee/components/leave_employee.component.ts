@@ -1,14 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { SsButtonComponent, SsCardComponent, SsCardFooterStartDirective, SsDataTableComponent, SsDialogComponent, SsDtColumn, SsDtConfig, SsStatComponent, SsToastService } from '@platform/ui-kit';
+import { SsButtonComponent, SsCardComponent, SsCardFooterStartDirective, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtColumn, SsDtConfig, SsStatComponent, SsToastService } from '@platform/ui-kit';
 import { LeaveRequest } from '../model/leave_employee.model';
 import { LeaveEmployeeService } from '../service/leave_employee.service';
 
 @Component({
   selector: 'app-leave-employee',
   standalone: true,
-  imports: [CommonModule, FormsModule, SsButtonComponent, SsCardComponent, SsCardFooterStartDirective, SsDataTableComponent, SsDialogComponent, SsStatComponent],
+  imports: [CommonModule, FormsModule, SsButtonComponent, SsCardComponent, SsCardFooterStartDirective, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsStatComponent],
   templateUrl: './leave_employee.component.html',
   styleUrl: './leave_employee.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
