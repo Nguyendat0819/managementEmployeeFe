@@ -11,7 +11,7 @@
   <div class="sidebar-menu">
     <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="collapsed">
       <ng-container
-        *ngTemplateOutlet="menuNodes; context: { $implicit: menuItems, level: 1 }"
+        *ngTemplateOutlet="menuNodes; context: { $implicit: menuItems(), level: 1 }"
       ></ng-container>
       <ng-template #menuNodes let-items let-level="level">
         <ng-container *ngFor="let item of items; trackBy: trackById">

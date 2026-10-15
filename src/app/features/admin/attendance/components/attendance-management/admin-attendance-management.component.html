@@ -3,111 +3,45 @@
     <div class="hero-copy">
       <p class="hero-eyebrow">OPERATIONS CONTROL</p>
       <h1 id="attendance-heading">Quản lý chấm công</h1>
-      <p class="hero-description">Một góc nhìn nhanh để biết hôm nay đội ngũ đang ở đâu, nhịp vận hành có ổn định không và việc gì cần xử lý ngay.</p>
-      <div class="hero-meta"><span class="live-dot"></span><span>Hệ thống đang đồng bộ</span><span class="hero-divider"></span><span>{{ syncTime }}</span></div>
+      <p class="hero-description">Bản ghi check-in và check-out trong ngày, đồng bộ trực tiếp từ Attendance Service.</p>
+      <div class="hero-meta"><span class="live-dot"></span><span>Đang xem dữ liệu từ máy chủ</span></div>
     </div>
     <div class="hero-score">
-      <span class="score-label">Tỷ lệ hiện diện</span>
-      <strong>94.6<span>%</span></strong>
+      <span class="score-label">Bản ghi hôm nay</span>
+      <strong>{{ recordCount() }}</strong>
       <span class="score-date">{{ currentDate }}</span>
-      <span class="score-shift">Ca hành chính · 08:00 - 17:00</span>
     </div>
   </section>
 
-  <section class="stats-grid" aria-label="Tổng quan chấm công hôm nay">
-    <ss-stat label="Tổng nhân sự" [value]="248" suffix="người" hint="Đang trong biên chế" tone="primary" icon="team"></ss-stat>
-    <ss-stat label="Đã có mặt" [value]="232" suffix="người" hint="93.5% lực lượng" tone="success" icon="check-circle"></ss-stat>
-    <ss-stat label="Đi muộn" [value]="9" suffix="người" hint="Cần xác nhận lý do" tone="warning" icon="clock-circle"></ss-stat>
-    <ss-stat label="Chưa ghi nhận" [value]="7" suffix="người" hint="Vắng hoặc thiếu dữ liệu" tone="error" icon="exclamation-circle"></ss-stat>
-  </section>
-
-  <section class="insight-grid" aria-label="Phân tích chấm công">
-    <ss-card title="Nhịp hiện diện trong tuần" description="Tỷ lệ nhân sự có mặt theo từng ngày" icon="line-chart" iconColor="#4d8dff">
-      <div class="insight-heading"><div><strong>94.6%</strong><span>Trung bình tuần này</span></div><ss-tag status="success">Ổn định</ss-tag></div>
-      <div class="trend-chart" aria-label="Biểu đồ tỷ lệ hiện diện 7 ngày">
-        <div class="chart-axis"><span>100%</span><span>90%</span><span>80%</span></div>
-        <div class="chart-bars">
-          @for (point of weeklyTrend; track point.label) {
-            <div class="bar-column"><span class="bar-value">{{ point.value }}%</span><div class="trend-bar" [style.height.%]="point.bar"><i></i></div><span class="bar-label">{{ point.label }}</span></div>
-          }
-        </div>
-      </div>
-      <div class="chart-footer"><span><i class="legend-dot blue"></i>Nhịp hiện diện</span><span>Thứ 2 - Chủ nhật</span></div>
-    </ss-card>
-
-    <ss-card title="Trạng thái hôm nay" description="Phân bổ trên tổng 248 nhân sự" icon="pie-chart" iconColor="#9c6cff">
-      <div class="presence-summary">
-        <div class="presence-donut"><div><strong>94.6%</strong><span>hiện diện</span></div></div>
-        <div class="presence-list">
-          @for (item of presenceBreakdown; track item.label) {
-            <div class="presence-row"><span><i class="legend-dot" [style.background]="item.color"></i>{{ item.label }}</span><strong>{{ item.value }} <small>{{ item.percentage }}%</small></strong></div>
-          }
-        </div>
-      </div>
-      <div class="presence-note"><span class="trend-up">↑ 2.1%</span><span>so với trung bình tháng trước</span></div>
-    </ss-card>
-  </section>
-
-  <section class="attention-grid" aria-label="Khu vực cần chú ý">
-    <ss-card title="Cần xử lý ngay" description="Các tín hiệu cần quản trị viên rà soát" icon="alert" iconColor="#f59f3d">
-      <div class="attention-list">
-        @for (item of attentionItems; track item.label) {
-          <button class="attention-row" [class]="'attention-row ' + item.tone" type="button" (click)="showAttention(item.label)">
-            <span class="attention-icon"><span nz-icon [nzType]="item.icon"></span></span>
-            <span class="attention-copy"><strong>{{ item.label }}</strong><small>{{ item.detail }}</small></span>
-            <strong class="attention-count">{{ item.count }}</strong>
-            <span class="attention-arrow">›</span>
-          </button>
-        }
-      </div>
-    </ss-card>
-
-    <ss-card title="Nhịp theo ca" description="Tình hình ghi nhận theo từng khung giờ" icon="schedule" iconColor="#32b36b">
-      <div class="flow-list">
-        @for (item of flowItems; track item.label) {
-          <div class="flow-row"><div class="flow-label"><span>{{ item.label }}</span><strong>{{ item.value }}</strong></div><div class="flow-track"><span [style.width.%]="item.percentage" [style.background]="item.color"></span></div></div>
-        }
-      </div>
-      <div class="flow-footnote"><span class="live-dot small"></span>Đang theo dõi trực tiếp từ các thiết bị</div>
-    </ss-card>
+  <section class="stats-grid" aria-label="Tổng quan bản ghi hôm nay">
+    <ss-stat label="Tổng bản ghi" [value]="recordCount()" suffix="bản ghi" hint="Được tải từ service" tone="primary" icon="team"></ss-stat>
+    <ss-stat label="Đã check-in" [value]="presentCount()" suffix="nhân viên" hint="Có bản ghi vào ca" tone="success" icon="check-circle"></ss-stat>
+    <ss-stat label="Đi muộn" [value]="lateCount()" suffix="nhân viên" hint="Theo trạng thái backend" tone="warning" icon="clock-circle"></ss-stat>
+    <ss-stat label="Thiếu check-out" [value]="incompleteCount()" suffix="bản ghi" hint="Cần được rà soát" tone="error" icon="exclamation-circle"></ss-stat>
   </section>
 
   <section class="attendance-table" aria-label="Bản ghi chấm công">
-    <ss-data-table [data]="records()" [columns]="attendanceColumns" [settings]="attendanceTableSettings" (primaryClick)="onPrimaryClick($event)" (actionClick)="onActionClick($event)"></ss-data-table>
+    <ss-data-table [data]="records()" [columns]="attendanceColumns" [settings]="attendanceTableSettings" (actionClick)="onActionClick($event)"></ss-data-table>
   </section>
 
-  <ss-dialog [visible]="detailVisible()" [title]="'Chi tiết chấm công · ' + (selectedRecord()?.employeeName ?? '')" [width]="720" [maskClosable]="false" (visibleChange)="detailVisible.set($event)">
+  <ss-dialog [visible]="detailVisible()" [title]="'Chi tiết chấm công · ' + (selectedRecord()?.employeeCode ?? '')" [width]="720" [maskClosable]="false" (visibleChange)="detailVisible.set($event)">
     @if (selectedRecord(); as record) {
       <div class="detail-dialog">
         <div class="detail-hero">
-          <div class="avatar">{{ initials(record.employeeName) }}</div>
-          <div class="detail-name"><strong>{{ record.employeeName }}</strong><span>{{ record.employeeCode }} · {{ record.department }}</span></div>
+          <div class="avatar">{{ initials(record.employeeCode) }}</div>
+          <div class="detail-name"><strong>{{ record.employeeCode }}</strong><span>Mã nhân viên</span></div>
           <ss-tag [status]="statusTone(record.status)">{{ record.status }}</ss-tag>
         </div>
         <div class="detail-time-grid">
           <div><span>Ngày ghi nhận</span><strong>{{ record.recordedAt }}</strong></div>
-          <div><span>Ca làm việc</span><strong>{{ record.shiftName }}</strong></div>
           <div><span>Check-in</span><strong>{{ record.checkIn }}</strong></div>
           <div><span>Check-out</span><strong>{{ record.checkOut }}</strong></div>
           <div><span>Tổng giờ</span><strong>{{ record.workDuration }}</strong></div>
           <div><span>Tăng ca</span><strong>{{ record.overtime }}</strong></div>
         </div>
-        <div class="note-box"><span>Ghi chú xử lý</span><strong>{{ record.note || 'Chưa có ghi chú cho bản ghi này.' }}</strong></div>
-        <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeDetail()">Đóng</ss-button><ss-button color="primary" icon="edit" htmlType="button" (onClick)="closeDetail(); openAdjustDialog(record)">Điều chỉnh bản ghi</ss-button></div>
+        <div class="note-box"><span>Ghi chú</span><strong>{{ record.note || 'Chưa có ghi chú cho bản ghi này.' }}</strong></div>
+        <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeDetail()">Đóng</ss-button></div>
       </div>
     }
-  </ss-dialog>
-
-  <ss-dialog [visible]="adjustVisible()" [title]="'Điều chỉnh chấm công · ' + (selectedRecord()?.employeeName ?? '')" [width]="650" [maskClosable]="false" (visibleChange)="adjustVisible.set($event)">
-    <form #adjustFormRef="ngForm" class="adjust-form" (ngSubmit)="saveAdjustment(adjustFormRef.valid)">
-      <p class="dialog-description">Cập nhật lại thời gian thực tế hoặc trạng thái cho bản ghi đang chọn.</p>
-      <div class="form-grid">
-        <div class="form-field"><label for="attendance-check-in">Giờ check-in</label><input id="attendance-check-in" name="checkIn" type="time" [(ngModel)]="adjustForm.checkIn"></div>
-        <div class="form-field"><label for="attendance-check-out">Giờ check-out</label><input id="attendance-check-out" name="checkOut" type="time" [(ngModel)]="adjustForm.checkOut"></div>
-        <div class="form-field full-width"><label for="attendance-status">Trạng thái <b>*</b></label><select id="attendance-status" name="status" [(ngModel)]="adjustForm.status" required><option>Có mặt</option><option>Đi muộn</option><option>Vắng mặt</option><option>Thiếu dữ liệu</option></select></div>
-        <div class="form-field full-width"><label for="attendance-note">Ghi chú</label><textarea id="attendance-note" name="note" [(ngModel)]="adjustForm.note" rows="3" maxlength="500" placeholder="Nhập lý do hoặc ghi chú xử lý"></textarea></div>
-      </div>
-      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeAdjustDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="adjustFormRef.invalid">Lưu điều chỉnh</ss-button></div>
-    </form>
   </ss-dialog>
 </main>

@@ -4,7 +4,10 @@ export interface AttendanceRecord {
   shiftName: string;
   checkIn: string;
   checkOut: string;
+  durationMinutes: number | null;
+  overtimeMinutes: number | null;
   duration: string;
-  status: 'Đúng giờ' | 'Đi muộn' | 'Thiếu dữ liệu';
+  overtime: string;
+  status: 'Đúng giờ' | 'Đi muộn' | 'Thiếu dữ liệu' | 'Chưa có ca';
   statusType: 'success' | 'warning' | 'error';
 }

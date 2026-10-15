@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { SsButtonComponent, SsConfirmService, SsDataTableComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsStatComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
 import { AdminShift } from '../../models/admin-shift.model';
@@ -13,12 +13,12 @@ import { AdminShiftService } from '../../services/admin-shift.service';
   styleUrl: './admin-shift-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AdminShiftListComponent {
+export class AdminShiftListComponent implements OnInit {
   private readonly shiftService = inject(AdminShiftService);
   private readonly toast = inject(SsToastService);
   private readonly confirmService = inject(SsConfirmService);
 
-  readonly shifts = signal(this.shiftService.shifts);
+  readonly shifts = signal<AdminShift[]>([]);
   readonly selectedShift = signal<AdminShift | null>(null);
   readonly detailVisible = signal(false);
   readonly formVisible = signal(false);
@@ -76,6 +76,10 @@ export class AdminShiftListComponent {
 
   get activeCount(): number {
     return this.shifts().filter((shift) => shift.status === 'Đang hoạt động').length;
+  }
+
+  ngOnInit(): void {
+    this.refreshShifts();
   }
 
   get assignedCount(): number {
@@ -147,26 +151,24 @@ export class AdminShiftListComponent {
     }
 
     const editingShift = this.editingShift();
-    const shift: AdminShift = {
-      id: editingShift?.id ?? Date.now(),
+    const shift = {
+      id: editingShift?.id,
       shiftName: this.shiftForm.shiftName.trim(),
       startTime: this.shiftForm.startTime,
       endTime: this.shiftForm.endTime,
       dayOfWeek: [...this.shiftForm.dayOfWeek],
-      dayLabel: this.dayLabelOf(this.shiftForm.dayOfWeek),
-      assignedCount: editingShift?.assignedCount ?? 0,
       status: this.shiftForm.status,
     };
-
-    this.shifts.update((shifts) => editingShift
-      ? shifts.map((item) => item.id === editingShift.id ? shift : item)
-      : [...shifts, shift]);
-    this.shiftTableSettings = { ...this.shiftTableSettings, cardStatusLabel: `${this.shifts().length} ca` };
-    this.closeFormDialog();
-    this.toast.show({
-      severity: 'success',
-      summary: editingShift ? 'Cập nhật ca thành công' : 'Thêm ca thành công',
-      detail: `Ca ${shift.shiftName} đã được ${editingShift ? 'cập nhật' : 'thêm vào danh sách'}.`,
+    this.shiftService.saveShift(shift).subscribe({
+      next: (saved) => {
+        this.refreshShifts();
+        this.closeFormDialog();
+        this.toast.show({
+          severity: 'success',
+          summary: editingShift ? 'Cập nhật ca thành công' : 'Thêm ca thành công',
+          detail: `Ca ${saved.shiftName} đã được ${editingShift ? 'cập nhật' : 'lưu vào hệ thống'}.`,
+        });
+      },
     });
   }
 
@@ -178,9 +180,12 @@ export class AdminShiftListComponent {
     );
     if (!confirmed) return;
 
-    this.shifts.update((shifts) => shifts.filter((item) => item.id !== shift.id));
-    this.shiftTableSettings = { ...this.shiftTableSettings, cardStatusLabel: `${this.shifts().length} ca` };
-    this.toast.show({ severity: 'success', summary: 'Đã xóa ca làm việc', detail: `Ca ${shift.shiftName} đã được xóa khỏi danh sách.` });
+    this.shiftService.deleteShift(shift.id).subscribe({
+      next: () => {
+        this.refreshShifts();
+        this.toast.show({ severity: 'success', summary: 'Đã tạm ngưng ca', detail: `Ca ${shift.shiftName} đã được tạm ngưng.` });
+      },
+    });
   }
 
   shiftStatusType(status: AdminShift['status']): 'success' | 'warning' {
@@ -197,11 +202,12 @@ export class AdminShiftListComponent {
     };
   }
 
-  private dayLabelOf(days: string[]): string {
-    if (days.length === 7) return 'Tất cả các ngày';
-    if (days.join(',') === 'T2,T3,T4,T5,T6') return 'Thứ Hai - Thứ Sáu';
-    if (days.join(',') === 'T2,T3,T4,T5,T6,T7') return 'Thứ Hai - Thứ Bảy';
-    if (days.join(',') === 'T7,CN') return 'Thứ Bảy - Chủ Nhật';
-    return days.join(' · ');
+  private refreshShifts(): void {
+    this.shiftService.getShifts().subscribe({
+      next: (shifts) => {
+        this.shifts.set(shifts);
+        this.shiftTableSettings = { ...this.shiftTableSettings, cardStatusLabel: `${shifts.length} ca` };
+      },
+    });
   }
 }

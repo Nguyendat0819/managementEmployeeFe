@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { SsButtonComponent, SsConfirmService, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsStatComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
 import { AdminShiftAssignment } from '../../models/admin-shift-assignment.model';
 import { AdminShiftRosterService } from '../../services/admin-shift-roster.service';
+import { AdminShiftService } from '../../../shifts/services/admin-shift.service';
 
 interface ShiftOption {
   id: number;
@@ -19,27 +20,21 @@ interface ShiftOption {
   styleUrl: './admin-shift-assignment-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AdminShiftAssignmentListComponent {
+export class AdminShiftAssignmentListComponent implements OnInit {
   private readonly rosterService = inject(AdminShiftRosterService);
+  private readonly shiftService = inject(AdminShiftService);
   private readonly toast = inject(SsToastService);
   private readonly confirmService = inject(SsConfirmService);
 
-  readonly assignments = signal(this.rosterService.assignments);
+  readonly assignments = signal<AdminShiftAssignment[]>([]);
   readonly selectedAssignment = signal<AdminShiftAssignment | null>(null);
   readonly detailVisible = signal(false);
   readonly formVisible = signal(false);
   readonly editingAssignment = signal<AdminShiftAssignment | null>(null);
   readonly assignmentForm = this.emptyAssignmentForm();
-  readonly shiftOptions: ShiftOption[] = [
-    { id: 1, name: 'Ca hành chính', time: '08:00 - 17:00' },
-    { id: 2, name: 'Ca sáng', time: '06:00 - 14:00' },
-    { id: 3, name: 'Ca chiều', time: '14:00 - 22:00' },
-    { id: 4, name: 'Ca đêm', time: '22:00 - 06:00' },
-  ];
+  readonly shiftOptions = signal<ShiftOption[]>([]);
   readonly assignmentColumns: SsDtColumn<AdminShiftAssignment>[] = [
-    { key: 'employeeCode', header: 'Mã nhân viên', field: 'employeeCode', width: '135px', sortable: true, filterable: true },
-    { key: 'employeeName', header: 'Nhân viên', field: 'employeeName', width: '190px', sortable: true, filterable: true },
-    { key: 'department', header: 'Phòng ban', field: 'department', width: '200px', filterable: true },
+    { key: 'employeeCode', header: 'Mã nhân viên', field: 'employeeCode', width: '165px', sortable: true, filterable: true },
     { key: 'shiftName', header: 'Ca làm việc', field: 'shiftName', width: '165px', filterable: true },
     { key: 'shiftTime', header: 'Khung giờ', field: 'shiftTime', width: '145px' },
     { key: 'effectiveDate', header: 'Ngày bắt đầu', field: 'effectiveDate', width: '125px', sortable: true },
@@ -66,7 +61,7 @@ export class AdminShiftAssignmentListComponent {
     cardStatusType: 'info',
     primaryButtons: [{ key: 'create-assignment', label: 'Thêm mới', type: 'primary', icon: 'plus' }],
     searchable: true,
-    searchPlaceholder: 'Tìm theo mã, tên nhân viên, phòng ban hoặc ca làm việc',
+    searchPlaceholder: 'Tìm theo mã nhân viên hoặc ca làm việc',
     showSort: true,
     showFilter: true,
     showSetting: true,
@@ -84,17 +79,20 @@ export class AdminShiftAssignmentListComponent {
         { label: 'Sắp áp dụng', value: 'Sắp áp dụng' },
         { label: 'Đã kết thúc', value: 'Đã kết thúc' },
       ] },
-      { key: 'shiftName', placeholder: 'Tất cả ca làm việc', options: [
-        { label: 'Ca hành chính', value: 'Ca hành chính' },
-        { label: 'Ca sáng', value: 'Ca sáng' },
-        { label: 'Ca chiều', value: 'Ca chiều' },
-        { label: 'Ca đêm', value: 'Ca đêm' },
-      ] },
     ],
     striped: true,
     size: 'small',
     emptyText: 'Không có phân ca phù hợp',
   };
+
+  ngOnInit(): void {
+    this.refreshAssignments();
+    this.shiftService.getShifts().subscribe({
+      next: (shifts) => this.shiftOptions.set(shifts
+        .filter((shift) => shift.status === 'Đang hoạt động')
+        .map((shift) => ({ id: shift.id, name: shift.shiftName, time: `${shift.startTime} - ${shift.endTime}` }))),
+    });
+  }
 
   get activeCount(): number {
     return this.assignments().filter((assignment) => assignment.status === 'Đang áp dụng').length;
@@ -138,12 +136,9 @@ export class AdminShiftAssignmentListComponent {
   openEditDialog(assignment: AdminShiftAssignment): void {
     Object.assign(this.assignmentForm, {
       employeeCode: assignment.employeeCode,
-      employeeName: assignment.employeeName,
-      department: assignment.department,
       shiftId: assignment.shiftId,
       effectiveDate: this.toInputDate(assignment.effectiveDate),
       endDate: this.toInputDate(assignment.endDate),
-      status: assignment.status,
     });
     this.editingAssignment.set(assignment);
     this.formVisible.set(true);
@@ -160,45 +155,44 @@ export class AdminShiftAssignmentListComponent {
       return;
     }
 
-    const selectedShift = this.shiftOptions.find((shift) => shift.id === Number(this.assignmentForm.shiftId));
-    if (!selectedShift) return;
+    const selectedShift = this.shiftOptions().find((shift) => shift.id === Number(this.assignmentForm.shiftId));
+    if (!selectedShift) {
+      this.toast.show({ severity: 'warning', summary: 'Chưa có ca hoạt động', detail: 'Hãy tạo và kích hoạt ca làm việc trước khi phân ca cho nhân viên.' });
+      return;
+    }
     const editingAssignment = this.editingAssignment();
-    const assignment: AdminShiftAssignment = {
-      id: editingAssignment?.id ?? Date.now(),
+    this.rosterService.saveAssignment(editingAssignment?.id, {
       employeeCode: this.assignmentForm.employeeCode.trim(),
-      employeeName: this.assignmentForm.employeeName.trim(),
-      department: this.assignmentForm.department.trim(),
       shiftId: selectedShift.id,
-      shiftName: selectedShift.name,
-      shiftTime: selectedShift.time,
-      effectiveDate: this.formatDate(this.assignmentForm.effectiveDate),
-      endDate: this.assignmentForm.endDate ? this.formatDate(this.assignmentForm.endDate) : 'Không xác định thời hạn',
-      status: this.assignmentForm.status,
-    };
-
-    this.assignments.update((assignments) => editingAssignment
-      ? assignments.map((item) => item.id === editingAssignment.id ? assignment : item)
-      : [...assignments, assignment]);
-    this.rosterTableSettings = { ...this.rosterTableSettings, cardStatusLabel: `${this.assignments().length} phân ca` };
-    this.closeFormDialog();
-    this.toast.show({
-      severity: 'success',
-      summary: editingAssignment ? 'Cập nhật phân ca thành công' : 'Thêm phân ca thành công',
-      detail: `Phân ca cho ${assignment.employeeName} đã được ${editingAssignment ? 'cập nhật' : 'thêm vào danh sách'}.`,
+      effectiveDate: this.assignmentForm.effectiveDate,
+      endDate: this.assignmentForm.endDate || null,
+    }).subscribe({
+      next: (assignment) => {
+        this.refreshAssignments();
+        this.closeFormDialog();
+        this.toast.show({
+          severity: 'success',
+          summary: editingAssignment ? 'Cập nhật phân ca thành công' : 'Thêm phân ca thành công',
+          detail: `Mã nhân viên ${assignment.employeeCode} đã được ${editingAssignment ? 'cập nhật' : 'phân ca'}.`,
+        });
+      },
     });
   }
 
   async deleteAssignment(assignment: AdminShiftAssignment): Promise<void> {
     const confirmed = await this.confirmService.confirm(
       'Xác nhận xóa phân ca',
-      `Bạn có chắc muốn xóa phân ca của "${assignment.employeeName}" không?`,
+      `Bạn có chắc muốn xóa phân ca của mã nhân viên ${assignment.employeeCode} không?`,
       { type: 'danger', okText: 'Xóa' },
     );
     if (!confirmed) return;
 
-    this.assignments.update((assignments) => assignments.filter((item) => item.id !== assignment.id));
-    this.rosterTableSettings = { ...this.rosterTableSettings, cardStatusLabel: `${this.assignments().length} phân ca` };
-    this.toast.show({ severity: 'success', summary: 'Đã xóa phân ca', detail: `Phân ca của ${assignment.employeeName} đã được xóa.` });
+    this.rosterService.deleteAssignment(assignment.id).subscribe({
+      next: () => {
+        this.refreshAssignments();
+        this.toast.show({ severity: 'success', summary: 'Đã xóa phân ca', detail: `Phân ca của ${assignment.employeeCode} đã được xóa.` });
+      },
+    });
   }
 
   assignmentStatusType(status: AdminShiftAssignment['status']): 'success' | 'info' | 'default' {
@@ -210,12 +204,9 @@ export class AdminShiftAssignmentListComponent {
   private emptyAssignmentForm() {
     return {
       employeeCode: '',
-      employeeName: '',
-      department: '',
-      shiftId: 1,
+      shiftId: null as number | null,
       effectiveDate: '',
       endDate: '',
-      status: 'Đang áp dụng' as AdminShiftAssignment['status'],
     };
   }
 
@@ -225,8 +216,12 @@ export class AdminShiftAssignmentListComponent {
     return year ? `${year}-${month}-${day}` : value;
   }
 
-  private formatDate(value: string): string {
-    const [year, month, day] = value.split('-');
-    return day && month && year ? `${day}/${month}/${year}` : value;
+  private refreshAssignments(): void {
+    this.rosterService.getAssignments().subscribe({
+      next: (assignments) => {
+        this.assignments.set(assignments);
+        this.rosterTableSettings = { ...this.rosterTableSettings, cardStatusLabel: `${assignments.length} phân ca` };
+      },
+    });
   }
 }

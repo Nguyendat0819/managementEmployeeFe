@@ -17,11 +17,11 @@
     <ss-data-table [data]="assignments()" [columns]="assignmentColumns" [settings]="rosterTableSettings" (primaryClick)="onPrimaryClick($event)" (actionClick)="onActionClick($event)"></ss-data-table>
   </section>
 
-  <ss-dialog [visible]="detailVisible()" [title]="'Phân ca của ' + (selectedAssignment()?.employeeName ?? '')" [width]="680" [maskClosable]="false" (visibleChange)="detailVisible.set($event)">
+  <ss-dialog [visible]="detailVisible()" [title]="'Phân ca của ' + (selectedAssignment()?.employeeCode ?? '')" [width]="680" [maskClosable]="false" (visibleChange)="detailVisible.set($event)">
     @if (selectedAssignment(); as assignment) {
       <div class="detail-dialog">
-        <div class="detail-hero"><div class="assignment-icon">⌘</div><div><strong>{{ assignment.employeeName }}</strong><span>{{ assignment.employeeCode }} · {{ assignment.department }}</span></div><ss-tag [status]="assignmentStatusType(assignment.status)">{{ assignment.status }}</ss-tag></div>
-        <div class="details-grid"><div><span>Ca làm việc</span><strong>{{ assignment.shiftName }}</strong></div><div><span>Khung giờ</span><strong>{{ assignment.shiftTime }}</strong></div><div><span>Ngày bắt đầu</span><strong>{{ assignment.effectiveDate }}</strong></div><div><span>Ngày kết thúc</span><strong>{{ assignment.endDate }}</strong></div><div><span>Phòng ban</span><strong>{{ assignment.department }}</strong></div><div><span>Trạng thái</span><strong>{{ assignment.status }}</strong></div></div>
+        <div class="detail-hero"><div class="assignment-icon">⌘</div><div><strong>{{ assignment.employeeCode }}</strong><span>Mã nhân viên được phân ca</span></div><ss-tag [status]="assignmentStatusType(assignment.status)">{{ assignment.status }}</ss-tag></div>
+        <div class="details-grid"><div><span>Ca làm việc</span><strong>{{ assignment.shiftName }}</strong></div><div><span>Khung giờ</span><strong>{{ assignment.shiftTime }}</strong></div><div><span>Ngày bắt đầu</span><strong>{{ assignment.effectiveDate }}</strong></div><div><span>Ngày kết thúc</span><strong>{{ assignment.endDate }}</strong></div><div><span>Trạng thái</span><strong>{{ assignment.status }}</strong></div></div>
         <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeDetail()">Đóng</ss-button></div>
       </div>
     }
@@ -29,15 +29,13 @@
 
   <ss-dialog [visible]="formVisible()" [title]="editingAssignment() ? 'Sửa phân ca' : 'Thêm phân ca'" [width]="720" [maskClosable]="false" (visibleChange)="formVisible.set($event)">
     <form #assignmentFormRef="ngForm" class="roster-form" (ngSubmit)="saveAssignment(assignmentFormRef.valid)">
-      <p class="dialog-description">Chọn nhân sự, ca làm việc và thời hạn áp dụng.</p>
+      <p class="dialog-description">Nhập mã nhân viên, chọn ca và thời hạn áp dụng để backend có dữ liệu tính giờ làm.</p>
       <div class="form-grid">
         <div class="form-field"><label for="assignment-employee-code">Mã nhân viên <b>*</b></label><input id="assignment-employee-code" name="employeeCode" [(ngModel)]="assignmentForm.employeeCode" required maxlength="50" placeholder="VD: NV-000136"></div>
-        <div class="form-field"><label for="assignment-employee-name">Họ và tên <b>*</b></label><input id="assignment-employee-name" name="employeeName" [(ngModel)]="assignmentForm.employeeName" required maxlength="200" placeholder="Nhập họ và tên"></div>
-        <div class="form-field form-field-wide"><label for="assignment-department">Phòng ban <b>*</b></label><input id="assignment-department" name="department" [(ngModel)]="assignmentForm.department" required maxlength="200" placeholder="Nhập phòng ban"></div>
-        <div class="form-field form-field-wide"><label for="assignment-shift">Ca làm việc <b>*</b></label><select id="assignment-shift" name="shiftId" [(ngModel)]="assignmentForm.shiftId" required>@for (shift of shiftOptions; track shift.id) { <option [ngValue]="shift.id">{{ shift.name }} · {{ shift.time }}</option> }</select></div>
+        <div class="form-field form-field-wide"><label for="assignment-shift">Ca làm việc <b>*</b></label><select id="assignment-shift" name="shiftId" [(ngModel)]="assignmentForm.shiftId" required><option [ngValue]="null" disabled>Chọn ca làm việc</option>@for (shift of shiftOptions(); track shift.id) { <option [ngValue]="shift.id">{{ shift.name }} · {{ shift.time }}</option> }</select></div>
+        @if (!shiftOptions().length) { <p class="dialog-description">Chưa có ca hoạt động. Hãy tạo ca trước tại mục Ca làm việc.</p> }
         <div class="form-field"><label>Ngày bắt đầu <b>*</b></label><ss-datepicker name="effectiveDate" [(ngModel)]="assignmentForm.effectiveDate" format="dd/MM/yyyy" valueFormat="yyyy-MM-dd" placeholder="dd/MM/yyyy" required></ss-datepicker></div>
         <div class="form-field"><label>Ngày kết thúc</label><ss-datepicker name="endDate" [(ngModel)]="assignmentForm.endDate" format="dd/MM/yyyy" valueFormat="yyyy-MM-dd" placeholder="dd/MM/yyyy"></ss-datepicker></div>
-        <div class="form-field"><label for="assignment-status">Trạng thái <b>*</b></label><select id="assignment-status" name="status" [(ngModel)]="assignmentForm.status" required><option>Đang áp dụng</option><option>Sắp áp dụng</option><option>Đã kết thúc</option></select></div>
       </div>
       <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeFormDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="assignmentFormRef.invalid">{{ editingAssignment() ? 'Cập nhật' : 'Lưu phân ca' }}</ss-button></div>
     </form>

@@ -1,13 +1,56 @@
 import { Injectable } from '@angular/core';
+import { Observable, map } from 'rxjs';
+import { AttendanceRecordDto } from '@core/models/attendance.model';
+import { AttendanceApiService } from '@core/services/attendance-api.service';
 import { AttendanceRecord } from '../model/attendance_employee.model';
 
 @Injectable({ providedIn: 'root' })
 export class AttendanceEmployeeService {
-  readonly records: AttendanceRecord[] = [
-    { date: '07/10/2025', weekday: 'Thứ Ba', shiftName: 'Ca hành chính', checkIn: '07:58', checkOut: '17:02', duration: '08:04', status: 'Đúng giờ', statusType: 'success' },
-    { date: '06/10/2025', weekday: 'Thứ Hai', shiftName: 'Ca hành chính', checkIn: '08:04', checkOut: '17:00', duration: '07:56', status: 'Đi muộn', statusType: 'warning' },
-    { date: '03/10/2025', weekday: 'Thứ Sáu', shiftName: 'Ca hành chính', checkIn: '07:55', checkOut: '17:01', duration: '08:06', status: 'Đúng giờ', statusType: 'success' },
-    { date: '02/10/2025', weekday: 'Thứ Năm', shiftName: 'Ca hành chính', checkIn: '08:00', checkOut: '17:00', duration: '08:00', status: 'Đúng giờ', statusType: 'success' },
-  ];
+  constructor(private readonly attendanceApi: AttendanceApiService) {}
 
+  getHistory(employeeCode: string, from: string, to: string): Observable<AttendanceRecord[]> {
+    return this.attendanceApi.getHistory(employeeCode, from, to).pipe(
+      map((response) => response.data.map((record) => this.toViewModel(record))),
+    );
+  }
+
+  checkIn(employeeCode: string): Observable<AttendanceRecordDto> {
+    return this.attendanceApi.checkIn(employeeCode).pipe(map((response) => response.data));
+  }
+
+  checkOut(employeeCode: string): Observable<AttendanceRecordDto> {
+    return this.attendanceApi.checkOut(employeeCode).pipe(map((response) => response.data));
+  }
+
+  toViewModel(record: AttendanceRecordDto): AttendanceRecord {
+    const date = new Date(`${record.recordedAt}T00:00:00`);
+    const status = record.status === 'NO_SHIFT'
+      ? 'Chưa có ca'
+      : record.lateMinutes && record.lateMinutes > 0 || record.status === 'LATE'
+        ? 'Đi muộn'
+        : record.status === 'INCOMPLETE' ? 'Thiếu dữ liệu' : 'Đúng giờ';
+    return {
+      date: new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date),
+      weekday: new Intl.DateTimeFormat('vi-VN', { weekday: 'long' }).format(date),
+      shiftName: record.shiftName ?? '—',
+      checkIn: this.toTime(record.checkIn),
+      checkOut: this.toTime(record.checkOut),
+      durationMinutes: record.workDurationMin,
+      overtimeMinutes: record.status === 'NO_SHIFT' ? null : record.overtimeMin,
+      duration: this.formatMinutes(record.workDurationMin),
+      overtime: this.formatMinutes(record.status === 'NO_SHIFT' ? null : record.overtimeMin),
+      status,
+      statusType: status === 'Đi muộn' ? 'error' : status === 'Thiếu dữ liệu' || status === 'Chưa có ca' ? 'warning' : 'success',
+    };
+  }
+
+  private toTime(value: string | null): string {
+    return value ? value.slice(11, 16) : '--:--';
+  }
+
+  private formatMinutes(value: number | null): string {
+    if (value === null) return '—';
+    if (value < 60) return `${value} phút`;
+    return `${Math.floor(value / 60)} giờ ${value % 60} phút`;
+  }
 }

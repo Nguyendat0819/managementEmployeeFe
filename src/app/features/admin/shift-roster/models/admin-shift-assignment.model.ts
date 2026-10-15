@@ -1,8 +1,6 @@
 export interface AdminShiftAssignment {
   id: number;
   employeeCode: string;
-  employeeName: string;
-  department: string;
   shiftId: number;
   shiftName: string;
   shiftTime: string;

@@ -9,6 +9,6 @@ export interface AdminAttendanceRecord {
   checkOut: string;
   workDuration: string;
   overtime: string;
-  status: 'Có mặt' | 'Đi muộn' | 'Vắng mặt' | 'Thiếu dữ liệu';
+  status: 'Có mặt' | 'Đi muộn' | 'Vắng mặt' | 'Thiếu dữ liệu' | 'Chưa có ca';
   note: string;
 }

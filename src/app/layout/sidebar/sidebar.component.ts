@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   EventEmitter,
   Input,
   Output,
@@ -29,7 +30,7 @@ export class SidebarComponent {
   protected readonly auth = inject(AuthService);
   protected readonly menuService = inject(MenuService);
   private readonly permissionService = inject(PermissionService);
-  protected readonly menuItems = this.filterMenu(this.menuService.getMenu());
+  protected readonly menuItems = computed(() => this.filterMenu(this.menuService.getMenu()));
   private readonly router = inject(Router);
 
   openMap: Record<string, boolean> = {};
@@ -105,7 +106,7 @@ export class SidebarComponent {
       return false;
     };
 
-    walk(this.menuItems, []);
+    walk(this.menuItems(), []);
     return found;
   }
 

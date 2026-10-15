@@ -23,6 +23,22 @@ export class API_ENDPOINTS {
     SEARCH: '/search',
   };
 
+  public static readonly Attendance = {
+    BASE: 'api/attendance',
+    CHECK_IN: '/check-in',
+    CHECK_OUT: '/check-out',
+    HISTORY: '/history',
+    RECORDS: '/records',
+  };
+
+  public static readonly AttendanceShift = {
+    BASE: 'api/shifts',
+  };
+
+  public static readonly AttendanceShiftAssignment = {
+    BASE: 'api/shift-assignments',
+  };
+
   public static readonly Role = {
     BASE: 'api/role',
     DETAIL: (id: number) => `/${id}`,
