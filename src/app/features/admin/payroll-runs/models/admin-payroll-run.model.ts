@@ -17,3 +17,46 @@ export interface AdminPayrollRun {
   paidAt: string;
   note: string;
 }
+
+export interface AdminPayslip {
+  id: number;
+  payrollRunId: number;
+  employeeCode: string;
+  periodYear: number;
+  periodMonth: number;
+  periodStart: string;
+  periodEnd: string;
+  status: string;
+  paymentDate: string | null;
+  baseSalary: number;
+  totalAllowance: number;
+  overtimePay: number;
+  bonus: number;
+  grossSalary: number;
+  socialInsurance: number;
+  healthInsurance: number;
+  pitDeduction: number;
+  otherDeduction: number;
+  totalDeduction: number;
+  netSalary: number;
+  workingDays: number;
+  absentDays: number;
+  overtimeHours: number;
+  snapshotData: Record<string, unknown> | null;
+}
+
+export interface PayslipLineRequest {
+  employeeCode: string;
+  baseSalary: number;
+  totalAllowance: number;
+  overtimePay: number;
+  bonus: number;
+  socialInsurance: number;
+  healthInsurance: number;
+  pitDeduction: number;
+  otherDeduction: number;
+  workingDays: number;
+  absentDays: number;
+  overtimeHours: number;
+  snapshotData?: Record<string, unknown>;
+}

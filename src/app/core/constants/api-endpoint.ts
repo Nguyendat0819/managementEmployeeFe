@@ -39,6 +39,12 @@ export class API_ENDPOINTS {
     BASE: 'api/shift-assignments',
   };
 
+  public static readonly Payroll = {
+    SALARY_STRUCTURES: 'api/salary-structures',
+    PAYROLL_RUNS: 'api/payroll-runs',
+    MY_PAYSLIPS: 'api/payslips/me',
+  };
+
   public static readonly Role = {
     BASE: 'api/role',
     DETAIL: (id: number) => `/${id}`,

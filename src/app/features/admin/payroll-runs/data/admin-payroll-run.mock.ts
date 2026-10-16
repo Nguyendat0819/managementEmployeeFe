@@ -1,9 +1,0 @@
-import { AdminPayrollRun } from '../models/admin-payroll-run.model';
-
-export const ADMIN_PAYROLL_RUNS: AdminPayrollRun[] = [
-  { id: 1, periodYear: 2025, periodMonth: 10, periodLabel: 'Tháng 10/2025', salaryStructureLabel: 'Khung lương 2025', employeeCount: 248, totalGross: 4856000000, totalDeduction: 620400000, totalNet: 4235600000, status: 'Chờ duyệt', createdAt: '07/10/2025 08:20', approvedBy: '', approvedAt: '', paidAt: '', note: 'Đã tổng hợp công, phép và phụ cấp tháng 10.' },
-  { id: 2, periodYear: 2025, periodMonth: 9, periodLabel: 'Tháng 09/2025', salaryStructureLabel: 'Khung lương 2025', employeeCount: 246, totalGross: 4782000000, totalDeduction: 610800000, totalNet: 4171200000, status: 'Đã trả', createdAt: '25/09/2025 09:10', approvedBy: 'Quản trị viên', approvedAt: '26/09/2025 14:30', paidAt: '30/09/2025 10:00', note: 'Đã chuyển lương qua ngân hàng.' },
-  { id: 3, periodYear: 2025, periodMonth: 8, periodLabel: 'Tháng 08/2025', salaryStructureLabel: 'Khung lương 2025', employeeCount: 244, totalGross: 4725000000, totalDeduction: 604300000, totalNet: 4120700000, status: 'Đã trả', createdAt: '25/08/2025 08:45', approvedBy: 'Quản trị viên', approvedAt: '27/08/2025 11:20', paidAt: '29/08/2025 09:15', note: '' },
-  { id: 4, periodYear: 2025, periodMonth: 7, periodLabel: 'Tháng 07/2025', salaryStructureLabel: 'Khung lương 2025', employeeCount: 242, totalGross: 4688000000, totalDeduction: 598400000, totalNet: 4089600000, status: 'Đã duyệt', createdAt: '25/07/2025 10:05', approvedBy: 'Quản trị viên', approvedAt: '28/07/2025 15:40', paidAt: '', note: 'Chờ đối soát lịch chuyển khoản.' },
-  { id: 5, periodYear: 2025, periodMonth: 11, periodLabel: 'Tháng 11/2025', salaryStructureLabel: 'Khung lương 2025', employeeCount: 248, totalGross: 0, totalDeduction: 0, totalNet: 0, status: 'Nháp', createdAt: '07/10/2025 08:30', approvedBy: '', approvedAt: '', paidAt: '', note: 'Kỳ lương mới được khởi tạo, chưa tính dữ liệu.' },
-];

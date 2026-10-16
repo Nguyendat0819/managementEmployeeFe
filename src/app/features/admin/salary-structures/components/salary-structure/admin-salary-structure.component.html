@@ -28,18 +28,17 @@
     <form #structureFormRef="ngForm" class="structure-form" (ngSubmit)="saveStructure(structureFormRef.valid)">
       <p class="dialog-description">Nhập thông tin lương cơ bản, phụ cấp và ngày bắt đầu áp dụng cho chức danh.</p>
       <div class="form-grid">
-        <div class="form-field"><label for="salary-position-code">Mã chức danh <b>*</b></label><input id="salary-position-code" name="positionCode" [(ngModel)]="structureForm.positionCode" required maxlength="50" placeholder="VD: DEV-JUNIOR"></div>
-        <div class="form-field"><label for="salary-position-name">Tên chức danh <b>*</b></label><input id="salary-position-name" name="positionName" [(ngModel)]="structureForm.positionName" required maxlength="150" placeholder="VD: Lập trình viên Junior"></div>
+        <div class="form-field form-field-wide"><label for="salary-position-code">Mã chức danh <b>*</b></label><ss-select id="salary-position-code" name="positionCode" [(ngModel)]="structureForm.positionCode" [options]="positionOptions" [loading]="positionLoading()" [showSearch]="true" [allowClear]="true" (change)="onPositionSelected($event)" required placeholder="Chọn mã - tên chức danh"></ss-select></div>
         <div class="form-field"><label for="salary-grade">Bậc lương <b>*</b></label><select id="salary-grade" name="grade" [(ngModel)]="structureForm.grade" required><option>Bậc 1</option><option>Bậc 2</option><option>Bậc 3</option><option>Bậc 4</option><option>Bậc 5</option></select></div>
         <div class="form-field"><label>Ngày hiệu lực <b>*</b></label><ss-datepicker name="effectiveDate" [(ngModel)]="structureForm.effectiveDate" format="dd/MM/yyyy" valueFormat="yyyy-MM-dd" placeholder="dd/MM/yyyy" required></ss-datepicker></div>
         <div class="form-field"><label for="salary-base">Lương cơ bản <b>*</b></label><div class="input-with-suffix"><input id="salary-base" name="baseSalary" type="number" min="0" step="100000" [(ngModel)]="structureForm.baseSalary" required><span>VNĐ</span></div></div>
         <div class="form-field"><label for="salary-allowance">Tổng phụ cấp</label><div class="input-with-suffix"><input id="salary-allowance" name="allowanceTotal" type="number" min="0" step="100000" [(ngModel)]="structureForm.allowanceTotal"><span>VNĐ</span></div></div>
         <div class="form-field"><label for="salary-status">Trạng thái <b>*</b></label><select id="salary-status" name="status" [(ngModel)]="structureForm.status" required><option>Đang áp dụng</option><option>Chờ áp dụng</option><option>Ngừng áp dụng</option></select></div>
-        <div class="form-field"><label for="salary-formula">Công thức tính</label><input id="salary-formula" name="formula" [(ngModel)]="structureForm.formula" maxlength="200" placeholder="VD: Lương cơ bản + phụ cấp"></div>
+        <div class="form-field"><label for="salary-formula">Công thức tính <b>*</b></label><input id="salary-formula" name="formula" [(ngModel)]="structureForm.formula" maxlength="200" required placeholder="VD: Lương cơ bản + phụ cấp"></div>
         <div class="form-field form-field-wide"><label for="salary-allowance-summary">Chi tiết phụ cấp</label><input id="salary-allowance-summary" name="allowanceSummary" [(ngModel)]="structureForm.allowanceSummary" maxlength="250" placeholder="VD: Ăn trưa · Đi lại · Chức vụ"></div>
         <div class="form-field form-field-wide"><label for="salary-note">Ghi chú</label><textarea id="salary-note" name="note" rows="3" maxlength="500" [(ngModel)]="structureForm.note" placeholder="Thông tin bổ sung về cấu trúc lương"></textarea></div>
       </div>
-      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeFormDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="structureFormRef.invalid">{{ editingStructure() ? 'Cập nhật cấu trúc' : 'Lưu cấu trúc' }}</ss-button></div>
+      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeFormDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="structureFormRef.invalid || saving()">{{ editingStructure() ? 'Cập nhật cấu trúc' : 'Lưu cấu trúc' }}</ss-button></div>
     </form>
   </ss-dialog>
 </main>

@@ -1,23 +1,22 @@
 export interface PayslipSummary {
+  id: number;
   month: string;
   period: string;
-  netSalary: string;
+  netSalary: number;
+  grossSalary: number;
+  totalDeduction: number;
+  baseSalary: number;
+  totalAllowance: number;
+  overtimePay: number;
+  bonus: number;
+  socialInsurance: number;
+  healthInsurance: number;
+  pitDeduction: number;
+  otherDeduction: number;
+  workingDays: number;
+  absentDays: number;
+  overtimeHours: number;
   paymentDate: string;
-  bankName: string;
-  accountNumber: string;
   status: string;
-  statusType: 'success' | 'warning' | 'default';
-}
-
-export interface PayslipDetail {
-  baseSalary: string;
-  positionAllowance: string;
-  lunchAllowance: string;
-  overtime: string;
-  grossSalary: string;
-  socialInsurance: string;
-  healthInsurance: string;
-  personalTax: string;
-  totalDeduction: string;
-  netSalary: string;
+  periodYear: number;
 }

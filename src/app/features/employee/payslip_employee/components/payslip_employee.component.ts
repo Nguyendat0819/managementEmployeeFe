@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { SsButtonComponent, SsDataTableComponent, SsDialogComponent, SsDtActionClick, SsDtColumn, SsDtConfig, SsStatComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { finalize } from 'rxjs';
+import { SsButtonComponent, SsDataTableComponent, SsDialogComponent, SsDtActionClick, SsDtColumn, SsDtConfig, SsStatComponent, SsTagComponent } from '@platform/ui-kit';
 import { PayslipSummary } from '../model/payslip_employee.model';
 import { PayslipEmployeeService } from '../service/payslip_employee.service';
 
@@ -12,30 +13,25 @@ import { PayslipEmployeeService } from '../service/payslip_employee.service';
   styleUrl: './payslip_employee.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PayslipEmployeeComponent {
+export class PayslipEmployeeComponent implements OnInit {
   private readonly payslipService = inject(PayslipEmployeeService);
-  private readonly toast = inject(SsToastService);
 
-  readonly payslips = this.payslipService.payslips;
-  readonly latestDetail = this.payslipService.latestDetail;
+  readonly payslips = signal<PayslipSummary[]>([]);
+  readonly latestPayslip = computed(() => this.payslips()[0] ?? null);
+  readonly currentYear = new Date().getFullYear();
+  readonly annualNet = computed(() => this.payslips()
+    .filter((slip) => slip.periodYear === this.currentYear)
+    .reduce((total, slip) => total + slip.netSalary, 0));
   readonly selectedPayslip = signal<PayslipSummary | null>(null);
   readonly detailVisible = signal(false);
-  readonly payslipColumns: SsDtColumn<PayslipSummary>[] = [
-    { key: 'month', header: 'Kỳ lương', field: 'month', filterable: true, width: '110px' },
-    { key: 'period', header: 'Thời gian', field: 'period' },
-    { key: 'netSalary', header: 'Thực nhận', field: 'netSalary', width: '170px' },
-    { key: 'paymentDate', header: 'Ngày thanh toán', field: 'paymentDate', sortable: true, width: '140px' },
-    { key: 'bankName', header: 'Ngân hàng', field: 'bankName', filterable: true, width: '140px' },
-    { key: 'accountNumber', header: 'Tài khoản', field: 'accountNumber', width: '150px' },
-    { key: 'status', header: 'Trạng thái', field: 'status', filterable: true, width: '140px' },
-  ];
-  readonly payslipTableSettings: SsDtConfig<PayslipSummary> = {
-    rowKey: 'month',
-    title: 'Phiếu lương & Thông tin thanh toán',
-    description: 'Tra cứu các kỳ lương và tài khoản nhận lương',
+  payslipTableSettings: SsDtConfig<PayslipSummary> = {
+    rowKey: 'id',
+    loading: true,
+    title: 'Phiếu lương đã thanh toán',
+    description: 'Tra cứu các kỳ lương đã được công ty chi trả',
     cardIcon: 'file-done',
     searchable: true,
-    searchPlaceholder: 'Tìm theo kỳ lương, ngân hàng hoặc trạng thái',
+    searchPlaceholder: 'Tìm theo kỳ lương hoặc trạng thái',
     showSort: true,
     showFilter: true,
     showSetting: true,
@@ -46,8 +42,25 @@ export class PayslipEmployeeComponent {
     striped: true,
     size: 'small',
     scrollY: '330px',
-    emptyText: 'Chưa có phiếu lương',
+    emptyText: 'Chưa có phiếu lương đã thanh toán',
   };
+  readonly payslipColumns: SsDtColumn<PayslipSummary>[] = [
+    { key: 'month', header: 'Kỳ lương', field: 'month', filterable: true, width: '110px', sortable: true },
+    { key: 'period', header: 'Thời gian', field: 'period', width: '220px' },
+    { key: 'grossSalary', header: 'Tổng thu nhập', format: (row) => this.formatCurrency(row.grossSalary), width: '165px', align: 'right', sortable: true },
+    { key: 'totalDeduction', header: 'Khấu trừ', format: (row) => this.formatCurrency(row.totalDeduction), width: '150px', align: 'right', sortable: true },
+    { key: 'netSalary', header: 'Thực nhận', format: (row) => this.formatCurrency(row.netSalary), width: '165px', align: 'right', sortable: true },
+    { key: 'paymentDate', header: 'Ngày thanh toán', field: 'paymentDate', sortable: true, width: '155px' },
+    { key: 'status', header: 'Trạng thái', field: 'status', filterable: true, width: '140px' },
+  ];
+
+  ngOnInit(): void {
+    this.payslipService.getMyPayslips().pipe(finalize(() => {
+      this.payslipTableSettings = { ...this.payslipTableSettings, loading: false };
+    })).subscribe({
+      next: (payslips) => this.payslips.set(payslips),
+    });
+  }
 
   openDetail(event: SsDtActionClick<PayslipSummary>): void {
     if (event.action.key !== 'detail') return;
@@ -59,8 +72,11 @@ export class PayslipEmployeeComponent {
     this.detailVisible.set(false);
   }
 
-  downloadPayslip(): void {
-    const month = this.selectedPayslip()?.month ?? 'gần nhất';
-    this.toast.show({ severity: 'success', summary: 'Đang tải phiếu lương', detail: 'Phiếu lương tháng ' + month + ' đã sẵn sàng để tải xuống.' });
+  formatCurrency(value: number): string {
+    return `${new Intl.NumberFormat('vi-VN').format(value)} VNĐ`;
+  }
+
+  formatDeduction(value: number): string {
+    return `- ${this.formatCurrency(value)}`;
   }
 }

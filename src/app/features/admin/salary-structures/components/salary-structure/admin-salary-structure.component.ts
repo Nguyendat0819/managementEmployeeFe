@@ -1,7 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { SsButtonComponent, SsConfirmService, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsStatComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
+import { finalize } from 'rxjs';
+import { SsButtonComponent, SsConfirmService, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsSelectComponent, SsStatComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
+import { PositionResponse } from '../../../positions/models/admin-position.model';
+import { AdminPositionService } from '../../../positions/services/admin-position.service';
 import { AdminSalaryStructure, AdminSalaryStructureStatus } from '../../models/admin-salary-structure.model';
 import { AdminSalaryStructureService } from '../../services/admin-salary-structure.service';
 
@@ -21,22 +24,39 @@ interface SalaryStructureForm {
 @Component({
   selector: 'app-admin-salary-structure',
   standalone: true,
-  imports: [CommonModule, FormsModule, SsButtonComponent, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsStatComponent, SsTagComponent],
+  imports: [CommonModule, FormsModule, SsButtonComponent, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsSelectComponent, SsStatComponent, SsTagComponent],
   templateUrl: './admin-salary-structure.component.html',
   styleUrl: './admin-salary-structure.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AdminSalaryStructureComponent {
+export class AdminSalaryStructureComponent implements OnInit {
   private readonly salaryService = inject(AdminSalaryStructureService);
+  private readonly positionService = inject(AdminPositionService);
   private readonly confirmService = inject(SsConfirmService);
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly toast = inject(SsToastService);
 
-  readonly structures = signal(this.salaryService.structures);
+  readonly structures = signal<AdminSalaryStructure[]>([]);
+  readonly positions = signal<PositionResponse[]>([]);
+  readonly positionLoading = signal(false);
+  readonly saving = signal(false);
   readonly selectedStructure = signal<AdminSalaryStructure | null>(null);
   readonly detailVisible = signal(false);
   readonly formVisible = signal(false);
   readonly editingStructure = signal<AdminSalaryStructure | null>(null);
   readonly structureForm: SalaryStructureForm = this.emptyStructureForm();
+
+  get positionOptions(): { label: string; value: string }[] {
+    const options = this.positions().map((position) => ({
+      label: `${position.positionCode} - ${position.title}`,
+      value: position.positionCode,
+    }));
+    const editing = this.editingStructure();
+    if (editing && !options.some((option) => option.value === editing.positionCode)) {
+      return [{ label: `${editing.positionCode} - ${editing.positionName} (không còn hoạt động)`, value: editing.positionCode }, ...options];
+    }
+    return options;
+  }
   readonly structureColumns: SsDtColumn<AdminSalaryStructure>[] = [
     { key: 'positionCode', header: 'Mã chức danh', field: 'positionCode', width: '145px', sortable: true, filterable: true },
     { key: 'positionName', header: 'Chức danh', field: 'positionName', width: '205px', sortable: true, filterable: true },
@@ -52,6 +72,7 @@ export class AdminSalaryStructureComponent {
     title: 'Danh sách thang bảng lương',
     description: 'Quản lý mức lương cơ bản và phụ cấp theo từng chức danh',
     cardIcon: 'database',
+    loading: true,
     cardStatusLabel: `${this.activeCount} cấu trúc đang dùng`,
     cardStatusType: 'success',
     primaryButtons: [{ key: 'create-structure', label: 'Thêm cấu trúc', type: 'primary', icon: 'plus' }],
@@ -77,6 +98,11 @@ export class AdminSalaryStructureComponent {
     scrollX: '1100px',
     emptyText: 'Không có cấu trúc lương phù hợp',
   };
+
+  ngOnInit(): void {
+    this.loadStructures();
+    this.loadPositions();
+  }
 
   get activeCount(): number {
     return this.structures().filter((structure) => structure.status === 'Đang áp dụng').length;
@@ -118,6 +144,13 @@ export class AdminSalaryStructureComponent {
     this.formVisible.set(true);
   }
 
+  onPositionSelected(value: unknown): void {
+    const positionCode = typeof value === 'string' ? value : '';
+    const position = this.positions().find((item) => item.positionCode === positionCode);
+    this.structureForm.positionCode = positionCode;
+    this.structureForm.positionName = position?.title ?? '';
+  }
+
   openEditDialog(structure: AdminSalaryStructure): void {
     Object.assign(this.structureForm, { ...structure, effectiveDate: this.toInputDate(structure.effectiveDate) });
     this.editingStructure.set(structure);
@@ -134,34 +167,49 @@ export class AdminSalaryStructureComponent {
 
   saveStructure(formValid: boolean): void {
     if (!formValid) return;
-    const positionCode = this.structureForm.positionCode.trim().toUpperCase().replace(/\s+/g, '-');
-    const positionName = this.structureForm.positionName.trim();
+    const positionCode = this.structureForm.positionCode.trim();
     const editingStructure = this.editingStructure();
-    if (this.structures().some((structure) => structure.id !== editingStructure?.id && structure.positionCode.toLowerCase() === positionCode.toLowerCase())) {
-      this.toast.show({ severity: 'warning', summary: 'Mã chức danh đã tồn tại', detail: 'Vui lòng sử dụng một mã chức danh khác.' });
+    const selectedPosition = this.positions().find((position) => position.positionCode === positionCode);
+    const positionName = selectedPosition?.title ?? (editingStructure?.positionCode === positionCode ? editingStructure.positionName : '');
+    if (!positionName) {
+      this.toast.show({ severity: 'warning', summary: 'Chưa chọn chức danh', detail: 'Chọn một chức danh đang có trong danh mục.' });
+      return;
+    }
+    if (this.structures().some((structure) =>
+      structure.id !== editingStructure?.id
+      && structure.positionCode.toLowerCase() === positionCode.toLowerCase()
+      && this.toInputDate(structure.effectiveDate) === this.structureForm.effectiveDate,
+    )) {
+      this.toast.show({ severity: 'warning', summary: 'Cấu trúc lương đã tồn tại', detail: 'Chức danh này đã có cấu trúc tại ngày hiệu lực đã chọn.' });
       return;
     }
 
-    const structure: AdminSalaryStructure = {
-      id: editingStructure?.id ?? Date.now(),
+    const request = {
       positionCode,
       positionName,
       grade: this.structureForm.grade,
       baseSalary: Number(this.structureForm.baseSalary),
       allowanceTotal: Number(this.structureForm.allowanceTotal),
       allowanceSummary: this.structureForm.allowanceSummary.trim(),
-      effectiveDate: this.formatDate(this.structureForm.effectiveDate),
+      effectiveDate: this.structureForm.effectiveDate,
       status: this.structureForm.status,
       formula: this.structureForm.formula.trim(),
       note: this.structureForm.note.trim(),
     };
 
-    this.structures.update((structures) => editingStructure
-      ? structures.map((item) => item.id === editingStructure.id ? structure : item)
-      : [...structures, structure]);
-    this.refreshTableStatus();
-    this.closeFormDialog();
-    this.toast.show({ severity: 'success', summary: editingStructure ? 'Cập nhật cấu trúc thành công' : 'Thêm cấu trúc thành công', detail: `Cấu trúc lương cho ${positionName} đã được ${editingStructure ? 'cập nhật' : 'thêm vào danh sách'}.` });
+    this.saving.set(true);
+    this.salaryService.saveStructure(request, editingStructure?.id)
+      .pipe(finalize(() => this.saving.set(false)))
+      .subscribe({
+        next: (structure) => {
+          this.structures.update((structures) => editingStructure
+            ? structures.map((item) => item.id === structure.id ? structure : item)
+            : [structure, ...structures]);
+          this.refreshTableStatus();
+          this.closeFormDialog();
+          this.toast.show({ severity: 'success', summary: editingStructure ? 'Cập nhật cấu trúc thành công' : 'Thêm cấu trúc thành công', detail: `Cấu trúc lương cho ${positionName} đã được ${editingStructure ? 'cập nhật' : 'thêm vào danh sách'}.` });
+        },
+      });
   }
 
   async deleteStructure(structure: AdminSalaryStructure): Promise<void> {
@@ -171,9 +219,13 @@ export class AdminSalaryStructureComponent {
       { type: 'danger', okText: 'Xóa' },
     );
     if (!confirmed) return;
-    this.structures.update((structures) => structures.filter((item) => item.id !== structure.id));
-    this.refreshTableStatus();
-    this.toast.show({ severity: 'success', summary: 'Đã xóa cấu trúc lương', detail: `Cấu trúc ${structure.positionName} đã được xóa khỏi danh sách.` });
+    this.salaryService.deleteStructure(structure.id).subscribe({
+      next: () => {
+        this.structures.update((structures) => structures.filter((item) => item.id !== structure.id));
+        this.refreshTableStatus();
+        this.toast.show({ severity: 'success', summary: 'Đã xóa cấu trúc lương', detail: `Cấu trúc ${structure.positionName} đã được xóa khỏi danh sách.` });
+      },
+    });
   }
 
   statusTone(status: AdminSalaryStructureStatus): 'success' | 'warning' | 'info' {
@@ -187,6 +239,7 @@ export class AdminSalaryStructureComponent {
   }
 
   toInputDate(value: string): string {
+    if (value.includes('-')) return value;
     const [day, month, year] = value.split('/');
     return `${year}-${month}-${day}`;
   }
@@ -195,13 +248,35 @@ export class AdminSalaryStructureComponent {
     return { positionCode: '', positionName: '', grade: 'Bậc 1', baseSalary: 10000000, allowanceTotal: 0, allowanceSummary: '', effectiveDate: '', status: 'Đang áp dụng', formula: 'Lương cơ bản + phụ cấp cố định', note: '' };
   }
 
-  private formatDate(value: string): string {
-    if (!value) return '';
-    const [year, month, day] = value.split('-');
-    return `${day}/${month}/${year}`;
+  private loadStructures(): void {
+    this.structureTableSettings = { ...this.structureTableSettings, loading: true };
+    this.salaryService.getStructures().pipe(finalize(() => {
+      this.structureTableSettings = { ...this.structureTableSettings, loading: false };
+    })).subscribe({
+      next: (structures) => {
+        this.structures.set(structures);
+        this.refreshTableStatus();
+      },
+    });
+  }
+
+  private loadPositions(): void {
+    this.positionLoading.set(true);
+    this.positionService.searchPositions({ page: 0, size: 200, isDeleted: false }).pipe(finalize(() => {
+      this.positionLoading.set(false);
+      this.changeDetectorRef.markForCheck();
+    })).subscribe({
+      next: (response) => {
+        this.positions.set(response.data?.content ?? []);
+        this.changeDetectorRef.markForCheck();
+      },
+    });
   }
 
   private refreshTableStatus(): void {
-    this.structureTableSettings = { ...this.structureTableSettings, cardStatusLabel: `${this.activeCount} cấu trúc đang dùng` };
+    this.structureTableSettings = {
+      ...this.structureTableSettings,
+      cardStatusLabel: `${this.activeCount} cấu trúc đang dùng`,
+    };
   }
 }
