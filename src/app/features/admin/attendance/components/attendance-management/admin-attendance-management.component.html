@@ -3,17 +3,17 @@
     <div class="hero-copy">
       <p class="hero-eyebrow">OPERATIONS CONTROL</p>
       <h1 id="attendance-heading">Quản lý chấm công</h1>
-      <p class="hero-description">Bản ghi check-in và check-out trong ngày, đồng bộ trực tiếp từ Attendance Service.</p>
+      <p class="hero-description">Tra cứu bản ghi check-in và check-out theo khoảng ngày, đồng bộ trực tiếp từ Attendance Service.</p>
       <div class="hero-meta"><span class="live-dot"></span><span>Đang xem dữ liệu từ máy chủ</span></div>
     </div>
     <div class="hero-score">
-      <span class="score-label">Bản ghi hôm nay</span>
+      <span class="score-label">Bản ghi trong khoảng</span>
       <strong>{{ recordCount() }}</strong>
-      <span class="score-date">{{ currentDate }}</span>
+      <span class="score-date">{{ dateRangeLabel() }}</span>
     </div>
   </section>
 
-  <section class="stats-grid" aria-label="Tổng quan bản ghi hôm nay">
+  <section class="stats-grid" aria-label="Tổng quan bản ghi trong khoảng ngày đã chọn">
     <ss-stat label="Tổng bản ghi" [value]="recordCount()" suffix="bản ghi" hint="Được tải từ service" tone="primary" icon="team"></ss-stat>
     <ss-stat label="Đã check-in" [value]="presentCount()" suffix="nhân viên" hint="Có bản ghi vào ca" tone="success" icon="check-circle"></ss-stat>
     <ss-stat label="Đi muộn" [value]="lateCount()" suffix="nhân viên" hint="Theo trạng thái backend" tone="warning" icon="clock-circle"></ss-stat>
@@ -21,8 +21,15 @@
   </section>
 
   <section class="attendance-table" aria-label="Bản ghi chấm công">
-    <ss-data-table [data]="records()" [columns]="attendanceColumns" [settings]="attendanceTableSettings" (actionClick)="onActionClick($event)"></ss-data-table>
+    <ss-data-table [data]="records()" [columns]="attendanceColumns" [settings]="attendanceTableSettings" (queryChange)="onQueryChange($event)" (actionClick)="onActionClick($event)"></ss-data-table>
   </section>
+
+  <ng-template #attendanceFilter let-filterModel>
+    <div class="attendance-date-filter">
+      <ss-datepicker name="attendanceFromDate" label="Từ ngày" [(ngModel)]="filterModel['from']" format="dd/MM/yyyy" valueFormat="yyyy-MM-dd" placeholder="dd/MM/yyyy" [maxDate]="filterModel['to'] || undefined" [showError]="false"></ss-datepicker>
+      <ss-datepicker name="attendanceToDate" label="Đến ngày" [(ngModel)]="filterModel['to']" format="dd/MM/yyyy" valueFormat="yyyy-MM-dd" placeholder="dd/MM/yyyy" [minDate]="filterModel['from'] || undefined" [showError]="false"></ss-datepicker>
+    </div>
+  </ng-template>
 
   <ss-dialog [visible]="detailVisible()" [title]="'Chi tiết chấm công · ' + (selectedRecord()?.employeeCode ?? '')" [width]="720" [maskClosable]="false" (visibleChange)="detailVisible.set($event)">
     @if (selectedRecord(); as record) {

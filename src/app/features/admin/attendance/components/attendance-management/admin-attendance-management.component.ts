@@ -1,13 +1,14 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
-import { SsButtonComponent, SsDataTableComponent, SsDialogComponent, SsDtActionClick, SsDtColumn, SsDtConfig, SsStatComponent, SsTagComponent } from '@platform/ui-kit';
+import { FormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal, TemplateRef, ViewChild } from '@angular/core';
+import { SsButtonComponent, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtActionClick, SsDtColumn, SsDtConfig, SsDtQuery, SsStatComponent, SsTagComponent } from '@platform/ui-kit';
 import { AdminAttendanceRecord } from '../../models/admin-attendance.model';
 import { AdminAttendanceService } from '../../services/admin-attendance.service';
 
 @Component({
   selector: 'app-admin-attendance-management',
   standalone: true,
-  imports: [CommonModule, SsButtonComponent, SsDataTableComponent, SsDialogComponent, SsStatComponent, SsTagComponent],
+  imports: [CommonModule, FormsModule, SsButtonComponent, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsStatComponent, SsTagComponent],
   templateUrl: './admin-attendance-management.component.html',
   styleUrl: './admin-attendance-management.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -18,7 +19,10 @@ export class AdminAttendanceManagementComponent implements OnInit {
   readonly records = signal<AdminAttendanceRecord[]>([]);
   readonly selectedRecord = signal<AdminAttendanceRecord | null>(null);
   readonly detailVisible = signal(false);
-  readonly currentDate = new Intl.DateTimeFormat('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date());
+  readonly fromDate = signal(this.toApiDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)));
+  readonly toDate = signal(this.toApiDate(new Date()));
+  readonly dateRangeLabel = computed(() => `${this.toVietnameseDate(this.fromDate())} – ${this.toVietnameseDate(this.toDate())}`);
+  @ViewChild('attendanceFilter', { static: true }) private attendanceFilter!: TemplateRef<unknown>;
   readonly recordCount = computed(() => this.records().length);
   readonly presentCount = computed(() => this.records().filter((record) => record.status === 'Có mặt' || record.status === 'Đi muộn').length);
   readonly lateCount = computed(() => this.records().filter((record) => record.status === 'Đi muộn').length);
@@ -49,13 +53,13 @@ export class AdminAttendanceManagementComponent implements OnInit {
 
   attendanceTableSettings: SsDtConfig<AdminAttendanceRecord> = {
     rowKey: 'id',
-    title: 'Bản ghi chấm công hôm nay',
-    description: 'Dữ liệu bản ghi được tải trực tiếp từ Attendance Service',
+    title: 'Bản ghi chấm công',
+    description: 'Dữ liệu bản ghi được tải trực tiếp từ Attendance Service theo khoảng ngày đã chọn',
     cardIcon: 'check-circle',
     cardStatusLabel: 'Dữ liệu trực tiếp',
     cardStatusType: 'success',
     searchable: true,
-    searchPlaceholder: 'Tìm theo mã nhân viên hoặc trạng thái',
+    searchPlaceholder: 'Tìm theo mã nhân viên',
     showSort: true,
     showFilter: true,
     showSetting: true,
@@ -82,10 +86,20 @@ export class AdminAttendanceManagementComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    const today = this.toApiDate(new Date());
-    this.attendanceService.getRecords(today, today).subscribe({
-      next: (records) => this.records.set(records),
-    });
+    this.attendanceTableSettings = {
+      ...this.attendanceTableSettings,
+      filterTemplate: this.attendanceFilter,
+    };
+    this.loadRecords(this.fromDate(), this.toDate());
+  }
+
+  onQueryChange(query: SsDtQuery): void {
+    const from = query.filter['from'] || this.defaultFromDate();
+    const to = query.filter['to'] || this.toApiDate(new Date());
+    if (from > to || (from === this.fromDate() && to === this.toDate())) return;
+    this.fromDate.set(from);
+    this.toDate.set(to);
+    this.loadRecords(from, to);
   }
 
   onActionClick(event: SsDtActionClick<AdminAttendanceRecord>): void {
@@ -110,10 +124,25 @@ export class AdminAttendanceManagementComponent implements OnInit {
     return name.split(' ').slice(-2).map((part) => part[0]).join('');
   }
 
+  private defaultFromDate(): string {
+    return this.toApiDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  }
+
+  private loadRecords(from: string, to: string): void {
+    this.attendanceService.getRecords(from, to).subscribe({
+      next: (records) => this.records.set(records),
+    });
+  }
+
   private toApiDate(date: Date): string {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  private toVietnameseDate(value: string): string {
+    const [year, month, day] = value.split('-');
+    return year && month && day ? `${day}/${month}/${year}` : value;
   }
 }
