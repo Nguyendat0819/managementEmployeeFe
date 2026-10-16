@@ -1,10 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { SsButtonComponent, SsConfirmService, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsStatComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
+import { concatMap, finalize, from, map, toArray } from 'rxjs';
+import { SsButtonComponent, SsConfirmService, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsStatComponent, SsTagComponent, SsToastService, SsTransferComponent, SsTransferItem } from '@platform/ui-kit';
 import { AdminShiftAssignment } from '../../models/admin-shift-assignment.model';
 import { AdminShiftRosterService } from '../../services/admin-shift-roster.service';
 import { AdminShiftService } from '../../../shifts/services/admin-shift.service';
+import { AdminEmployeeService } from '../../../employees/services/admin-employee.service';
 
 interface ShiftOption {
   id: number;
@@ -15,7 +17,7 @@ interface ShiftOption {
 @Component({
   selector: 'app-admin-shift-assignment-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, SsButtonComponent, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsStatComponent, SsTagComponent],
+  imports: [CommonModule, FormsModule, SsButtonComponent, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsStatComponent, SsTagComponent, SsTransferComponent],
   templateUrl: './admin-shift-assignment-list.component.html',
   styleUrl: './admin-shift-assignment-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -23,16 +25,27 @@ interface ShiftOption {
 export class AdminShiftAssignmentListComponent implements OnInit {
   private readonly rosterService = inject(AdminShiftRosterService);
   private readonly shiftService = inject(AdminShiftService);
+  private readonly employeeService = inject(AdminEmployeeService);
   private readonly toast = inject(SsToastService);
   private readonly confirmService = inject(SsConfirmService);
 
   readonly assignments = signal<AdminShiftAssignment[]>([]);
+  readonly assignmentsLoaded = signal(false);
   readonly selectedAssignment = signal<AdminShiftAssignment | null>(null);
   readonly detailVisible = signal(false);
   readonly formVisible = signal(false);
   readonly editingAssignment = signal<AdminShiftAssignment | null>(null);
+  readonly selectedEmployees = signal<SsTransferItem[]>([]);
+  readonly employeeSearchResults = signal<SsTransferItem[]>([]);
+  readonly employeeSearching = signal(false);
+  readonly employeeHasMore = signal(false);
+  readonly employeeTotalFound = signal<number | null>(null);
+  readonly savingAssignment = signal(false);
   readonly assignmentForm = this.emptyAssignmentForm();
   readonly shiftOptions = signal<ShiftOption[]>([]);
+  private employeeSearchTerm = '';
+  private employeeSearchPage = 0;
+  private employeeSearchRequestId = 0;
   readonly assignmentColumns: SsDtColumn<AdminShiftAssignment>[] = [
     { key: 'employeeCode', header: 'Mã nhân viên', field: 'employeeCode', width: '165px', sortable: true, filterable: true },
     { key: 'shiftName', header: 'Ca làm việc', field: 'shiftName', width: '165px', filterable: true },
@@ -129,27 +142,41 @@ export class AdminShiftAssignmentListComponent implements OnInit {
 
   openCreateDialog(): void {
     Object.assign(this.assignmentForm, this.emptyAssignmentForm());
+    this.resetEmployeeSearch();
+    this.selectedEmployees.set([]);
     this.editingAssignment.set(null);
     this.formVisible.set(true);
+    this.refreshAssignments();
   }
 
   openEditDialog(assignment: AdminShiftAssignment): void {
+    this.resetEmployeeSearch();
     Object.assign(this.assignmentForm, {
-      employeeCode: assignment.employeeCode,
       shiftId: assignment.shiftId,
       effectiveDate: this.toInputDate(assignment.effectiveDate),
       endDate: this.toInputDate(assignment.endDate),
     });
+    this.selectedEmployees.set([{ value: assignment.employeeCode, label: assignment.employeeCode }]);
     this.editingAssignment.set(assignment);
     this.formVisible.set(true);
   }
 
   closeFormDialog(): void {
-    this.formVisible.set(false);
+    this.onFormVisibilityChange(false);
+  }
+
+  onFormVisibilityChange(visible: boolean): void {
+    if (!visible) this.resetEmployeeSearch();
+    this.formVisible.set(visible);
   }
 
   saveAssignment(formValid: boolean): void {
     if (!formValid) return;
+    const employees = this.selectedEmployees();
+    if (!employees.length) {
+      this.toast.show({ severity: 'warning', summary: 'Chưa chọn nhân viên', detail: 'Chọn ít nhất một nhân viên để phân ca.' });
+      return;
+    }
     if (this.assignmentForm.endDate && this.assignmentForm.endDate < this.assignmentForm.effectiveDate) {
       this.toast.show({ severity: 'warning', summary: 'Thời hạn không hợp lệ', detail: 'Ngày kết thúc phải sau ngày bắt đầu.' });
       return;
@@ -161,22 +188,83 @@ export class AdminShiftAssignmentListComponent implements OnInit {
       return;
     }
     const editingAssignment = this.editingAssignment();
-    this.rosterService.saveAssignment(editingAssignment?.id, {
-      employeeCode: this.assignmentForm.employeeCode.trim(),
+    const assignmentRequest = (employeeCode: string) => ({
+      employeeCode,
       shiftId: selectedShift.id,
       effectiveDate: this.assignmentForm.effectiveDate,
       endDate: this.assignmentForm.endDate || null,
-    }).subscribe({
-      next: (assignment) => {
+    });
+    let savedCount = 0;
+    const savedEmployeeCodes: string[] = [];
+    this.savingAssignment.set(true);
+    from(employees).pipe(
+      concatMap((employee) => this.rosterService.saveAssignment(
+        editingAssignment?.id,
+        assignmentRequest(employee.value.trim()),
+      ).pipe(map((assignment) => {
+        savedCount++;
+        savedEmployeeCodes.push(assignment.employeeCode);
+        return assignment;
+      }))),
+      toArray(),
+      finalize(() => this.savingAssignment.set(false)),
+    ).subscribe({
+      next: (savedAssignments) => {
         this.refreshAssignments();
         this.closeFormDialog();
         this.toast.show({
           severity: 'success',
           summary: editingAssignment ? 'Cập nhật phân ca thành công' : 'Thêm phân ca thành công',
-          detail: `Mã nhân viên ${assignment.employeeCode} đã được ${editingAssignment ? 'cập nhật' : 'phân ca'}.`,
+          detail: editingAssignment
+            ? `Mã nhân viên ${savedAssignments[0].employeeCode} đã được cập nhật.`
+            : `Đã phân ca cho ${savedAssignments.length} nhân viên.`,
+        });
+      },
+      error: () => {
+        if (savedCount) {
+          this.selectedEmployees.set(this.selectedEmployees().filter((employee) => !savedEmployeeCodes.includes(employee.value)));
+          this.refreshAssignments();
+        }
+        this.toast.show({
+          severity: 'error',
+          summary: 'Phân ca chưa hoàn tất',
+          detail: savedCount
+            ? `Đã lưu ${savedCount}/${employees.length} nhân viên trước khi gặp lỗi. Hãy kiểm tra danh sách phân ca.`
+            : 'Không thể lưu phân ca. Vui lòng kiểm tra dữ liệu và thử lại.',
         });
       },
     });
+  }
+
+  searchEmployees(keyword: string): void {
+    if (!this.canLoadEmployees()) return;
+    this.employeeSearchTerm = keyword.trim();
+    this.employeeSearchPage = 0;
+    this.employeeSearchResults.set([]);
+    this.employeeTotalFound.set(null);
+    this.fetchEmployees(false);
+  }
+
+  onAssignmentCriteriaChanged(): void {
+    if (this.editingAssignment()) return;
+    this.selectedEmployees.set([]);
+    this.employeeSearchResults.set([]);
+    this.employeeSearchPage = 0;
+    this.employeeSearchRequestId++;
+    this.employeeSearching.set(false);
+    this.employeeHasMore.set(false);
+    this.employeeTotalFound.set(null);
+    if (this.canLoadEmployees()) {
+      this.fetchEmployees(false);
+    } else {
+      this.employeeSearchTerm = '';
+    }
+  }
+
+  loadMoreEmployees(): void {
+    if (this.employeeSearching() || !this.employeeHasMore()) return;
+    this.employeeSearchPage++;
+    this.fetchEmployees(true);
   }
 
   async deleteAssignment(assignment: AdminShiftAssignment): Promise<void> {
@@ -203,11 +291,100 @@ export class AdminShiftAssignmentListComponent implements OnInit {
 
   private emptyAssignmentForm() {
     return {
-      employeeCode: '',
       shiftId: null as number | null,
-      effectiveDate: '',
+      effectiveDate: this.toApiDate(new Date()),
       endDate: '',
     };
+  }
+
+  private resetEmployeeSearch(): void {
+    this.employeeSearchRequestId++;
+    this.employeeSearchTerm = '';
+    this.employeeSearchPage = 0;
+    this.employeeSearching.set(false);
+    this.employeeHasMore.set(false);
+    this.employeeTotalFound.set(null);
+    this.employeeSearchResults.set([]);
+  }
+
+  private toApiDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private fetchEmployees(append: boolean): void {
+    const requestId = ++this.employeeSearchRequestId;
+    this.employeeSearching.set(true);
+    this.employeeService.searchEmployees({ page: this.employeeSearchPage, size: 20, search: this.employeeSearchTerm || undefined })
+      .pipe(finalize(() => {
+        if (requestId === this.employeeSearchRequestId) this.employeeSearching.set(false);
+      }))
+      .subscribe({
+        next: (response) => {
+          if (requestId !== this.employeeSearchRequestId) return;
+          const page = response.data;
+          const results = (page?.content ?? [])
+            .map((employee) => this.toAssignmentCandidate({
+              employeeCode: employee.employeeCode,
+              fullName: employee.fullName,
+              departmentName: employee.departmentName,
+              positionName: employee.positionName,
+            }))
+            .filter((employee): employee is SsTransferItem => employee !== null);
+          this.employeeSearchResults.set(append ? [...this.employeeSearchResults(), ...results] : results);
+          this.employeeTotalFound.set(null);
+          this.employeeHasMore.set((page?.page ?? 0) + 1 < (page?.totalPages ?? 0));
+        },
+        error: () => {
+          if (requestId !== this.employeeSearchRequestId) return;
+          this.employeeHasMore.set(false);
+          this.toast.show({ severity: 'error', summary: 'Không tải được nhân viên', detail: 'Vui lòng thử tìm lại sau.' });
+        },
+      });
+  }
+
+  canLoadEmployees(): boolean {
+    return !this.editingAssignment()
+      && this.assignmentsLoaded()
+      && this.assignmentForm.shiftId !== null
+      && !!this.assignmentForm.effectiveDate
+      && (!this.assignmentForm.endDate || this.assignmentForm.endDate >= this.assignmentForm.effectiveDate);
+  }
+
+  private toAssignmentCandidate(employee: {
+    employeeCode: string;
+    fullName: string;
+    departmentName: string | null;
+    positionName: string | null;
+  }): SsTransferItem | null {
+    const existingAssignments = this.assignments().filter((assignment) =>
+      assignment.employeeCode === employee.employeeCode
+      && this.assignmentPeriodsOverlap(assignment),
+    );
+    if (existingAssignments.some((assignment) => assignment.shiftId !== Number(this.assignmentForm.shiftId))) {
+      return null;
+    }
+
+    const alreadyOnShift = existingAssignments.find((assignment) => assignment.shiftId === Number(this.assignmentForm.shiftId));
+    return {
+      value: employee.employeeCode,
+      label: `${employee.employeeCode} · ${employee.fullName}`,
+      description: alreadyOnShift
+        ? `Đã phân ca ${alreadyOnShift.shiftName}`
+        : [employee.departmentName, employee.positionName].filter(Boolean).join(' · '),
+      disabled: !!alreadyOnShift,
+    };
+  }
+
+  private assignmentPeriodsOverlap(assignment: AdminShiftAssignment): boolean {
+    const assignedStart = this.toInputDate(assignment.effectiveDate);
+    const assignedEnd = assignment.endDate === 'Không xác định thời hạn'
+      ? '9999-12-31'
+      : this.toInputDate(assignment.endDate);
+    const requestedEnd = this.assignmentForm.endDate || '9999-12-31';
+    return assignedStart <= requestedEnd && assignedEnd >= this.assignmentForm.effectiveDate;
   }
 
   private toInputDate(value: string): string {
@@ -217,10 +394,17 @@ export class AdminShiftAssignmentListComponent implements OnInit {
   }
 
   private refreshAssignments(): void {
+    this.assignmentsLoaded.set(false);
     this.rosterService.getAssignments().subscribe({
       next: (assignments) => {
         this.assignments.set(assignments);
+        this.assignmentsLoaded.set(true);
         this.rosterTableSettings = { ...this.rosterTableSettings, cardStatusLabel: `${assignments.length} phân ca` };
+        if (this.canLoadEmployees()) this.fetchEmployees(false);
+      },
+      error: () => {
+        this.assignmentsLoaded.set(false);
+        this.toast.show({ severity: 'error', summary: 'Không tải được danh sách phân ca', detail: 'Không thể kiểm tra ca hiện tại của nhân viên.' });
       },
     });
   }

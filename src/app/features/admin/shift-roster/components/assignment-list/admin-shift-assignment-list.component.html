@@ -27,17 +27,38 @@
     }
   </ss-dialog>
 
-  <ss-dialog [visible]="formVisible()" [title]="editingAssignment() ? 'Sửa phân ca' : 'Thêm phân ca'" [width]="720" [maskClosable]="false" (visibleChange)="formVisible.set($event)">
+  <ss-dialog [visible]="formVisible()" [title]="editingAssignment() ? 'Sửa phân ca' : 'Thêm phân ca'" [width]="960" [maskClosable]="false" (visibleChange)="onFormVisibilityChange($event)">
     <form #assignmentFormRef="ngForm" class="roster-form" (ngSubmit)="saveAssignment(assignmentFormRef.valid)">
-      <p class="dialog-description">Nhập mã nhân viên, chọn ca và thời hạn áp dụng để backend có dữ liệu tính giờ làm.</p>
+      <p class="dialog-description">Chọn một hoặc nhiều nhân viên, ca làm việc và thời hạn áp dụng.</p>
       <div class="form-grid">
-        <div class="form-field"><label for="assignment-employee-code">Mã nhân viên <b>*</b></label><input id="assignment-employee-code" name="employeeCode" [(ngModel)]="assignmentForm.employeeCode" required maxlength="50" placeholder="VD: NV-000136"></div>
-        <div class="form-field form-field-wide"><label for="assignment-shift">Ca làm việc <b>*</b></label><select id="assignment-shift" name="shiftId" [(ngModel)]="assignmentForm.shiftId" required><option [ngValue]="null" disabled>Chọn ca làm việc</option>@for (shift of shiftOptions(); track shift.id) { <option [ngValue]="shift.id">{{ shift.name }} · {{ shift.time }}</option> }</select></div>
+        <div class="form-field form-field-wide"><label for="assignment-shift">Ca làm việc <b>*</b></label><select id="assignment-shift" name="shiftId" [(ngModel)]="assignmentForm.shiftId" (ngModelChange)="onAssignmentCriteriaChanged()" required><option [ngValue]="null" disabled>Chọn ca làm việc</option>@for (shift of shiftOptions(); track shift.id) { <option [ngValue]="shift.id">{{ shift.name }} · {{ shift.time }}</option> }</select></div>
         @if (!shiftOptions().length) { <p class="dialog-description">Chưa có ca hoạt động. Hãy tạo ca trước tại mục Ca làm việc.</p> }
-        <div class="form-field"><label>Ngày bắt đầu <b>*</b></label><ss-datepicker name="effectiveDate" [(ngModel)]="assignmentForm.effectiveDate" format="dd/MM/yyyy" valueFormat="yyyy-MM-dd" placeholder="dd/MM/yyyy" required></ss-datepicker></div>
-        <div class="form-field"><label>Ngày kết thúc</label><ss-datepicker name="endDate" [(ngModel)]="assignmentForm.endDate" format="dd/MM/yyyy" valueFormat="yyyy-MM-dd" placeholder="dd/MM/yyyy"></ss-datepicker></div>
+        <div class="form-field"><label>Ngày bắt đầu <b>*</b></label><ss-datepicker name="effectiveDate" [(ngModel)]="assignmentForm.effectiveDate" (ngModelChange)="onAssignmentCriteriaChanged()" format="dd/MM/yyyy" valueFormat="yyyy-MM-dd" placeholder="dd/MM/yyyy" [maxDate]="assignmentForm.endDate || undefined" required></ss-datepicker></div>
+        <div class="form-field"><label>Ngày kết thúc</label><ss-datepicker name="endDate" [(ngModel)]="assignmentForm.endDate" (ngModelChange)="onAssignmentCriteriaChanged()" format="dd/MM/yyyy" valueFormat="yyyy-MM-dd" placeholder="dd/MM/yyyy" [minDate]="assignmentForm.effectiveDate || undefined"></ss-datepicker></div>
+        @if (editingAssignment() || canLoadEmployees()) {
+          <div class="form-field form-field-wide"><ss-transfer
+          [selected]="selectedEmployees()"
+          (selectedChange)="selectedEmployees.set($event)"
+          [searchResults]="employeeSearchResults()"
+          [searching]="employeeSearching()"
+          [hasMore]="employeeHasMore()"
+          [totalFound]="employeeTotalFound()"
+          [readonly]="!!editingAssignment()"
+          label="Nhân viên áp dụng"
+          searchPlaceholder="Tìm theo mã hoặc tên nhân viên"
+          targetTitle="Nhân viên được chọn"
+          emptySelectedText="Chưa chọn nhân viên"
+          emptyResultText="Không tìm thấy nhân viên"
+          hintText="Nhập mã hoặc tên rồi nhấn Enter để tìm"
+          [searchOnInit]="false"
+          (search)="searchEmployees($event)"
+          (loadMore)="loadMoreEmployees()">
+          </ss-transfer></div>
+        } @else {
+          <p class="dialog-description form-field-wide">Ngày bắt đầu mặc định là hôm nay. Chọn ca làm việc để tải danh sách nhân viên chưa có ca trong thời gian này; người đã thuộc ca đang chọn được đánh dấu, người đang ở ca khác sẽ không xuất hiện. Thay đổi ca hoặc ngày sẽ xóa lựa chọn nhân viên hiện tại.</p>
+        }
       </div>
-      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeFormDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="assignmentFormRef.invalid">{{ editingAssignment() ? 'Cập nhật' : 'Lưu phân ca' }}</ss-button></div>
+      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeFormDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="assignmentFormRef.invalid || savingAssignment()">{{ savingAssignment() ? 'Đang lưu…' : editingAssignment() ? 'Cập nhật' : 'Lưu phân ca' }}</ss-button></div>
     </form>
   </ss-dialog>
 </main>
