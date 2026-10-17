@@ -2,7 +2,7 @@
   <section class="page-heading">
     <div>
       <h1>Ngày nghỉ lễ</h1>
-      <p>Thiết lập lịch nghỉ lễ và các ngày nghỉ đặc biệt áp dụng cho toàn công ty.</p>
+      <p>Lịch này được dùng khi tính lương: ngày đã khai báo được tính hưởng lương; thời gian chấm công trùng ngày lễ tính theo hệ số làm thêm ngày lễ.</p>
     </div>
   </section>
 
@@ -29,7 +29,7 @@
 
   <ss-dialog [visible]="formVisible()" [title]="editingHoliday() ? 'Sửa ngày nghỉ lễ' : 'Thêm ngày nghỉ lễ'" [width]="700" [maskClosable]="false" (visibleChange)="formVisible.set($event)">
     <form #holidayFormRef="ngForm" class="holiday-form" (ngSubmit)="saveHoliday(holidayFormRef.valid)">
-      <p class="dialog-description">Nhập khoảng thời gian nghỉ và thông tin hiển thị trên lịch công ty.</p>
+      <p class="dialog-description">Mọi ngày trong khoảng này sẽ được tính là ngày lễ hưởng lương trong kỳ lương; giờ làm có chấm công sẽ được xếp vào làm thêm ngày lễ.</p>
       <div class="form-grid">
         <div class="form-field form-field-wide"><label for="holiday-name">Tên ngày nghỉ <b>*</b></label><input id="holiday-name" name="name" [(ngModel)]="holidayForm.name" required maxlength="200" placeholder="VD: Tết Dương lịch"></div>
         <div class="form-field"><label for="holiday-type">Loại ngày nghỉ <b>*</b></label><select id="holiday-type" name="holidayType" [(ngModel)]="holidayForm.holidayType" required>@for (type of holidayTypes; track type) { <option>{{ type }}</option> }</select></div>

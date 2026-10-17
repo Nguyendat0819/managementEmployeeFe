@@ -42,6 +42,7 @@ export class API_ENDPOINTS {
   public static readonly Payroll = {
     SALARY_STRUCTURES: 'api/salary-structures',
     PAYROLL_RUNS: 'api/payroll-runs',
+    HOLIDAYS: 'api/payroll-holidays',
     MY_PAYSLIPS: 'api/payslips/me',
   };
 

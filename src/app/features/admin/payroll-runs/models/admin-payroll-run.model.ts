@@ -10,6 +10,7 @@ export interface AdminPayrollRun {
   totalGross: number;
   totalDeduction: number;
   totalNet: number;
+  totalEmployerCost: number;
   status: AdminPayrollRunStatus;
   createdAt: string;
   approvedBy: string;
@@ -35,14 +36,24 @@ export interface AdminPayslip {
   grossSalary: number;
   socialInsurance: number;
   healthInsurance: number;
+  unemploymentInsurance: number;
   pitDeduction: number;
   otherDeduction: number;
   totalDeduction: number;
   netSalary: number;
+  employerSocialInsurance: number;
+  employerHealthInsurance: number;
+  employerUnemploymentInsurance: number;
+  employerInsuranceTotal: number;
   workingDays: number;
   absentDays: number;
   overtimeHours: number;
   snapshotData: Record<string, unknown> | null;
+}
+
+export interface PayrollCalculationResponse {
+  run: AdminPayrollRun;
+  warnings: string[];
 }
 
 export interface PayslipLineRequest {
@@ -53,6 +64,7 @@ export interface PayslipLineRequest {
   bonus: number;
   socialInsurance: number;
   healthInsurance: number;
+  unemploymentInsurance: number;
   pitDeduction: number;
   otherDeduction: number;
   workingDays: number;

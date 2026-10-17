@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { finalize } from 'rxjs';
 import { SsButtonComponent, SsConfirmService, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsStatComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
 import { AdminHoliday } from '../../models/admin-holiday.model';
 import { AdminHolidayService } from '../../services/admin-holiday.service';
@@ -13,16 +14,18 @@ import { AdminHolidayService } from '../../services/admin-holiday.service';
   styleUrl: './admin-holiday-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AdminHolidayListComponent {
+export class AdminHolidayListComponent implements OnInit {
   private readonly holidayService = inject(AdminHolidayService);
   private readonly toast = inject(SsToastService);
   private readonly confirmService = inject(SsConfirmService);
 
-  readonly holidays = signal(this.holidayService.holidays);
+  readonly holidays = signal<AdminHoliday[]>([]);
   readonly selectedHoliday = signal<AdminHoliday | null>(null);
   readonly detailVisible = signal(false);
   readonly formVisible = signal(false);
   readonly editingHoliday = signal<AdminHoliday | null>(null);
+  readonly loading = signal(false);
+  readonly saving = signal(false);
   readonly holidayForm = this.emptyHolidayForm();
   readonly holidayTypes = ['Ngày lễ quốc gia', 'Tết cổ truyền', 'Nghỉ bù', 'Ngày lễ khác'];
   readonly holidayColumns: SsDtColumn<AdminHoliday>[] = [
@@ -77,6 +80,10 @@ export class AdminHolidayListComponent {
     size: 'small',
     emptyText: 'Không có ngày nghỉ lễ phù hợp',
   };
+
+  ngOnInit(): void {
+    this.loadHolidays();
+  }
 
   get upcomingCount(): number {
     return this.holidays().filter((holiday) => holiday.status === 'Sắp tới').length;
@@ -142,26 +149,30 @@ export class AdminHolidayListComponent {
     }
 
     const editingHoliday = this.editingHoliday();
-    const holiday: AdminHoliday = {
-      id: editingHoliday?.id ?? Date.now(),
+    const request = {
       name: this.holidayForm.name.trim(),
       holidayType: this.holidayForm.holidayType,
-      holidayDate: this.formatDate(this.holidayForm.holidayDate),
-      holidayDateEnd: this.formatDate(this.holidayForm.holidayDateEnd),
-      dayCount: this.calculateDays(this.holidayForm.holidayDate, this.holidayForm.holidayDateEnd),
+      holidayDate: this.holidayForm.holidayDate,
+      holidayDateEnd: this.holidayForm.holidayDateEnd,
       notes: this.holidayForm.notes.trim(),
-      status: this.holidayForm.status,
     };
-
-    this.holidays.update((holidays) => editingHoliday
-      ? holidays.map((item) => item.id === editingHoliday.id ? holiday : item)
-      : [...holidays, holiday]);
-    this.holidayTableSettings = { ...this.holidayTableSettings, cardStatusLabel: `${this.holidays().length} ngày nghỉ` };
-    this.closeFormDialog();
-    this.toast.show({
-      severity: 'success',
-      summary: editingHoliday ? 'Cập nhật ngày nghỉ thành công' : 'Thêm ngày nghỉ thành công',
-      detail: `${holiday.name} đã được ${editingHoliday ? 'cập nhật' : 'thêm vào danh sách'}.`,
+    this.saving.set(true);
+    const saveRequest = editingHoliday
+      ? this.holidayService.updateHoliday(editingHoliday.id, request)
+      : this.holidayService.createHoliday(request);
+    saveRequest.pipe(finalize(() => this.saving.set(false))).subscribe({
+      next: (holiday) => {
+        this.holidays.update((holidays) => editingHoliday
+          ? holidays.map((item) => item.id === editingHoliday.id ? holiday : item)
+          : [...holidays, holiday]);
+        this.holidayTableSettings = { ...this.holidayTableSettings, cardStatusLabel: `${this.holidays().length} ngày nghỉ` };
+        this.closeFormDialog();
+        this.toast.show({
+          severity: 'success',
+          summary: editingHoliday ? 'Cập nhật ngày nghỉ thành công' : 'Thêm ngày nghỉ thành công',
+          detail: `${holiday.name} đã được ${editingHoliday ? 'cập nhật' : 'thêm vào danh sách'}.`,
+        });
+      },
     });
   }
 
@@ -173,9 +184,13 @@ export class AdminHolidayListComponent {
     );
     if (!confirmed) return;
 
-    this.holidays.update((holidays) => holidays.filter((item) => item.id !== holiday.id));
-    this.holidayTableSettings = { ...this.holidayTableSettings, cardStatusLabel: `${this.holidays().length} ngày nghỉ` };
-    this.toast.show({ severity: 'success', summary: 'Đã xóa ngày nghỉ', detail: `${holiday.name} đã được xóa khỏi danh sách.` });
+    this.holidayService.deleteHoliday(holiday.id).subscribe({
+      next: () => {
+        this.holidays.update((holidays) => holidays.filter((item) => item.id !== holiday.id));
+        this.holidayTableSettings = { ...this.holidayTableSettings, cardStatusLabel: `${this.holidays().length} ngày nghỉ` };
+        this.toast.show({ severity: 'success', summary: 'Đã xóa ngày nghỉ', detail: `${holiday.name} đã được xóa khỏi danh sách.` });
+      },
+    });
   }
 
   holidayStatusType(status: AdminHoliday['status']): 'success' | 'info' | 'default' {
@@ -195,6 +210,23 @@ export class AdminHolidayListComponent {
     };
   }
 
+  private loadHolidays(): void {
+    this.loading.set(true);
+    this.holidayService.getHolidays().pipe(finalize(() => this.loading.set(false))).subscribe({
+      next: (holidays) => {
+        this.holidays.set(holidays);
+        this.holidayTableSettings = {
+          ...this.holidayTableSettings,
+          loading: false,
+          cardStatusLabel: `${holidays.length} ngày nghỉ`,
+        };
+      },
+      error: () => {
+        this.holidayTableSettings = { ...this.holidayTableSettings, loading: false };
+      },
+    });
+  }
+
   private calculateDays(start: string, end: string): number {
     return Math.floor((new Date(end).getTime() - new Date(start).getTime()) / 86400000) + 1;
   }
@@ -204,8 +236,4 @@ export class AdminHolidayListComponent {
     return year ? `${year}-${month}-${day}` : value;
   }
 
-  private formatDate(value: string): string {
-    const [year, month, day] = value.split('-');
-    return day && month && year ? `${day}/${month}/${year}` : value;
-  }
 }

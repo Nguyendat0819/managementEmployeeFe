@@ -11,10 +11,12 @@ export interface PayslipSummary {
   bonus: number;
   socialInsurance: number;
   healthInsurance: number;
+  unemploymentInsurance: number;
   pitDeduction: number;
   otherDeduction: number;
   workingDays: number;
   absentDays: number;
+  paidHolidayDays: number;
   overtimeHours: number;
   paymentDate: string;
   status: string;

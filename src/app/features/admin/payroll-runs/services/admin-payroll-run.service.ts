@@ -4,7 +4,7 @@ import { API_ENDPOINTS } from '@core/constants/api-endpoint';
 import { ApiResponse } from '@core/models/api-response.interface';
 import { BaseService } from '@core/services/base.service';
 import { environment } from '@env/environment';
-import { AdminPayslip, AdminPayrollRun, PayslipLineRequest } from '../models/admin-payroll-run.model';
+import { AdminPayslip, AdminPayrollRun, PayrollCalculationResponse, PayslipLineRequest } from '../models/admin-payroll-run.model';
 
 export interface PayrollRunRequest {
   periodYear: number;
@@ -22,6 +22,11 @@ export class AdminPayrollRunService extends BaseService {
       .pipe(map(({ data }) => data.map((item) => this.toRun(item))));
   }
 
+  getRun(id: number): Observable<AdminPayrollRun> {
+    return this.get<ApiResponse<PayrollRunResponse>>(`${this.serviceBase}/${this.runsUrl}/${id}`)
+      .pipe(map(({ data }) => this.toRun(data)));
+  }
+
   createRun(request: PayrollRunRequest): Observable<AdminPayrollRun> {
     return this.post<ApiResponse<PayrollRunResponse>>(`${this.serviceBase}/${this.runsUrl}`, request)
       .pipe(map(({ data }) => this.toRun(data)));
@@ -34,6 +39,11 @@ export class AdminPayrollRunService extends BaseService {
   getPayslips(runId: number): Observable<AdminPayslip[]> {
     return this.get<ApiResponse<AdminPayslipResponse[]>>(`${this.serviceBase}/${this.runsUrl}/${runId}/payslips`)
       .pipe(map(({ data }) => data.map((item) => this.toPayslip(item))));
+  }
+
+  calculateRun(id: number): Observable<PayrollCalculationResponse> {
+    return this.post<ApiResponse<PayrollCalculationApiResponse>>(`${this.serviceBase}/${this.runsUrl}/${id}/calculate`, {})
+      .pipe(map(({ data }) => ({ run: this.toRun(data.run), warnings: data.warnings ?? [] })));
   }
 
   addPayslip(runId: number, entry: PayslipLineRequest): Observable<AdminPayslip> {
@@ -68,6 +78,7 @@ export class AdminPayrollRunService extends BaseService {
       totalGross: Number(item.totalGross ?? 0),
       totalDeduction: Number(item.totalDeduction ?? 0),
       totalNet: Number(item.totalNet ?? 0),
+      totalEmployerCost: Number(item.totalEmployerCost ?? 0),
       createdAt: this.formatDateTime(item.createdAt),
       approvedAt: this.formatDateTime(item.approvedAt),
       paidAt: this.formatDateTime(item.paidAt),
@@ -90,10 +101,15 @@ export class AdminPayrollRunService extends BaseService {
       grossSalary: Number(item.grossSalary ?? 0),
       socialInsurance: Number(item.socialInsurance ?? 0),
       healthInsurance: Number(item.healthInsurance ?? 0),
+      unemploymentInsurance: Number(item.unemploymentInsurance ?? 0),
       pitDeduction: Number(item.pitDeduction ?? 0),
       otherDeduction: Number(item.otherDeduction ?? 0),
       totalDeduction: Number(item.totalDeduction ?? 0),
       netSalary: Number(item.netSalary ?? 0),
+      employerSocialInsurance: Number(item.employerSocialInsurance ?? 0),
+      employerHealthInsurance: Number(item.employerHealthInsurance ?? 0),
+      employerUnemploymentInsurance: Number(item.employerUnemploymentInsurance ?? 0),
+      employerInsuranceTotal: Number(item.employerInsuranceTotal ?? 0),
       workingDays: Number(item.workingDays ?? 0),
       absentDays: Number(item.absentDays ?? 0),
       overtimeHours: Number(item.overtimeHours ?? 0),
@@ -136,4 +152,9 @@ interface AdminPayslipResponse extends Omit<AdminPayslip, 'paymentDate'> {
   periodMonth: number;
   paymentDate: string | null;
   snapshotData: Record<string, unknown> | null;
+}
+
+interface PayrollCalculationApiResponse {
+  run: PayrollRunResponse;
+  warnings: string[];
 }

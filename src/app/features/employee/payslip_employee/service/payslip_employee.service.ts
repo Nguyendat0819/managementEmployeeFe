@@ -31,10 +31,12 @@ export class PayslipEmployeeService extends BaseService {
       bonus: Number(item.bonus ?? 0),
       socialInsurance: Number(item.socialInsurance ?? 0),
       healthInsurance: Number(item.healthInsurance ?? 0),
+      unemploymentInsurance: Number(item.unemploymentInsurance ?? 0),
       pitDeduction: Number(item.pitDeduction ?? 0),
       otherDeduction: Number(item.otherDeduction ?? 0),
       workingDays: Number(item.workingDays ?? 0),
       absentDays: Number(item.absentDays ?? 0),
+      paidHolidayDays: Number(item.snapshotData?.['paidHolidayDays'] ?? 0),
       overtimeHours: Number(item.overtimeHours ?? 0),
       paymentDate: this.formatDateTime(item.paymentDate),
       status: item.status,
@@ -76,6 +78,7 @@ interface PayslipResponse {
   grossSalary: number | string;
   socialInsurance: number | string;
   healthInsurance: number | string;
+  unemploymentInsurance: number | string;
   pitDeduction: number | string;
   otherDeduction: number | string;
   totalDeduction: number | string;
@@ -83,4 +86,5 @@ interface PayslipResponse {
   workingDays: number;
   absentDays: number;
   overtimeHours: number | string;
+  snapshotData: Record<string, unknown> | null;
 }

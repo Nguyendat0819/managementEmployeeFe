@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, Input, OnChanges, OnInit, SimpleChanges, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { forkJoin, finalize } from 'rxjs';
+import { Router } from '@angular/router';
 import { SsButtonComponent, SsCardComponent, SsConfirmService, SsDataTableComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsStatComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
 import { AdminSalaryStructureService } from '../../../salary-structures/services/admin-salary-structure.service';
 import { AdminPayslip, AdminPayrollRun, AdminPayrollRunStatus, PayslipLineRequest } from '../../models/admin-payroll-run.model';
@@ -23,11 +24,14 @@ type PayslipForm = PayslipLineRequest;
   styleUrl: './admin-payroll-run.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AdminPayrollRunComponent implements OnInit {
+export class AdminPayrollRunComponent implements OnChanges, OnInit {
+  @Input() detailRunId: number | null = null;
+
   private readonly payrollService = inject(AdminPayrollRunService);
   private readonly salaryStructureService = inject(AdminSalaryStructureService);
   private readonly confirmService = inject(SsConfirmService);
   private readonly toast = inject(SsToastService);
+  private readonly router = inject(Router);
 
   readonly runs = signal<AdminPayrollRun[]>([]);
   readonly selectedRun = signal<AdminPayrollRun | null>(null);
@@ -36,7 +40,8 @@ export class AdminPayrollRunComponent implements OnInit {
   readonly detailLoading = signal(false);
   readonly savingRun = signal(false);
   readonly savingPayslip = signal(false);
-  readonly detailVisible = signal(false);
+  readonly calculatingRun = signal(false);
+  readonly calculationWarnings = signal<string[]>([]);
   readonly formVisible = signal(false);
   readonly entryFormVisible = signal(false);
   runTableSettings: SsDtConfig<AdminPayrollRun> = {
@@ -58,7 +63,7 @@ export class AdminPayrollRunComponent implements OnInit {
     pageSizeOptions: [6, 10, 20],
     rowActions: [
       { key: 'detail', label: 'Xem chi tiết', icon: 'eye' },
-      { key: 'submit', label: 'Gửi duyệt', icon: 'send', visible: (row) => row.status === 'Nháp' && row.employeeCount > 0 },
+      { key: 'calculate', label: 'Tính lương tự động', icon: 'calculator', visible: (row) => row.status === 'Nháp' && row.employeeCount === 0 },
       { key: 'approve', label: 'Duyệt kỳ lương', icon: 'check', visible: (row) => row.status === 'Chờ duyệt' },
       { key: 'paid', label: 'Đánh dấu đã trả', icon: 'bank', visible: (row) => row.status === 'Đã duyệt' },
       { key: 'delete', label: 'Xóa kỳ lương', icon: 'delete', danger: true, visible: (row) => row.status === 'Nháp' },
@@ -82,8 +87,13 @@ export class AdminPayrollRunComponent implements OnInit {
   ];
   readonly payslipColumns: SsDtColumn<AdminPayslip>[] = [
     { key: 'employeeCode', header: 'Mã nhân viên', field: 'employeeCode', width: '135px', filterable: true },
+    { key: 'employeeName', header: 'Nhân viên', format: (row) => String(row.snapshotData?.['employeeName'] ?? row.employeeCode), width: '170px', filterable: true },
     { key: 'baseSalary', header: 'Lương cơ bản', format: (row) => this.formatCurrency(row.baseSalary), width: '145px', align: 'right' },
     { key: 'grossSalary', header: 'Tổng Gross', format: (row) => this.formatCurrency(row.grossSalary), width: '145px', align: 'right' },
+    { key: 'workingDays', header: 'Ngày công', field: 'workingDays', width: '95px', align: 'right' },
+    { key: 'absentDays', header: 'Ngày vắng', field: 'absentDays', width: '95px', align: 'right' },
+    { key: 'unemploymentInsurance', header: 'BHTN', format: (row) => this.formatCurrency(row.unemploymentInsurance), width: '125px', align: 'right' },
+    { key: 'pitDeduction', header: 'Thuế TNCN', format: (row) => this.formatCurrency(row.pitDeduction), width: '130px', align: 'right' },
     { key: 'totalDeduction', header: 'Khấu trừ', format: (row) => this.formatCurrency(row.totalDeduction), width: '140px', align: 'right' },
     { key: 'netSalary', header: 'Thực nhận', format: (row) => this.formatCurrency(row.netSalary), width: '145px', align: 'right' },
   ];
@@ -91,7 +101,7 @@ export class AdminPayrollRunComponent implements OnInit {
     rowKey: 'id',
     loading: false,
     title: 'Phiếu lương trong kỳ',
-    description: 'Các khoản đã nhập cho từng nhân viên',
+    description: 'Phiếu lương từ hợp đồng, chấm công và ngày lễ',
     cardIcon: 'file-done',
     searchable: true,
     searchPlaceholder: 'Tìm theo mã nhân viên',
@@ -103,7 +113,7 @@ export class AdminPayrollRunComponent implements OnInit {
     pageSizeOptions: [5, 10, 20],
     striped: true,
     size: 'small',
-    scrollX: '700px',
+    scrollX: '1250px',
     scrollY: '260px',
     emptyText: 'Kỳ lương chưa có phiếu lương',
   };
@@ -116,6 +126,19 @@ export class AdminPayrollRunComponent implements OnInit {
     this.salaryStructureService.getStructures().subscribe({
       next: (structures) => this.activeSalaryStructureCount.set(structures.filter((item) => item.status === 'Đang áp dụng').length),
     });
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['detailRunId']) return;
+    if (this.detailRunId === null) {
+      this.selectedRun.set(null);
+      this.runPayslips.set([]);
+      this.calculationWarnings.set([]);
+      this.entryFormVisible.set(false);
+      if (!changes['detailRunId'].firstChange) this.loadRuns();
+      return;
+    }
+    this.loadDetail(this.detailRunId);
   }
 
   get currentRun(): AdminPayrollRun | null {
@@ -142,13 +165,25 @@ export class AdminPayrollRunComponent implements OnInit {
     if (button.key === 'create-run') this.openCreateDialog();
   }
 
+  payslipTableSettingsFor(run: AdminPayrollRun): SsDtConfig<AdminPayslip> {
+    const canSubmit = run.status === 'Nháp' && run.employeeCount > 0;
+    return {
+      ...this.payslipTableSettings,
+      primaryButtons: canSubmit ? [{ key: 'submit-run', label: 'Gửi duyệt', type: 'primary', icon: 'send' }] : [],
+    };
+  }
+
+  onPayslipTablePrimaryClick(button: SsDtButton, run: AdminPayrollRun): void {
+    if (button.key === 'submit-run') void this.submitRun(run);
+  }
+
   onActionClick(event: SsDtActionClick<AdminPayrollRun>): void {
     if (event.action.key === 'detail') {
       this.openDetail(event.row);
       return;
     }
-    if (event.action.key === 'submit') {
-      void this.submitRun(event.row);
+    if (event.action.key === 'calculate') {
+      void this.calculateRun(event.row);
       return;
     }
     if (event.action.key === 'approve') {
@@ -172,23 +207,37 @@ export class AdminPayrollRunComponent implements OnInit {
   }
 
   openDetail(run: AdminPayrollRun): void {
-    this.selectedRun.set(run);
+    void this.router.navigate(['/admin/payroll-runs', run.id]);
+  }
+
+  private loadDetail(runId: number, initialWarnings: string[] = []): void {
+    this.selectedRun.set(null);
     this.runPayslips.set([]);
+    this.calculationWarnings.set(initialWarnings);
     this.entryFormVisible.set(false);
-    this.detailVisible.set(true);
     this.detailLoading.set(true);
     this.payslipTableSettings = { ...this.payslipTableSettings, loading: true };
-    this.payrollService.getPayslips(run.id).pipe(finalize(() => {
+    forkJoin({
+      run: this.payrollService.getRun(runId),
+      payslips: this.payrollService.getPayslips(runId),
+    }).pipe(finalize(() => {
       this.detailLoading.set(false);
       this.payslipTableSettings = { ...this.payslipTableSettings, loading: false };
     })).subscribe({
-      next: (payslips) => this.runPayslips.set(payslips),
+      next: ({ run, payslips }) => {
+        this.selectedRun.set(run);
+        this.runPayslips.set(payslips);
+        this.calculationWarnings.set([...new Set([...initialWarnings, ...payslips.flatMap((slip) => {
+          const warnings = slip.snapshotData?.['calculationWarnings'];
+          return Array.isArray(warnings) ? warnings.filter((warning): warning is string => typeof warning === 'string') : [];
+        })])]);
+      },
+      error: () => this.toast.show({ severity: 'error', summary: 'Không tải được kỳ lương', detail: 'Vui lòng thử tải lại trang chi tiết.' }),
     });
   }
 
   closeDetail(): void {
-    this.detailVisible.set(false);
-    this.entryFormVisible.set(false);
+    void this.router.navigate(['/admin/payroll-runs']);
   }
 
   closeFormDialog(): void {
@@ -233,6 +282,7 @@ export class AdminPayrollRunComponent implements OnInit {
       bonus: Number(this.payslipForm.bonus),
       socialInsurance: Number(this.payslipForm.socialInsurance),
       healthInsurance: Number(this.payslipForm.healthInsurance),
+      unemploymentInsurance: Number(this.payslipForm.unemploymentInsurance),
       pitDeduction: Number(this.payslipForm.pitDeduction),
       otherDeduction: Number(this.payslipForm.otherDeduction),
       workingDays: Number(this.payslipForm.workingDays),
@@ -260,6 +310,33 @@ export class AdminPayrollRunComponent implements OnInit {
     });
   }
 
+  async calculateRun(run: AdminPayrollRun): Promise<void> {
+    if (run.status !== 'Nháp' || run.employeeCount > 0) return;
+    const confirmed = await this.confirmService.confirm(
+      'Tính lương tự động',
+      `Lấy nhân viên có hợp đồng hiệu lực trong ${run.periodLabel}, tổng hợp chấm công và ngày lễ rồi tính lương, bảo hiểm, thuế?`,
+      { type: 'warning', okText: 'Tính lương' },
+    );
+    if (!confirmed) return;
+    this.calculatingRun.set(true);
+    this.payrollService.calculateRun(run.id).pipe(finalize(() => this.calculatingRun.set(false))).subscribe({
+      next: (result) => {
+        this.updateRun(result.run);
+        this.calculationWarnings.set(result.warnings);
+        if (this.detailRunId === result.run.id) {
+          this.loadDetail(result.run.id, result.warnings);
+        } else {
+          void this.router.navigate(['/admin/payroll-runs', result.run.id]);
+        }
+        this.toast.show({
+          severity: result.warnings.length ? 'warning' : 'success',
+          summary: result.warnings.length ? 'Đã tính lương, cần rà soát cảnh báo' : 'Tính lương thành công',
+          detail: result.warnings.length ? `${result.run.employeeCount} phiếu lương. ${result.warnings.slice(0, 2).join(' ')}${result.warnings.length > 2 ? ` Còn ${result.warnings.length - 2} cảnh báo trong chi tiết.` : ''}` : `Đã tạo ${result.run.employeeCount} phiếu lương cho ${result.run.periodLabel}.`,
+        });
+      },
+    });
+  }
+
   async submitRun(run: AdminPayrollRun): Promise<void> {
     if (run.employeeCount < 1) {
       this.toast.show({ severity: 'warning', summary: 'Kỳ lương chưa có phiếu', detail: 'Nhập ít nhất một phiếu lương trước khi gửi duyệt.' });
@@ -271,6 +348,7 @@ export class AdminPayrollRunComponent implements OnInit {
       next: (updated) => {
         this.updateRun(updated);
         this.toast.show({ severity: 'success', summary: 'Đã gửi kỳ lương', detail: `${updated.periodLabel} đang chờ phê duyệt.` });
+        this.closeDetail();
       },
     });
   }
@@ -385,6 +463,7 @@ export class AdminPayrollRunComponent implements OnInit {
       bonus: 0,
       socialInsurance: 0,
       healthInsurance: 0,
+      unemploymentInsurance: 0,
       pitDeduction: 0,
       otherDeduction: 0,
       workingDays: 0,

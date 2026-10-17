@@ -1,9 +1,10 @@
+  @if (detailRunId === null) {
 <main class="admin-payroll-page">
   <section class="payroll-hero" aria-labelledby="payroll-heading">
     <div class="hero-copy">
       <p class="hero-eyebrow">PAYROLL CONTROL</p>
       <h1 id="payroll-heading">Kỳ tính lương</h1>
-      <p class="hero-description">Tạo kỳ lương, nhập các phiếu lương đã được xác định và theo dõi tiến trình phê duyệt, chi trả.</p>
+      <p class="hero-description">Tạo kỳ lương, lấy nhân viên và tự động tính phiếu từ dữ liệu chấm công, ngày lễ, thuế và bảo hiểm.</p>
       <div class="hero-meta"><span class="live-dot"></span><span>Đang dùng {{ structureVersion }}</span><span class="hero-divider"></span><span>{{ activeSalaryStructureCount() }} cấu trúc lương đang áp dụng</span></div>
     </div>
     <div class="hero-period"><span class="period-label">Kỳ đang xử lý</span><strong>{{ currentRun?.periodLabel || 'Chưa có kỳ lương' }}</strong><span class="period-status">{{ currentRun?.status || 'Chưa khởi tạo' }}</span><div class="period-progress"><span [style.width.%]="currentRun ? progressForStatus(currentRun.status) : 0"></span></div></div>
@@ -20,57 +21,21 @@
     <ss-card title="Tiến trình kỳ lương" description="Tạo kỳ, nhập phiếu lương, phê duyệt và ghi nhận chi trả" icon="steps" iconColor="#1677ff">
       @if (currentRun; as run) {
         <div class="run-heading"><div><strong>{{ run.periodLabel }}</strong><span>{{ run.employeeCount }} phiếu lương · {{ run.salaryStructureLabel }}</span></div><ss-tag [status]="statusTone(run.status)">{{ run.status }}</ss-tag></div>
-        <div class="steps-line"><div class="step-item active"><span>01</span><strong>Khởi tạo</strong><small>Đã tạo kỳ</small></div><div class="step-connector" [class.filled]="run.status !== 'Nháp'"></div><div class="step-item" [class.active]="run.employeeCount > 0"><span>02</span><strong>Nhập phiếu lương</strong><small>{{ run.employeeCount }} phiếu đã nhập</small></div><div class="step-connector" [class.filled]="run.status === 'Đã duyệt' || run.status === 'Đã trả'"></div><div class="step-item" [class.active]="run.status === 'Đã duyệt' || run.status === 'Đã trả'"><span>03</span><strong>Phê duyệt</strong><small>Kiểm tra tổng hợp</small></div><div class="step-connector" [class.filled]="run.status === 'Đã trả'"></div><div class="step-item" [class.active]="run.status === 'Đã trả'"><span>04</span><strong>Chi trả</strong><small>Hoàn tất kỳ lương</small></div></div>
-        <div class="run-metrics"><div><span>Tổng Gross</span><strong>{{ formatCurrency(run.totalGross) }}</strong></div><div><span>Khấu trừ</span><strong>{{ formatCurrency(run.totalDeduction) }}</strong></div><div><span>Tổng Net</span><strong>{{ formatCurrency(run.totalNet) }}</strong></div></div>
+        <div class="steps-line"><div class="step-item active"><span>01</span><strong>Khởi tạo</strong><small>Đã tạo kỳ</small></div><div class="step-connector" [class.filled]="run.status !== 'Nháp'"></div><div class="step-item" [class.active]="run.employeeCount > 0"><span>02</span><strong>Tính phiếu lương</strong><small>{{ run.employeeCount }} nhân viên</small></div><div class="step-connector" [class.filled]="run.status === 'Đã duyệt' || run.status === 'Đã trả'"></div><div class="step-item" [class.active]="run.status === 'Đã duyệt' || run.status === 'Đã trả'"><span>03</span><strong>Phê duyệt</strong><small>Kiểm tra tổng hợp</small></div><div class="step-connector" [class.filled]="run.status === 'Đã trả'"></div><div class="step-item" [class.active]="run.status === 'Đã trả'"><span>04</span><strong>Chi trả</strong><small>Hoàn tất kỳ lương</small></div></div>
+        <div class="run-metrics"><div><span>Tổng Gross</span><strong>{{ formatCurrency(run.totalGross) }}</strong></div><div><span>Khấu trừ</span><strong>{{ formatCurrency(run.totalDeduction) }}</strong></div><div><span>Tổng Net</span><strong>{{ formatCurrency(run.totalNet) }}</strong></div><div><span>Tổng chi phí công ty</span><strong>{{ formatCurrency(run.totalEmployerCost) }}</strong></div></div>
       } @else { <div class="empty-current-run">Chưa có kỳ lương để hiển thị.</div> }
     </ss-card>
 
     <ss-card title="Nguồn dữ liệu" description="Thông tin lấy từ thang bảng lương và kỳ hiện tại" icon="database" iconColor="#722ed1">
       <div class="source-card"><div class="source-icon">{{ currentRun?.periodYear || '—' }}</div><div><strong>{{ structureVersion }}</strong><span>{{ activeSalaryStructureCount() }} cấu trúc chức danh đang áp dụng</span></div></div>
       <div class="source-list"><div><span>Phiếu lương kỳ hiện tại</span><strong>{{ currentRun?.employeeCount ?? 0 }}</strong></div><div><span>Đơn vị tiền tệ</span><strong>VNĐ</strong></div></div>
-      <div class="source-note"><span class="live-dot small"></span><span>Các khoản lương, công và khấu trừ được nhập theo dữ liệu đã được xác định.</span></div>
+      <div class="source-note"><span class="live-dot small"></span><span>Phiếu được tính từ hợp đồng, lịch phân ca, chấm công và ngày lễ đã khai báo.</span></div>
     </ss-card>
   </section>
 
   <section class="payroll-table" aria-label="Danh sách kỳ tính lương">
     <ss-data-table [data]="runs()" [columns]="runColumns" [settings]="runTableSettings" (primaryClick)="onPrimaryClick($event)" (actionClick)="onActionClick($event)"></ss-data-table>
   </section>
-
-  <ss-dialog [visible]="detailVisible()" [title]="selectedRun()?.periodLabel ?? 'Chi tiết kỳ lương'" [width]="920" [maskClosable]="false" (visibleChange)="detailVisible.set($event)">
-    @if (selectedRun(); as run) {
-      <div class="detail-dialog">
-        <div class="detail-hero"><div class="run-avatar">{{ run.periodMonth }}</div><div class="detail-name"><strong>{{ run.periodLabel }}</strong><span>{{ run.salaryStructureLabel }} · Tạo lúc {{ run.createdAt }}</span></div><ss-tag [status]="statusTone(run.status)">{{ run.status }}</ss-tag></div>
-        <div class="detail-money"><div><span>Tổng Gross</span><strong>{{ formatCurrency(run.totalGross) }}</strong></div><div><span>Khấu trừ</span><strong>{{ formatCurrency(run.totalDeduction) }}</strong></div><div><span>Tổng Net</span><strong>{{ formatCurrency(run.totalNet) }}</strong></div></div>
-        <div class="detail-grid"><div><span>Số phiếu lương</span><strong>{{ run.employeeCount }} nhân viên</strong></div><div><span>Thang bảng lương</span><strong>{{ run.salaryStructureLabel }}</strong></div><div><span>Người duyệt</span><strong>{{ run.approvedBy || 'Chưa duyệt' }}</strong></div><div><span>Ngày trả lương</span><strong>{{ run.paidAt || 'Chưa chi trả' }}</strong></div></div>
-        <ss-data-table [data]="runPayslips()" [columns]="payslipColumns" [settings]="payslipTableSettings"></ss-data-table>
-
-        @if (entryFormVisible() && run.status === 'Nháp') {
-          <form #payslipFormRef="ngForm" class="payslip-entry-form" (ngSubmit)="savePayslip(payslipFormRef.valid)">
-            <div class="entry-heading"><div><strong>Nhập phiếu lương</strong><span>Nhập các khoản đã được xác định cho một nhân viên.</span></div><ss-button variant="text" color="neutral" htmlType="button" (onClick)="entryFormVisible.set(false)">Đóng</ss-button></div>
-            <div class="form-grid">
-              <div class="form-field"><label for="slip-employee-code">Mã nhân viên <b>*</b></label><input id="slip-employee-code" name="employeeCode" [(ngModel)]="payslipForm.employeeCode" required maxlength="255"></div>
-              <div class="form-field"><label for="slip-base-salary">Lương cơ bản <b>*</b></label><input id="slip-base-salary" name="baseSalary" type="number" min="0" [(ngModel)]="payslipForm.baseSalary" required></div>
-              <div class="form-field"><label for="slip-allowance">Tổng phụ cấp <b>*</b></label><input id="slip-allowance" name="totalAllowance" type="number" min="0" [(ngModel)]="payslipForm.totalAllowance" required></div>
-              <div class="form-field"><label for="slip-overtime">Tiền làm thêm <b>*</b></label><input id="slip-overtime" name="overtimePay" type="number" min="0" [(ngModel)]="payslipForm.overtimePay" required></div>
-              <div class="form-field"><label for="slip-bonus">Thưởng <b>*</b></label><input id="slip-bonus" name="bonus" type="number" min="0" [(ngModel)]="payslipForm.bonus" required></div>
-              <div class="form-field"><label for="slip-social">Bảo hiểm xã hội <b>*</b></label><input id="slip-social" name="socialInsurance" type="number" min="0" [(ngModel)]="payslipForm.socialInsurance" required></div>
-              <div class="form-field"><label for="slip-health">Bảo hiểm y tế <b>*</b></label><input id="slip-health" name="healthInsurance" type="number" min="0" [(ngModel)]="payslipForm.healthInsurance" required></div>
-              <div class="form-field"><label for="slip-pit">Thuế TNCN <b>*</b></label><input id="slip-pit" name="pitDeduction" type="number" min="0" [(ngModel)]="payslipForm.pitDeduction" required></div>
-              <div class="form-field"><label for="slip-other">Khấu trừ khác <b>*</b></label><input id="slip-other" name="otherDeduction" type="number" min="0" [(ngModel)]="payslipForm.otherDeduction" required></div>
-              <div class="form-field"><label for="slip-working-days">Ngày công <b>*</b></label><input id="slip-working-days" name="workingDays" type="number" min="0" max="31" [(ngModel)]="payslipForm.workingDays" required></div>
-              <div class="form-field"><label for="slip-absent-days">Ngày vắng <b>*</b></label><input id="slip-absent-days" name="absentDays" type="number" min="0" max="31" [(ngModel)]="payslipForm.absentDays" required></div>
-              <div class="form-field"><label for="slip-overtime-hours">Giờ làm thêm <b>*</b></label><input id="slip-overtime-hours" name="overtimeHours" type="number" min="0" step="0.25" [(ngModel)]="payslipForm.overtimeHours" required></div>
-            </div>
-            <div class="source-note"><span class="live-dot small"></span><span>Máy chủ cộng Gross và Net từ các khoản này; công, thuế và hệ số làm thêm chưa được tự tính.</span></div>
-            <div class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="entryFormVisible.set(false)">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="payslipFormRef.invalid || savingPayslip()">Lưu phiếu lương</ss-button></div>
-          </form>
-        }
-
-        <div class="note-box"><span>Ghi chú</span><strong>{{ run.note || 'Chưa có ghi chú cho kỳ lương này.' }}</strong></div>
-        <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeDetail()">Đóng</ss-button>@if (run.status === 'Nháp') {<ss-button variant="outline" color="primary" icon="plus" htmlType="button" (onClick)="togglePayslipEntry()">Nhập phiếu lương</ss-button>@if (run.employeeCount > 0) {<ss-button color="primary" icon="send" htmlType="button" (onClick)="closeDetail(); submitRun(run)">Gửi duyệt</ss-button>}} @if (run.status === 'Chờ duyệt') {<ss-button color="primary" icon="check" htmlType="button" (onClick)="closeDetail(); approveRun(run)">Duyệt kỳ lương</ss-button>} @if (run.status === 'Đã duyệt') {<ss-button color="success" icon="bank" htmlType="button" (onClick)="closeDetail(); markAsPaid(run)">Đánh dấu đã trả</ss-button>}</div>
-      </div>
-    }
-  </ss-dialog>
 
   <ss-dialog [visible]="formVisible()" [title]="'Tạo kỳ tính lương'" [width]="560" [maskClosable]="false" (visibleChange)="formVisible.set($event)">
     <form #runFormRef="ngForm" class="run-form" (ngSubmit)="saveRun(runFormRef.valid)">
@@ -82,3 +47,27 @@
     </form>
   </ss-dialog>
 </main>
+
+} @else {
+  <main class="admin-payroll-page payroll-detail-page">
+    @if (detailLoading()) {
+      <div class="detail-page-loading">Đang tải thông tin kỳ lương…</div>
+    }
+    @if (selectedRun(); as run) {
+      <div class="payroll-detail-content">
+        <div class="detail-hero"><div class="run-avatar">{{ run.periodMonth }}</div><div class="detail-name"><strong>{{ run.periodLabel }}</strong><span>{{ run.salaryStructureLabel }} · Tạo lúc {{ run.createdAt }}</span></div><ss-tag [status]="statusTone(run.status)">{{ run.status }}</ss-tag></div>
+        <div class="detail-money"><div><span>Tổng Gross</span><strong>{{ formatCurrency(run.totalGross) }}</strong></div><div><span>Khấu trừ</span><strong>{{ formatCurrency(run.totalDeduction) }}</strong></div><div><span>Tổng Net</span><strong>{{ formatCurrency(run.totalNet) }}</strong></div><div><span>Chi phí công ty</span><strong>{{ formatCurrency(run.totalEmployerCost) }}</strong></div></div>
+        <div class="detail-grid"><div><span>Số phiếu lương</span><strong>{{ run.employeeCount }} nhân viên</strong></div><div><span>Thang bảng lương</span><strong>{{ run.salaryStructureLabel }}</strong></div><div><span>Người duyệt</span><strong>{{ run.approvedBy || 'Chưa duyệt' }}</strong></div><div><span>Ngày trả lương</span><strong>{{ run.paidAt || 'Chưa chi trả' }}</strong></div></div>
+        <ss-data-table
+          [data]="runPayslips()"
+          [columns]="payslipColumns"
+          [settings]="payslipTableSettingsFor(run)"
+          (primaryClick)="onPayslipTablePrimaryClick($event, run)">
+        </ss-data-table>
+      </div>
+    }
+    @if (!detailLoading() && !selectedRun()) {
+      <div class="detail-page-loading">Không tìm thấy kỳ lương này.</div>
+    }
+  </main>
+}
