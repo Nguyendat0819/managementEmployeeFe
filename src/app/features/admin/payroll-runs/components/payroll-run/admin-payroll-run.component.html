@@ -1,15 +1,5 @@
   @if (detailRunId === null) {
 <main class="admin-payroll-page">
-  <section class="payroll-hero" aria-labelledby="payroll-heading">
-    <div class="hero-copy">
-      <p class="hero-eyebrow">PAYROLL CONTROL</p>
-      <h1 id="payroll-heading">Kỳ tính lương</h1>
-      <p class="hero-description">Tạo kỳ lương, lấy nhân viên và tự động tính phiếu từ dữ liệu chấm công, ngày lễ, thuế và bảo hiểm.</p>
-      <div class="hero-meta"><span class="live-dot"></span><span>Đang dùng {{ structureVersion }}</span><span class="hero-divider"></span><span>{{ activeSalaryStructureCount() }} cấu trúc lương đang áp dụng</span></div>
-    </div>
-    <div class="hero-period"><span class="period-label">Kỳ đang xử lý</span><strong>{{ currentRun?.periodLabel || 'Chưa có kỳ lương' }}</strong><span class="period-status">{{ currentRun?.status || 'Chưa khởi tạo' }}</span><div class="period-progress"><span [style.width.%]="currentRun ? progressForStatus(currentRun.status) : 0"></span></div></div>
-  </section>
-
   <section class="stats-grid" aria-label="Tổng quan kỳ tính lương">
     <ss-stat label="Kỳ lương đang xử lý" [value]="currentRun?.periodLabel || '—'" hint="Kỳ chưa chi trả gần nhất" tone="primary" icon="calculator"></ss-stat>
     <ss-stat label="Chờ duyệt" [value]="waitingApprovalCount" suffix="kỳ" hint="Cần phê duyệt trước khi trả" tone="warning" icon="clock-circle"></ss-stat>
@@ -58,6 +48,9 @@
         <div class="detail-hero"><div class="run-avatar">{{ run.periodMonth }}</div><div class="detail-name"><strong>{{ run.periodLabel }}</strong><span>{{ run.salaryStructureLabel }} · Tạo lúc {{ run.createdAt }}</span></div><ss-tag [status]="statusTone(run.status)">{{ run.status }}</ss-tag></div>
         <div class="detail-money"><div><span>Tổng Gross</span><strong>{{ formatCurrency(run.totalGross) }}</strong></div><div><span>Khấu trừ</span><strong>{{ formatCurrency(run.totalDeduction) }}</strong></div><div><span>Tổng Net</span><strong>{{ formatCurrency(run.totalNet) }}</strong></div><div><span>Chi phí công ty</span><strong>{{ formatCurrency(run.totalEmployerCost) }}</strong></div></div>
         <div class="detail-grid"><div><span>Số phiếu lương</span><strong>{{ run.employeeCount }} nhân viên</strong></div><div><span>Thang bảng lương</span><strong>{{ run.salaryStructureLabel }}</strong></div><div><span>Người duyệt</span><strong>{{ run.approvedBy || 'Chưa duyệt' }}</strong></div><div><span>Ngày trả lương</span><strong>{{ run.paidAt || 'Chưa chi trả' }}</strong></div></div>
+        @if (run.status === 'Nháp' && run.employeeCount === 0) {
+          <div class="source-note payroll-validation-note"><span class="live-dot small"></span><span>Chưa thể gửi duyệt vì kỳ lương chưa có phiếu lương. Hãy tính lương tự động từ danh sách kỳ lương trước.</span></div>
+        }
         <ss-data-table
           [data]="runPayslips()"
           [columns]="payslipColumns"

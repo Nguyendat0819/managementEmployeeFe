@@ -12,6 +12,8 @@
 .entry-heading strong { color: var(--color-text-heading); font-size: 14px; }
 .entry-heading span { margin-top: 4px; color: var(--color-text-secondary); font-size: 12px; }
 .payslip-entry-form .source-note { margin-top: 0; }
+.payroll-validation-note { color: #ad6800; }
+.payroll-validation-note .live-dot { background: #faad14; box-shadow: 0 0 0 3px rgba(250, 173, 20, .14); }
 
 .payroll-detail-page { max-width: 1600px; }
 .detail-page-loading { padding: 48px 16px; color: var(--color-text-secondary); text-align: center; }
