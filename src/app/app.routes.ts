@@ -2,6 +2,8 @@ import { Routes } from '@angular/router';
 import { authGuard } from '@core';
 import { authRoutes } from './features/auth/auth.routes';
 import { dashboardEmployeeRoutes } from './features/employee/dashboard_employee/dashboard_employee.routes';
+import { myTasksRoutes } from './features/employee/tasks/my-tasks.routes';
+import { taskManagementRoutes } from './features/admin/tasks/tasks.routes';
 import { attendanceEmployeeRoutes } from './features/employee/attendance_employee/attendance_employee.routes';
 import { leaveEmployeeRoutes } from './features/employee/leave_employee/leave_employee.routes';
 import { profileEmployeeRoutes } from './features/employee/profile_employee/profile_employee.routes';
@@ -52,6 +54,10 @@ export const routes: Routes = [
             children: attendanceEmployeeRoutes,
           },
           {
+            path: 'tasks',
+            children: myTasksRoutes,
+          },
+          {
             path: 'leaves',
             children: leaveEmployeeRoutes,
           },
@@ -100,6 +106,10 @@ export const routes: Routes = [
           {
             path: 'attendance',
             children: attendanceAdminRoutes,
+          },
+          {
+            path: 'tasks',
+            children: taskManagementRoutes,
           },
           {
             path: 'leaves',

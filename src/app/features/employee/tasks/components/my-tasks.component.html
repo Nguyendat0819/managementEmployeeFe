@@ -1,0 +1,40 @@
+<main class="tasks-page">
+  <section class="stats-grid" aria-label="Chỉ số công việc theo tháng">
+    <ss-stat label="Công việc hoàn thành" [value]="monthlyKpi() ? monthlyKpi()?.completedTaskCount + '/' + monthlyKpi()?.taskCount : '—'" hint="Chỉ tính công việc được quản lý nghiệm thu" tone="primary" icon="check-circle"></ss-stat>
+    <ss-stat label="Công việc trong tháng" [value]="monthlyKpi()?.taskCount ?? 0" suffix="công việc" hint="Được giao trong tháng đã chọn" tone="info" icon="unordered-list"></ss-stat>
+    <ss-stat label="Chờ quản lý xác minh" [value]="monthlyKpi()?.pendingReviewCount ?? submittedCount()" suffix="công việc" hint="Chưa được tính là hoàn thành" tone="warning" icon="clock-circle"></ss-stat>
+    <ss-stat label="Thưởng công việc hoàn thành" [value]="formatCurrency(approvedBonus())" hint="Theo công việc đã nghiệm thu" tone="success" icon="dollar"></ss-stat>
+  </section>
+
+  <section class="month-toolbar"><ss-datepicker label="Xem đánh giá tháng" type="month" [(ngModel)]="periodFilter" (ngModelChange)="loadMonthlyKpi()" format="MM/yyyy" valueFormat="yyyy-MM" placeholder="MM/yyyy" [allowClear]="false"></ss-datepicker><span>Trọng số công việc hoàn thành: {{ monthlyKpi()?.completedWeight ?? 0 }} / {{ monthlyKpi()?.totalWeight ?? 0 }}</span></section>
+
+  <ss-data-table class="task-data-table" [data]="tasks()" [columns]="taskColumns" [settings]="taskTableConfig" (actionClick)="onActionClick($event)"></ss-data-table>
+
+  <ss-dialog [visible]="progressVisible()" title="Nộp kết quả công việc" [width]="680" [maskClosable]="false" (visibleChange)="!$event && closeProgress()">
+    @if (selectedTask(); as task) {
+      <form #progressFormRef="ngForm" class="progress-form" (ngSubmit)="submitProgress(progressFormRef.valid)">
+        <div class="task-criteria"><b>{{ task.title }}</b><p>Tiêu chí nghiệm thu: {{ task.acceptanceCriteria }}</p><p>Tháng đánh giá {{ formatMonth(task.periodMonth) }} · Trọng số {{ task.weight }}</p>@if (task.reviewComment) { <p class="manager-feedback">Phản hồi quản lý: {{ task.reviewComment }}</p> }</div>
+        <label class="field"><span>Kết quả công việc <b>*</b></span><textarea name="result" [(ngModel)]="progressForm.result" required maxlength="4000" rows="4" placeholder="Mô tả kết quả đạt được theo tiêu chí nghiệm thu"></textarea></label>
+        <label class="field"><span>Đường dẫn minh chứng</span><textarea name="evidenceText" [(ngModel)]="progressForm.evidenceText" rows="3" placeholder="Dán đường dẫn đến mã nguồn, tài liệu hoặc kết quả kiểm thử; mỗi đường dẫn một dòng"></textarea></label>
+        <label class="field"><span>Hình ảnh hoặc tệp minh chứng</span><input type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,.zip" (change)="onEvidenceFilesSelected($event)"></label>
+        @if (evidenceFiles().length) {
+          <ul class="selected-files">@for (file of evidenceFiles(); track file.name + file.lastModified; let index = $index) { <li><span>{{ file.name }} · {{ (file.size / 1024 / 1024) | number:'1.0-1' }} MB</span><button type="button" (click)="removeEvidenceFile(index)" aria-label="Bỏ tệp">Bỏ</button></li> }</ul>
+        }
+        <p class="form-hint">Cần ít nhất một đường dẫn hoặc tệp minh chứng. Công việc chỉ được tính là hoàn thành sau khi quản lý nghiệm thu.</p>
+        <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeProgress()">Hủy</ss-button><ss-button color="primary" icon="send" htmlType="submit" [disabled]="progressFormRef.invalid || busyTaskId() !== null">Gửi chờ nghiệm thu</ss-button></div>
+      </form>
+    }
+  </ss-dialog>
+
+  <ss-dialog [visible]="historyVisible()" title="Lịch sử cập nhật công việc" [width]="760" [maskClosable]="false" (visibleChange)="!$event && closeHistory()">
+    @if (selectedTask(); as task) {
+      <section class="history-content"><h3>{{ task.title }} · {{ task.employeeCode }}</h3><p>Tiêu chí nghiệm thu: {{ task.acceptanceCriteria }}</p>
+        @if (historyLoading()) { <p>Đang tải lịch sử…</p> }
+        @for (progress of progressHistory(); track progress.id) {
+          <article class="history-entry"><div><b>{{ formatSubmissionStatus(progress.status) }}</b><time>{{ progress.submittedAt | date:'dd/MM/yyyy HH:mm' }}</time></div><p>{{ progress.result }}</p><ul>@for (link of progress.evidenceLinks; track link) { <li><a [href]="link" target="_blank" rel="noopener noreferrer">{{ link }}</a></li> }</ul>@if (progress.reviewComment) { <p class="manager-feedback">{{ progress.reviewedBy }}: {{ progress.reviewComment }}</p> }</article>
+        } @empty { @if (!historyLoading()) { <p>Chưa có lần cập nhật nào.</p> } }
+      </section>
+    }
+    <div dialog-footer class="dialog-actions"><ss-button color="primary" htmlType="button" (onClick)="closeHistory()">Đóng</ss-button></div>
+  </ss-dialog>
+</main>

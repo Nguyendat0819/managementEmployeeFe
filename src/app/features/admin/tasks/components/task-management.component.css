@@ -1,0 +1,43 @@
+:host { display: block; }
+.task-management-page { width: 100%; min-width: 0; max-width: 1440px; margin: 0 auto; padding: 8px 0 32px; box-sizing: border-box; }
+.page-heading { margin-bottom: 20px; }
+.eyebrow { margin: 0 0 7px; color: #1677ff; font-size: 11px; font-weight: 700; letter-spacing: .12em; }
+h1 { margin: 0; color: var(--color-text-heading); font-size: clamp(24px, 2.2vw, 32px); }
+.page-heading p:last-child { margin: 8px 0 0; color: var(--color-text-secondary); }
+.stats-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+.task-table { width: 100%; min-width: 0; }
+.task-table ss-data-table { display: block; width: 100%; min-width: 0; max-width: 100%; }
+.monthly-kpi { margin: 0 0 18px; padding: 18px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-bg-container, #fff); }
+.section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.section-heading h2 { margin: 0; color: var(--color-text-heading); font-size: 17px; }
+.section-heading p { margin: 6px 0 0; color: var(--color-text-secondary); font-size: 12px; }
+.month-filter { display: block; width: 160px; min-width: 160px; }
+.kpi-table-wrap { overflow-x: auto; }
+.kpi-table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+.kpi-table th, .kpi-table td { padding: 10px 12px; border-bottom: 1px solid var(--color-border); white-space: nowrap; }
+.kpi-table th { color: var(--color-text-secondary); font-weight: 600; }
+.empty-kpi { padding: 20px !important; color: var(--color-text-secondary); text-align: center; }
+.task-form { display: grid; gap: 14px; }
+.field { display: grid; gap: 6px; color: var(--color-text-heading); font-size: 12px; font-weight: 600; }
+.field b { color: #ff4d4f; }
+.field input, .field textarea { width: 100%; padding: 9px 11px; border: 1px solid var(--color-border); border-radius: 6px; color: var(--color-text); background: var(--color-bg-container, #fff); font: inherit; font-size: 13px; box-sizing: border-box; }
+.field textarea { resize: vertical; }
+.field input:focus, .field textarea:focus { border-color: #1677ff; outline: 0; box-shadow: 0 0 0 3px rgba(22, 119, 255, .1); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.dialog-description { margin: 0; color: var(--color-text-secondary); font-size: 13px; line-height: 1.5; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.policy-hint { margin: -4px 0 0; color: var(--color-text-secondary); font-size: 11px; line-height: 1.5; }
+.review-content { display: grid; gap: 14px; max-height: 65vh; overflow: auto; }
+.review-facts, .latest-submission, .history-entry { padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-bg-container, #fff); }
+.review-facts p, .latest-submission p, .history-entry p { margin: 5px 0; color: var(--color-text-secondary); font-size: 12px; line-height: 1.5; }
+.latest-submission h3, .history-list h3 { margin: 0 0 8px; color: var(--color-text-heading); font-size: 13px; }
+.review-content ul { margin: 6px 0 0; padding-left: 18px; overflow-wrap: anywhere; font-size: 12px; }
+.evidence-list { display: grid; gap: 8px; }
+.evidence-image { display: block; max-width: min(100%, 360px); max-height: 240px; margin-bottom: 5px; border: 1px solid var(--color-border); border-radius: 6px; object-fit: contain; }
+.history-list { display: grid; gap: 8px; }
+.history-entry > div { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+.history-entry time { margin-left: auto; color: var(--color-text-secondary); }
+.history-entry span { padding: 2px 7px; border-radius: 10px; background: var(--color-bg-layout, #f5f5f5); }
+.review-comment { color: #cf1322 !important; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+@media (max-width: 600px) { .stats-grid { grid-template-columns: 1fr; gap: 10px; } .form-row { grid-template-columns: 1fr; } .section-heading { flex-direction: column; } .month-filter { width: 100%; justify-content: space-between; } }

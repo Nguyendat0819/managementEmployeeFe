@@ -9,6 +9,10 @@ export interface PayslipSummary {
   totalAllowance: number;
   overtimePay: number;
   bonus: number;
+  approvedTaskBonus: number;
+  approvedTaskCount: number;
+  belowThresholdTaskCount: number;
+  belowThresholdTaskPenalty: number;
   socialInsurance: number;
   healthInsurance: number;
   unemploymentInsurance: number;

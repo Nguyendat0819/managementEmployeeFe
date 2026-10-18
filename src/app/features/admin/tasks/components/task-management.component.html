@@ -1,0 +1,79 @@
+<main class="task-management-page">
+  <section class="stats-grid" aria-label="Tổng quan công việc">
+    <ss-stat label="Công việc đang thực hiện" [value]="activeCount()" suffix="công việc" hint="Đã giao cho nhân viên" tone="primary" icon="schedule"></ss-stat>
+    <ss-stat label="Chờ quản lý nghiệm thu" [value]="reviewCount()" suffix="công việc" hint="Chưa được tính hoàn thành" tone="warning" icon="clock-circle"></ss-stat>
+    <ss-stat label="Thưởng công việc chờ nghiệm thu" [value]="formatCurrency(reviewBonus())" hint="Được ghi nhận nếu công việc được nghiệm thu" tone="info" icon="dollar"></ss-stat>
+  </section>
+
+  <section class="monthly-kpi" aria-label="Chỉ số công việc theo tháng">
+    <div class="section-heading"><div><h2>Chỉ số công việc tháng</h2><p>Thống kê số công việc hoàn thành và tổng trọng số của các công việc đã nghiệm thu.</p></div>
+      <ss-datepicker class="month-filter" label="Tháng" type="month" [(ngModel)]="periodFilter" (ngModelChange)="loadMonthlyKpis()" format="MM/yyyy" valueFormat="yyyy-MM" placeholder="MM/yyyy" [allowClear]="false"></ss-datepicker>
+    </div>
+    <div class="kpi-table-wrap">
+      <table class="kpi-table"><thead><tr><th>Nhân viên</th><th>Công việc hoàn thành</th><th>Công việc chưa hoàn thành</th><th>Trọng số hoàn thành</th><th>Tổng trọng số</th><th>Chờ nghiệm thu</th></tr></thead>
+        <tbody>
+          @for (kpi of monthlyKpis(); track kpi.employeeCode) {
+            <tr><td>{{ kpi.employeeCode }}</td><td>{{ kpi.completedTaskCount }}</td><td>{{ kpi.incompleteTaskCount }}</td><td>{{ kpi.completedWeight }}</td><td>{{ kpi.totalWeight }}</td><td>{{ kpi.pendingReviewCount }}</td></tr>
+          } @empty {
+            <tr><td colspan="6" class="empty-kpi">Chưa có công việc được giao trong tháng này.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="task-table" aria-label="Danh sách công việc">
+    <ss-data-table [data]="tasks()" [columns]="taskColumns" [settings]="taskTableConfig" (primaryClick)="onPrimaryClick($event)" (actionClick)="onActionClick($event)"></ss-data-table>
+  </section>
+
+  <ss-dialog [visible]="formVisible()" [title]="editingTask() ? 'Cập nhật công việc' : 'Giao công việc mới'" [width]="720" [maskClosable]="false" (visibleChange)="onFormVisibilityChange($event)">
+    <form #taskForm="ngForm" class="task-form" (ngSubmit)="createTask(taskForm.valid)">
+      <p class="dialog-description">Xác định tháng đánh giá, trọng số và tiêu chí nghiệm thu trước khi giao công việc.</p>
+      <label class="field"><span>Nhân viên <b>*</b></span>
+        <ss-select name="employeeCode" [(ngModel)]="form.employeeCode" [options]="employeeOptions" [loading]="employeeLoading" [showSearch]="true" [allowClear]="true" required placeholder="Tìm theo mã hoặc tên nhân viên"></ss-select>
+      </label>
+      <label class="field"><span>Tên công việc <b>*</b></span><input name="title" [(ngModel)]="form.title" required maxlength="200" placeholder="Nhập tên công việc"></label>
+      <label class="field"><span>Mô tả</span><textarea name="description" [(ngModel)]="form.description" rows="3" maxlength="2000" placeholder="Kết quả mong đợi, tiêu chí hoàn thành"></textarea></label>
+      <label class="field"><span>Tiêu chí nghiệm thu <b>*</b></span><textarea name="acceptanceCriteria" [(ngModel)]="form.acceptanceCriteria" rows="3" required maxlength="4000" placeholder="Mô tả điều kiện khách quan để quản lý nghiệm thu"></textarea></label>
+      <div class="form-row">
+        <label class="field"><span>Tháng đánh giá <b>*</b></span><ss-datepicker name="periodMonth" [(ngModel)]="form.periodMonth" type="month" format="MM/yyyy" valueFormat="yyyy-MM" placeholder="MM/yyyy" [allowClear]="false" required></ss-datepicker></label>
+        <label class="field"><span>Hạn hoàn thành</span><ss-datepicker name="dueDate" [(ngModel)]="form.dueDate" format="dd/MM/yyyy" valueFormat="yyyy-MM-dd" placeholder="dd/MM/yyyy"></ss-datepicker></label>
+      </div>
+      <div class="form-row">
+        <label class="field"><span>Trọng số công việc <b>*</b></span><input name="weight" type="number" [(ngModel)]="form.weight" required min="0.01" max="99999.99" step="0.01"></label>
+        <label class="field"><span>Thưởng công việc (VNĐ) <b>*</b></span><input name="bonusAmount" type="number" [(ngModel)]="form.bonusAmount" required min="0" step="1000"></label>
+      </div>
+      <label class="field"><span>Mức phạt khi công việc bị yêu cầu bổ sung (VNĐ) <b>*</b></span><input name="penaltyAmount" type="number" [(ngModel)]="form.penaltyAmount" required min="0" step="1000"></label>
+      <p class="policy-hint">Nhân viên gửi kết quả kèm hình ảnh, đường dẫn hoặc tệp; quản lý nghiệm thu thì công việc chuyển thành hoàn thành.</p>
+      <div dialog-footer class="dialog-actions">
+        <ss-button variant="outline" color="neutral" htmlType="button" (onClick)="cancelEdit()">Hủy</ss-button>
+        <ss-button color="primary" [icon]="editingTask() ? 'save' : 'send'" htmlType="submit" [disabled]="taskForm.invalid || saving()">{{ saving() ? 'Đang lưu…' : editingTask() ? 'Lưu thay đổi' : 'Giao công việc' }}</ss-button>
+      </div>
+    </form>
+  </ss-dialog>
+
+  <ss-dialog [visible]="reviewVisible()" [title]="selectedTask()?.status === 'SUBMITTED' ? 'Xác minh kết quả công việc' : 'Lịch sử công việc'" [width]="780" [maskClosable]="false" (visibleChange)="!$event && closeReview()">
+    @if (selectedTask(); as task) {
+      <section class="review-content">
+        <div class="review-facts"><p><b>{{ task.title }}</b> · {{ task.employeeCode }} · {{ formatMonth(task.periodMonth) }}</p><p>Tiêu chí nghiệm thu: {{ task.acceptanceCriteria }}</p><p>Kết quả: {{ task.status === 'APPROVED' ? 'Hoàn thành' : 'Chưa hoàn thành' }} · Trọng số: {{ task.weight }}</p></div>
+        @if (task.latestProgress; as latest) {
+          <article class="latest-submission"><h3>Lần nộp mới nhất · {{ formatSubmissionStatus(latest.status) }}</h3><p>{{ latest.result || 'Lần nộp cũ chưa lưu mô tả kết quả.' }}</p><ul class="evidence-list">@for (link of latest.evidenceLinks; track link) { <li>@if (isImageEvidence(link)) { <a [href]="link" target="_blank" rel="noopener noreferrer"><img class="evidence-image" [src]="link" [alt]="displayEvidenceName(link)"></a> }<a [href]="link" target="_blank" rel="noopener noreferrer">{{ displayEvidenceName(link) }}</a></li> }</ul>@if (!latest.evidenceLinks.length) { <p class="review-comment">Lần nộp này chưa có minh chứng. Hãy yêu cầu nhân viên bổ sung.</p> }</article>
+        } @else {
+          <p class="empty-kpi">Công việc chưa có lần cập nhật nào.</p>
+        }
+        @if (task.status === 'SUBMITTED') {
+          <label class="field"><span>Lý do yêu cầu bổ sung <b>*</b></span><textarea name="reviewReason" [(ngModel)]="reviewReason" rows="2" maxlength="1000" placeholder="Nêu rõ tiêu chí hoặc bằng chứng còn thiếu"></textarea></label>
+        }
+        <section class="history-list"><h3>Lịch sử thay đổi</h3>
+          @if (historyLoading()) { <p>Đang tải lịch sử…</p> }
+          @for (progress of progressHistory(); track progress.id) {
+            <article class="history-entry"><div><b>{{ formatSubmissionStatus(progress.status) }}</b><time>{{ progress.submittedAt | date:'dd/MM/yyyy HH:mm' }}</time></div><p>{{ progress.result }}</p><ul class="evidence-list">@for (link of progress.evidenceLinks; track link) { <li>@if (isImageEvidence(link)) { <a [href]="link" target="_blank" rel="noopener noreferrer"><img class="evidence-image" [src]="link" [alt]="displayEvidenceName(link)"></a> }<a [href]="link" target="_blank" rel="noopener noreferrer">{{ displayEvidenceName(link) }}</a></li> }</ul>@if (progress.reviewComment) { <p class="review-comment">{{ progress.reviewedBy }}: {{ progress.reviewComment }}</p> }</article>
+          } @empty { @if (!historyLoading()) { <p>Chưa có lịch sử cập nhật.</p> } }
+        </section>
+      </section>
+      @if (task.status === 'SUBMITTED') {
+        <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeReview()">Đóng</ss-button><ss-button color="danger" icon="file-add" htmlType="button" [disabled]="!reviewReason.trim()" (onClick)="requestSupplement()">Yêu cầu bổ sung</ss-button><ss-button color="primary" icon="check" htmlType="button" [disabled]="!canApprove(task)" (onClick)="approveSelected()">Nghiệm thu hoàn thành</ss-button></div>
+      }
+    }
+  </ss-dialog>
+</main>

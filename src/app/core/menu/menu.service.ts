@@ -36,6 +36,16 @@ export class MenuService {
           permissions: ['employee:attendance:read'],
         },
         {
+          id: 'ess-tasks',
+          label: 'Task được giao',
+          icon: 'profile',
+          iconColor: '#13c2c2',
+          path: '/user/tasks',
+          order: 25,
+          roles: ['USER', 'ADMIN'],
+          permissions: ['employee:task:read'],
+        },
+        {
           id: 'ess-leaves',
           label: 'Nghỉ phép cá nhân',
           icon: 'solution',
@@ -252,7 +262,19 @@ export class MenuService {
             },
           ],
         },
-
+        // -----------------------------------------------------
+        // Quản lý task
+        // -----------------------------------------------------
+        {
+          id: 'admin-tasks',
+          label: 'Quản lý task & thưởng',
+          icon: 'profile',
+          iconColor: '#13c2c2',
+          path: '/admin/tasks',
+          order: 5,
+          roles: ['ADMIN'],
+          permissions: ['employee:task:manage'],
+        },
         // -----------------------------------------------------
         // Payroll
         // -----------------------------------------------------

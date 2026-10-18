@@ -19,7 +19,7 @@
     <ss-card title="Nguồn dữ liệu" description="Thông tin lấy từ thang bảng lương và kỳ hiện tại" icon="database" iconColor="#722ed1">
       <div class="source-card"><div class="source-icon">{{ currentRun?.periodYear || '—' }}</div><div><strong>{{ structureVersion }}</strong><span>{{ activeSalaryStructureCount() }} cấu trúc chức danh đang áp dụng</span></div></div>
       <div class="source-list"><div><span>Phiếu lương kỳ hiện tại</span><strong>{{ currentRun?.employeeCount ?? 0 }}</strong></div><div><span>Đơn vị tiền tệ</span><strong>VNĐ</strong></div></div>
-      <div class="source-note"><span class="live-dot small"></span><span>Phiếu được tính từ hợp đồng, lịch phân ca, chấm công và ngày lễ đã khai báo.</span></div>
+      <div class="source-note"><span class="live-dot small"></span><span>Phiếu được tính từ hợp đồng, lịch phân ca, chấm công, ngày lễ và thưởng task đã duyệt.</span></div>
     </ss-card>
   </section>
 

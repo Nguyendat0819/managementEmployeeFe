@@ -79,4 +79,8 @@ export class PayslipEmployeeComponent implements OnInit {
   formatDeduction(value: number): string {
     return `- ${this.formatCurrency(value)}`;
   }
+
+  otherNonTaskDeduction(slip: PayslipSummary): number {
+    return Math.max(0, slip.otherDeduction - slip.belowThresholdTaskPenalty);
+  }
 }
