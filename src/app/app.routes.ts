@@ -19,6 +19,7 @@ import { holidayAdminRoutes } from './features/admin/holidays/holidays.routes';
 import { attendanceAdminRoutes } from './features/admin/attendance/attendance.routes';
 import { leaveAdminRoutes } from './features/admin/leaves/leaves.routes';
 import { leaveSettingsAdminRoutes } from './features/admin/leave-settings/leave-settings.routes';
+import { adminNotificationsRoutes } from './features/admin/notifications/admin-notifications.routes';
 import { salaryStructureAdminRoutes } from './features/admin/salary-structures/salary-structures.routes';
 import { payrollRunAdminRoutes } from './features/admin/payroll-runs/payroll-runs.routes';
 import { userAdminRoutes } from './features/admin/users/users.routes';
@@ -118,6 +119,10 @@ export const routes: Routes = [
           {
             path: 'leave-settings',
             children: leaveSettingsAdminRoutes,
+          },
+          {
+            path: 'notifications',
+            children: adminNotificationsRoutes,
           },
           {
             path: 'salary-structures',

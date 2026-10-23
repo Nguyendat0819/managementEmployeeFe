@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { SsButtonComponent, SsDataTableComponent, SsDialogComponent, SsDtColumn, SsDtConfig, SsStatComponent, SsTagComponent } from '@platform/ui-kit';
+import { forkJoin } from 'rxjs';
+import { finalize } from 'rxjs/operators';
+import { SsButtonComponent, SsDataTableComponent, SsDialogComponent, SsDtColumn, SsDtConfig, SsStatComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
 import { EmployeeNotification } from '../model/notification_employee.model';
 import { NotificationEmployeeService } from '../service/notification_employee.service';
 
@@ -14,9 +16,16 @@ import { NotificationEmployeeService } from '../service/notification_employee.se
 })
 export class NotificationEmployeeComponent {
   private readonly notificationService = inject(NotificationEmployeeService);
+  private readonly toast = inject(SsToastService);
 
-  readonly notifications = signal(this.notificationService.notifications);
-  readonly unreadCount = computed(() => this.notifications().filter((item) => !item.read).length);
+  readonly notifications = signal<EmployeeNotification[]>([]);
+  readonly loading = signal(false);
+  readonly unreadCount = signal(0);
+  readonly recentCount = computed(() => {
+    const weekAgo = Date.now() - 7 * 86400000;
+    return this.notifications().filter((item) => item.createdAtIso && new Date(item.createdAtIso).getTime() >= weekAgo).length;
+  });
+  readonly importantCount = computed(() => this.notifications().filter((item) => item.type === 'warning').length);
   readonly selectedNotification = signal<EmployeeNotification | null>(null);
   readonly detailVisible = signal(false);
   readonly notificationColumns: SsDtColumn<EmployeeNotification>[] = [
@@ -46,6 +55,27 @@ export class NotificationEmployeeComponent {
     emptyText: 'Không có thông báo',
   };
 
+  constructor() {
+    this.loadNotifications();
+  }
+
+  loadNotifications(): void {
+    this.loading.set(true);
+    forkJoin({
+      notifications: this.notificationService.getMine(),
+      unreadCount: this.notificationService.getUnreadCount(),
+    }).pipe(finalize(() => this.loading.set(false))).subscribe({
+      next: ({ notifications, unreadCount }) => {
+        this.notifications.set(notifications);
+        this.unreadCount.set(unreadCount);
+      },
+      error: () => {
+        this.notifications.set([]);
+        this.unreadCount.set(0);
+      },
+    });
+  }
+
   openDetail(notification: EmployeeNotification): void {
     this.markAsRead(notification);
     this.selectedNotification.set(notification);
@@ -58,10 +88,18 @@ export class NotificationEmployeeComponent {
 
   markAsRead(notification: EmployeeNotification): void {
     if (notification.read) return;
-    this.notifications.update((items) => items.map((item) => item.id === notification.id ? { ...item, read: true } : item));
+    this.notificationService.markAsRead(notification.id).subscribe((updated) => {
+      this.notifications.update((items) => items.map((item) => item.id === updated.id ? updated : item));
+      this.unreadCount.update((count) => Math.max(0, count - 1));
+    }, () => undefined);
   }
 
   markAllAsRead(): void {
-    this.notifications.update((items) => items.map((item) => ({ ...item, read: true })));
+    if (!this.unreadCount()) return;
+    this.notificationService.markAllAsRead().subscribe(() => {
+      this.notifications.update((items) => items.map((item) => ({ ...item, read: true })));
+      this.unreadCount.set(0);
+      this.toast.show({ severity: 'success', summary: 'Đã cập nhật thông báo', detail: 'Tất cả thông báo đã được đánh dấu là đã đọc.' });
+    }, () => undefined);
   }
 }

@@ -1,9 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { SsButtonComponent, SsCardComponent, SsCardFooterStartDirective, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtColumn, SsDtConfig, SsStatComponent, SsToastService } from '@platform/ui-kit';
+import { forkJoin } from 'rxjs';
+import { finalize } from 'rxjs/operators';
+import { SsButtonComponent, SsCardComponent, SsCardFooterStartDirective, SsConfirmService, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtActionClick, SsDtColumn, SsDtConfig, SsStatComponent, SsToastService } from '@platform/ui-kit';
+import { LeaveApiService } from '@core/services/leave-api.service';
+import { LeaveBalanceDto, LeaveRequestDto, LeaveTypeDto } from '@core/models/leave-api.model';
 import { LeaveRequest } from '../model/leave_employee.model';
-import { LeaveEmployeeService } from '../service/leave_employee.service';
 
 @Component({
   selector: 'app-leave-employee',
@@ -14,23 +17,38 @@ import { LeaveEmployeeService } from '../service/leave_employee.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LeaveEmployeeComponent {
-  private readonly leaveService = inject(LeaveEmployeeService);
+  private readonly leaveService = inject(LeaveApiService);
   private readonly toast = inject(SsToastService);
+  private readonly confirmService = inject(SsConfirmService);
 
-  readonly balances = this.leaveService.balances;
-  readonly requests = signal(this.leaveService.requests);
-  readonly totalRemaining = this.balances.reduce((total, balance) => total + balance.total - balance.used, 0);
+  readonly balances = signal<LeaveBalanceView[]>([]);
+  readonly leaveTypes = signal<LeaveTypeDto[]>([]);
+  readonly evidenceRequired = computed(() => this.leaveTypes().find((type) => type.id === this.leaveForm.leaveTypeId)?.requireDocument ?? false);
+  readonly requests = signal<LeaveRequest[]>([]);
+  readonly loading = signal(false);
+  readonly submitting = signal(false);
+  readonly currentYear = new Date().getFullYear();
+  readonly totalRemaining = computed(() => this.balances().reduce((total, balance) => total + balance.remaining, 0));
+  readonly pendingCount = computed(() => this.requests().filter((request) => request.statusCode === 'PENDING').length);
+  readonly usedThisYear = computed(() => this.balances().reduce((total, balance) => total + balance.used, 0));
+  readonly upcomingDays = computed(() => {
+    const today = this.toIsoLocalDate(new Date());
+    return this.requests()
+      .filter((request) => request.statusCode === 'APPROVED' && request.startDateIso >= today)
+      .reduce((total, request) => total + request.days, 0);
+  });
   readonly dialogVisible = signal(false);
-  readonly leaveForm = { type: 'Phép năm', startDate: '', endDate: '', reason: '' };
+  readonly policyDialogVisible = signal(false);
+  readonly leaveForm = { leaveTypeId: null as number | null, startDate: '', endDate: '', reason: '', evidenceUrl: '' };
   readonly leaveColumns: SsDtColumn<LeaveRequest>[] = [
     { key: 'type', header: 'Loại phép', field: 'type', filterable: true },
     { key: 'period', header: 'Thời gian nghỉ', format: (row) => row.startDate + ' - ' + row.endDate, sortable: true },
-    { key: 'days', header: 'Số ngày', field: 'days', align: 'center', width: '110px' },
+    { key: 'days', header: 'Số ngày', format: (row) => `${row.days} ngày`, align: 'center', width: '110px' },
     { key: 'reason', header: 'Lý do', field: 'reason' },
     { key: 'status', header: 'Trạng thái', field: 'status', filterable: true, width: '140px' },
   ];
   readonly leaveTableSettings: SsDtConfig<LeaveRequest> = {
-    rowKey: (row) => row.startDate + row.type,
+    rowKey: 'id',
     title: 'Đơn nghỉ phép gần đây',
     description: 'Lịch sử đăng ký nghỉ phép',
     cardIcon: 'file-text',
@@ -47,51 +65,167 @@ export class LeaveEmployeeComponent {
     size: 'small',
     scrollY: '280px',
     emptyText: 'Chưa có đơn nghỉ phép',
+    rowActions: [{ key: 'cancel', label: 'Hủy đơn', icon: 'close', danger: true, visible: (row) => row.statusCode === 'PENDING' }],
   };
 
+  constructor() {
+    this.loadLeaveData();
+  }
+
+  loadLeaveData(): void {
+    this.loading.set(true);
+    forkJoin({
+      requests: this.leaveService.getMyRequests(),
+      balances: this.leaveService.getMyBalances(this.currentYear),
+      leaveTypes: this.leaveService.getLeaveTypes(),
+    }).pipe(finalize(() => this.loading.set(false))).subscribe({
+      next: ({ requests, balances, leaveTypes }) => {
+        this.requests.set(requests.map((item) => this.toLeaveRequest(item)));
+        this.balances.set(balances.map((item) => this.toLeaveBalance(item)));
+        this.leaveTypes.set(leaveTypes);
+        if (!this.leaveForm.leaveTypeId && leaveTypes.length) this.leaveForm.leaveTypeId = leaveTypes[0].id;
+      },
+      error: () => undefined,
+    });
+  }
+
   openRequestDialog(): void {
-    this.leaveForm.type = 'Phép năm';
+    this.leaveForm.leaveTypeId = this.leaveTypes()[0]?.id ?? null;
     this.leaveForm.startDate = '';
     this.leaveForm.endDate = '';
     this.leaveForm.reason = '';
+    this.leaveForm.evidenceUrl = '';
     this.dialogVisible.set(true);
+  }
+
+  balancePercent(balance: LeaveBalanceView): number {
+    return balance.total > 0 ? Math.max(0, Math.min(100, (balance.remaining / balance.total) * 100)) : 0;
   }
 
   closeRequestDialog(): void {
     this.dialogVisible.set(false);
   }
 
+  openPolicyDialog(): void {
+    this.policyDialogVisible.set(true);
+  }
+
   submitRequest(): void {
-    if (!this.leaveForm.startDate || !this.leaveForm.endDate || !this.leaveForm.reason.trim()) {
-      this.toast.show({ severity: 'warning', summary: 'Chưa đủ thông tin', detail: 'Vui lòng nhập đầy đủ thời gian nghỉ và lý do.' });
+    if (!this.leaveForm.leaveTypeId || !this.leaveForm.startDate || !this.leaveForm.endDate || !this.leaveForm.reason.trim()) {
+      this.toast.show({ severity: 'warning', summary: 'Chưa đủ thông tin', detail: 'Vui lòng chọn loại phép, thời gian nghỉ và nhập lý do.' });
       return;
     }
     if (this.leaveForm.endDate < this.leaveForm.startDate) {
       this.toast.show({ severity: 'warning', summary: 'Thời gian không hợp lệ', detail: 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.' });
       return;
     }
-    const request: LeaveRequest = {
-      type: this.leaveForm.type,
-      startDate: this.formatDate(this.leaveForm.startDate),
-      endDate: this.formatDate(this.leaveForm.endDate),
-      days: this.calculateDays(this.leaveForm.startDate, this.leaveForm.endDate) + ' ngày',
+    const evidenceUrl = this.leaveForm.evidenceUrl.trim();
+    if (this.evidenceRequired() && !evidenceUrl) {
+      this.toast.show({ severity: 'warning', summary: 'Thiếu minh chứng', detail: 'Loại phép đã chọn yêu cầu đường dẫn minh chứng.' });
+      return;
+    }
+    if (evidenceUrl && !this.isValidUrl(evidenceUrl)) {
+      this.toast.show({ severity: 'warning', summary: 'Đường dẫn minh chứng không hợp lệ', detail: 'Vui lòng nhập một đường dẫn bắt đầu bằng http:// hoặc https://.' });
+      return;
+    }
+    this.submitting.set(true);
+    this.leaveService.createRequest({
+      leaveTypeId: this.leaveForm.leaveTypeId,
+      startDate: this.leaveForm.startDate,
+      endDate: this.leaveForm.endDate,
       reason: this.leaveForm.reason.trim(),
-      status: 'Chờ duyệt',
-      statusType: 'warning',
-    };
-    this.requests.update((items) => [request, ...items]);
-    this.closeRequestDialog();
-    this.toast.show({ severity: 'success', summary: 'Gửi đơn thành công', detail: 'Đơn nghỉ phép đã được gửi đến người phê duyệt.' });
+      evidenceUrl: evidenceUrl || undefined,
+    }).subscribe({
+      next: () => {
+        this.closeRequestDialog();
+        this.toast.show({ severity: 'success', summary: 'Gửi đơn thành công', detail: 'Đơn nghỉ phép đã được gửi đến người phê duyệt.' });
+        this.loadLeaveData();
+      },
+      error: () => this.submitting.set(false),
+      complete: () => this.submitting.set(false),
+    });
   }
 
-  private calculateDays(start: string, end: string): number {
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    return Math.floor((endDate.getTime() - startDate.getTime()) / 86400000) + 1;
+  onActionClick(event: SsDtActionClick<LeaveRequest>): void {
+    if (event.action.key === 'cancel') void this.cancelRequest(event.row);
+  }
+
+  private async cancelRequest(request: LeaveRequest): Promise<void> {
+    const confirmed = await this.confirmService.confirm(
+      'Xác nhận hủy đơn nghỉ phép',
+      `Bạn có chắc muốn hủy đơn ${request.type} từ ${request.startDate} không?`,
+      { type: 'warning', okText: 'Hủy đơn' },
+    );
+    if (!confirmed) return;
+    this.leaveService.cancelRequest(request.id).subscribe((updated) => {
+      this.requests.update((items) => items.map((item) => item.id === updated.id ? this.toLeaveRequest(updated) : item));
+      this.toast.show({ severity: 'success', summary: 'Đã hủy đơn', detail: 'Trạng thái đơn nghỉ phép đã được cập nhật.' });
+      this.loadLeaveData();
+    }, () => undefined);
+  }
+
+  private toLeaveRequest(item: LeaveRequestDto): LeaveRequest {
+    const status = item.status || this.statusLabel(item.statusCode);
+    return {
+      id: item.id,
+      leaveTypeId: item.leaveTypeId,
+      type: item.type,
+      startDate: this.formatDate(item.startDate),
+      endDate: this.formatDate(item.endDate),
+      startDateIso: item.startDate,
+      days: Number(item.days ?? 0),
+      reason: item.reason,
+      status,
+      statusCode: item.statusCode,
+      evidenceUrl: item.evidenceUrl ?? '',
+      statusType: item.statusCode === 'APPROVED' ? 'success' : item.statusCode === 'PENDING' ? 'warning' : item.statusCode === 'REJECTED' ? 'error' : 'default',
+    };
+  }
+
+  private toLeaveBalance(item: LeaveBalanceDto): LeaveBalanceView {
+    return {
+      leaveTypeId: item.leaveTypeId,
+      label: item.label || item.type,
+      used: Number(item.usedDays ?? 0),
+      total: Number(item.totalDays ?? 0),
+      remaining: Number(item.remainingDays ?? 0),
+      pending: Number(item.pendingDays ?? 0),
+      tone: 'primary',
+    };
+  }
+
+  private statusLabel(statusCode: string): string {
+    return ({ PENDING: 'Chờ duyệt', APPROVED: 'Đã duyệt', REJECTED: 'Từ chối', CANCELLED: 'Đã hủy' } as Record<string, string>)[statusCode] ?? statusCode;
   }
 
   private formatDate(value: string): string {
     const [year, month, day] = value.split('-');
-    return day + '/' + month + '/' + year;
+    return year && month && day ? `${day}/${month}/${year}` : value;
   }
+
+  private isValidUrl(value: string): boolean {
+    try {
+      const url = new URL(value);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  }
+
+  private toIsoLocalDate(value: Date): string {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+}
+
+interface LeaveBalanceView {
+  leaveTypeId: number;
+  label: string;
+  used: number;
+  total: number;
+  remaining: number;
+  pending: number;
+  tone: 'primary' | 'success' | 'warning';
 }

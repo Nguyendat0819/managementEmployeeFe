@@ -262,6 +262,16 @@ export class MenuService {
             },
           ],
         },
+        {
+          id: 'admin-notifications',
+          label: 'Gửi thông báo',
+          icon: 'bell',
+          iconColor: '#faad14',
+          path: '/admin/notifications',
+          order: 55,
+          roles: ['ADMIN'],
+          permissions: ['employee:notification:create'],
+        },
         // -----------------------------------------------------
         // Quản lý task
         // -----------------------------------------------------

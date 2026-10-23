@@ -17,4 +17,5 @@ export interface AdminLeaveRequest {
   approver: string;
   status: AdminLeaveRequestStatus;
   decisionNote: string;
+  evidenceUrl?: string;
 }

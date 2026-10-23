@@ -46,6 +46,21 @@ export class API_ENDPOINTS {
     MY_PAYSLIPS: 'api/payslips/me',
   };
 
+  public static readonly Leave = {
+    REQUESTS: 'api/leave-requests',
+    MY_REQUESTS: 'api/leave-requests/me',
+    MY_BALANCES: 'api/leave-balances/me',
+    TYPES: 'api/leave-types',
+  };
+
+  public static readonly Notifications = {
+    BASE: 'api/notifications',
+    MINE: 'api/notifications/me',
+    UNREAD_COUNT: 'api/notifications/me/unread-count',
+    MARK_READ: (id: number) => `/api/notifications/me/${id}/read`,
+    MARK_ALL_READ: 'api/notifications/me/read-all',
+  };
+
   public static readonly Role = {
     BASE: 'api/role',
     DETAIL: (id: number) => `/${id}`,

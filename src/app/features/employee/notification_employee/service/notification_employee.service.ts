@@ -1,13 +1,64 @@
 import { Injectable } from '@angular/core';
+import { Observable, map } from 'rxjs';
+import { API_ENDPOINTS } from '@core/constants/api-endpoint';
+import { ApiResponse } from '@core/models/api-response.interface';
+import { BaseService } from '@core/services/base.service';
+import { environment } from '@env/environment';
 import { EmployeeNotification } from '../model/notification_employee.model';
 
 @Injectable({ providedIn: 'root' })
-export class NotificationEmployeeService {
-  readonly notifications: EmployeeNotification[] = [
-    { id: 1, title: 'Khảo sát mức độ hài lòng nhân viên', content: 'Hãy chia sẻ ý kiến của bạn về môi trường làm việc trong quý III/2025.', category: 'Khảo sát', createdAt: '10 phút trước', icon: 'solution', type: 'info', read: false },
-    { id: 2, title: 'Phiếu lương tháng 09/2025 đã sẵn sàng', content: 'Bạn có thể xem và tải phiếu lương điện tử trong mục Phiếu lương.', category: 'Tiền lương', createdAt: 'Hôm qua', icon: 'file-done', type: 'success', read: false },
-    { id: 3, title: 'Lịch nghỉ lễ Quốc khánh đã được cập nhật', content: 'Lịch nghỉ lễ Quốc khánh 02/09 đã được cập nhật trên hệ thống.', category: 'Thông tin chung', createdAt: '02/09/2025', icon: 'calendar', type: 'default', read: true },
-    { id: 4, title: 'Nhắc nhở hoàn thành đào tạo an toàn thông tin', content: 'Vui lòng hoàn thành khóa đào tạo trước ngày 15/09/2025.', category: 'Đào tạo', createdAt: '30/08/2025', icon: 'read', type: 'warning', read: false },
-    { id: 5, title: 'Đơn nghỉ phép đã được phê duyệt', content: 'Đơn nghỉ phép từ ngày 18/08 đến 19/08/2025 của bạn đã được phê duyệt.', category: 'Nghỉ phép', createdAt: '15/08/2025', icon: 'check-circle', type: 'success', read: true },
-  ];
+export class NotificationEmployeeService extends BaseService {
+  private readonly serviceBase = this.createServiceBase();
+
+  getMine(): Observable<EmployeeNotification[]> {
+    return this.get<ApiResponse<NotificationResponse[]>>(`${this.serviceBase}/${API_ENDPOINTS.Notifications.MINE}`)
+      .pipe(map(({ data }) => (data ?? []).map((item) => this.toNotification(item))));
+  }
+
+  getUnreadCount(): Observable<number> {
+    return this.get<ApiResponse<{ unreadCount: number }>>(`${this.serviceBase}/${API_ENDPOINTS.Notifications.UNREAD_COUNT}`)
+      .pipe(map(({ data }) => Number(data?.unreadCount ?? 0)));
+  }
+
+  markAsRead(id: number): Observable<EmployeeNotification> {
+    return this.patch<ApiResponse<NotificationResponse>>(`${this.serviceBase}${API_ENDPOINTS.Notifications.MARK_READ(id)}`, {})
+      .pipe(map(({ data }) => this.toNotification(data)));
+  }
+
+  markAllAsRead(): Observable<number> {
+    return this.patch<ApiResponse<{ updatedCount: number }>>(`${this.serviceBase}/${API_ENDPOINTS.Notifications.MARK_ALL_READ}`, {})
+      .pipe(map(({ data }) => Number(data?.updatedCount ?? 0)));
+  }
+
+  private toNotification(item: NotificationResponse): EmployeeNotification {
+    const createdAt = item.createdAt ? new Date(item.createdAt) : null;
+    return {
+      ...item,
+      category: item.category || 'Thông tin chung',
+      createdAtIso: item.createdAt,
+      createdAt: createdAt && !Number.isNaN(createdAt.getTime())
+        ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(createdAt)
+        : '',
+      icon: item.icon || 'bell',
+      type: item.type === 'success' || item.type === 'warning' || item.type === 'default' ? item.type : 'info',
+    };
+  }
+
+  private createServiceBase(): string {
+    const configuredBase = Array.isArray(environment.apiBaseUrl) ? environment.apiBaseUrl[0] : environment.apiBaseUrl;
+    return `${configuredBase.replace(/\/+$/, '')}/notification-service`;
+  }
+}
+
+interface NotificationResponse {
+  id: number;
+  title: string;
+  content: string;
+  category: string | null;
+  createdAt: string;
+  icon: string | null;
+  type: string | null;
+  read: boolean;
+  referenceType: string | null;
+  referenceId: number | null;
 }

@@ -29,13 +29,14 @@ export class AdminLeavePolicyComponent {
   private readonly confirmService = inject(SsConfirmService);
   private readonly toast = inject(SsToastService);
 
-  readonly policies = signal(this.policyService.policies);
+  readonly policies = signal<AdminLeavePolicy[]>([]);
+  readonly loading = signal(false);
+  readonly saving = signal(false);
   readonly selectedPolicy = signal<AdminLeavePolicy | null>(null);
   readonly detailVisible = signal(false);
   readonly formVisible = signal(false);
   readonly editingPolicy = signal<AdminLeavePolicy | null>(null);
   readonly policyForm: LeavePolicyForm = this.emptyPolicyForm();
-  readonly generalSettings = { advanceNoticeDays: 3, approvalLevel: 'Quản lý trực tiếp', countMode: 'Ngày làm việc', closingDay: 25 };
   readonly policyColumns: SsDtColumn<AdminLeavePolicy>[] = [
     { key: 'code', header: 'Mã chính sách', field: 'code', width: '145px', sortable: true, filterable: true },
     { key: 'name', header: 'Tên loại phép', field: 'name', width: '190px', sortable: true, filterable: true },
@@ -65,7 +66,7 @@ export class AdminLeavePolicyComponent {
     rowActions: [
       { key: 'detail', label: 'Xem chi tiết', icon: 'eye' },
       { key: 'edit', label: 'Sửa', icon: 'edit' },
-      { key: 'delete', label: 'Xóa', icon: 'delete', danger: true },
+      { key: 'delete', label: 'Tạm khóa', icon: 'close', danger: true },
     ],
     quickFilters: [
       { key: 'status', placeholder: 'Tất cả trạng thái', options: [{ label: 'Đang áp dụng', value: 'Đang áp dụng' }, { label: 'Tạm khóa', value: 'Tạm khóa' }] },
@@ -76,6 +77,10 @@ export class AdminLeavePolicyComponent {
     scrollX: '1120px',
     emptyText: 'Không có loại phép phù hợp',
   };
+
+  constructor() {
+    this.loadPolicies();
+  }
 
   get activePolicyCount(): number {
     return this.policies().filter((policy) => policy.status === 'Đang áp dụng').length;
@@ -152,28 +157,36 @@ export class AdminLeavePolicyComponent {
       description: this.policyForm.description.trim(),
     };
 
-    this.policies.update((policies) => editingPolicy
-      ? policies.map((item) => item.id === editingPolicy.id ? policy : item)
-      : [...policies, policy]);
-    this.refreshTableStatus();
-    this.closeFormDialog();
-    this.toast.show({ severity: 'success', summary: editingPolicy ? 'Cập nhật chính sách thành công' : 'Thêm loại phép thành công', detail: `Chính sách ${name} đã được ${editingPolicy ? 'cập nhật' : 'thêm vào danh mục'}.` });
+    this.saving.set(true);
+    this.policyService.savePolicy(editingPolicy?.id ?? null, policy).subscribe({
+      next: (savedPolicy) => {
+        this.policies.update((policies) => editingPolicy
+          ? policies.map((item) => item.id === savedPolicy.id ? savedPolicy : item)
+          : [...policies, savedPolicy]);
+        this.refreshTableStatus();
+        this.closeFormDialog();
+        this.toast.show({ severity: 'success', summary: editingPolicy ? 'Cập nhật chính sách thành công' : 'Thêm loại phép thành công', detail: `Chính sách ${name} đã được ${editingPolicy ? 'cập nhật' : 'thêm vào danh mục'}.` });
+      },
+      error: () => this.saving.set(false),
+      complete: () => this.saving.set(false),
+    });
   }
 
   async deletePolicy(policy: AdminLeavePolicy): Promise<void> {
     const confirmed = await this.confirmService.confirm(
-      'Xác nhận xóa loại phép',
-      `Bạn có chắc muốn xóa chính sách "${policy.name}" không?`,
-      { type: 'danger', okText: 'Xóa' },
+      'Xác nhận tạm khóa loại phép',
+      `Bạn có chắc muốn ngừng áp dụng chính sách "${policy.name}" không?`,
+      { type: 'warning', okText: 'Tạm khóa' },
     );
     if (!confirmed) return;
-    this.policies.update((policies) => policies.filter((item) => item.id !== policy.id));
-    this.refreshTableStatus();
-    this.toast.show({ severity: 'success', summary: 'Đã xóa loại phép', detail: `Chính sách ${policy.name} đã được xóa khỏi danh mục.` });
-  }
-
-  saveGeneralSettings(): void {
-    this.toast.show({ severity: 'success', summary: 'Đã lưu quy tắc nghỉ phép', detail: 'Các thiết lập chung sẽ được áp dụng cho đơn mới.' });
+    this.policyService.deletePolicy(policy.id).subscribe({
+      next: () => {
+        this.policies.update((policies) => policies.map((item) => item.id === policy.id ? { ...item, status: 'Tạm khóa' } : item));
+        this.refreshTableStatus();
+        this.toast.show({ severity: 'success', summary: 'Đã khóa loại phép', detail: `Chính sách ${policy.name} đã được chuyển sang trạng thái tạm khóa.` });
+      },
+      error: () => undefined,
+    });
   }
 
   statusTone(status: AdminLeavePolicyStatus): 'success' | 'warning' | 'info' {
@@ -186,5 +199,17 @@ export class AdminLeavePolicyComponent {
 
   private refreshTableStatus(): void {
     this.policyTableSettings = { ...this.policyTableSettings, cardStatusLabel: `${this.activePolicyCount} loại đang dùng` };
+  }
+
+  private loadPolicies(): void {
+    this.loading.set(true);
+    this.policyService.getPolicies().subscribe({
+      next: (policies) => {
+        this.policies.set(policies);
+        this.refreshTableStatus();
+      },
+      error: () => this.loading.set(false),
+      complete: () => this.loading.set(false),
+    });
   }
 }

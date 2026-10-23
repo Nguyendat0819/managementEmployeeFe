@@ -2,8 +2,8 @@
   <section class="stats-grid" aria-label="Tổng quan thông báo">
     <ss-stat label="Tổng thông báo" [value]="notifications().length" suffix="tin" hint="Trong hộp thư" tone="primary" icon="bell"></ss-stat>
     <ss-stat label="Chưa đọc" [value]="unreadCount()" suffix="tin" hint="Cần xem xét" tone="warning" icon="mail"></ss-stat>
-    <ss-stat label="Trong tuần này" [value]="2" suffix="tin" hint="Thông báo mới" tone="info" icon="calendar"></ss-stat>
-    <ss-stat label="Quan trọng" [value]="1" suffix="tin" hint="Cần hoàn thành" tone="error" icon="exclamation-circle"></ss-stat>
+    <ss-stat label="Trong tuần này" [value]="recentCount()" suffix="tin" hint="Thông báo mới" tone="info" icon="calendar"></ss-stat>
+    <ss-stat label="Quan trọng" [value]="importantCount()" suffix="tin" hint="Cần hoàn thành" tone="error" icon="exclamation-circle"></ss-stat>
   </section>
 
   <section class="notification-table" aria-label="Thông báo của tôi">

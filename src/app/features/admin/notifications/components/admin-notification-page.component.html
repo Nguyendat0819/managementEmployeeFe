@@ -1,0 +1,51 @@
+<main class="admin-notification-page">
+  <section class="intro-card">
+    <div class="intro-icon">🔔</div>
+    <div>
+      <h1>Gửi thông báo</h1>
+      <p>Gửi một thông báo trong ứng dụng đến nhân viên đã có tài khoản hệ thống.</p>
+    </div>
+  </section>
+
+  <ss-card title="Nội dung thông báo" description="Nhân viên nhận được thông báo trong hộp thư cá nhân" icon="bell" iconColor="#faad14">
+    <form #notificationForm="ngForm" class="notification-form" (ngSubmit)="sendNotification(notificationForm.valid)">
+      <div class="form-grid">
+        <div class="form-field form-field-wide">
+          <label for="notification-recipient">Người nhận <b>*</b></label>
+          <select id="notification-recipient" name="userId" [(ngModel)]="form.userId" required [disabled]="loadingEmployees() || !employees().length">
+            <option [ngValue]="null" disabled>{{ loadingEmployees() ? 'Đang tải nhân viên…' : 'Chọn nhân viên' }}</option>
+            @for (employee of employees(); track employee.user) {
+              <option [ngValue]="employee.user">{{ employee.fullName }} · {{ employee.employeeCode }}{{ employee.departmentName ? ' · ' + employee.departmentName : '' }}</option>
+            }
+          </select>
+          @if (!loadingEmployees() && !employees().length) { <small>Chưa có nhân viên đủ điều kiện nhận thông báo.</small> }
+        </div>
+
+        <div class="form-field">
+          <label for="notification-category">Danh mục</label>
+          <select id="notification-category" name="category" [(ngModel)]="form.category">
+            <option>Thông tin chung</option><option>Nghỉ phép</option><option>Tiền lương</option><option>Đào tạo</option><option>Khảo sát</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="notification-type">Mức độ</label>
+          <select id="notification-type" name="type" [(ngModel)]="form.type">
+            <option value="info">Thông tin</option><option value="success">Thành công</option><option value="warning">Cần chú ý</option><option value="default">Thông báo chung</option>
+          </select>
+        </div>
+        <div class="form-field form-field-wide">
+          <label for="notification-title">Tiêu đề <b>*</b></label>
+          <input id="notification-title" name="title" [(ngModel)]="form.title" required maxlength="255" placeholder="Nhập tiêu đề thông báo">
+        </div>
+        <div class="form-field form-field-wide">
+          <label for="notification-content">Nội dung <b>*</b></label>
+          <textarea id="notification-content" name="content" [(ngModel)]="form.content" required rows="6" placeholder="Nhập nội dung cần gửi"></textarea>
+        </div>
+      </div>
+      <div class="form-footer">
+        <span>Thông báo sẽ được lưu trong hộp thư của người nhận.</span>
+        <ss-button color="primary" htmlType="submit" icon="send" [disabled]="notificationForm.invalid || !form.userId || sending() || loadingEmployees()">Gửi thông báo</ss-button>
+      </div>
+    </form>
+  </ss-card>
+</main>

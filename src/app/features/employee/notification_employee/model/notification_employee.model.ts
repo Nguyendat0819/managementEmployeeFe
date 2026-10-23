@@ -6,7 +6,10 @@ export interface EmployeeNotification {
   content: string;
   category: string;
   createdAt: string;
+  createdAtIso?: string;
   icon: string;
   type: NotificationType;
   read: boolean;
+  referenceType?: string | null;
+  referenceId?: number | null;
 }

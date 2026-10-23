@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { finalize } from 'rxjs/operators';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { SsButtonComponent, SsCardComponent, SsConfirmService, SsDataTableComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsStatComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
 import { AdminLeaveRequest, AdminLeaveRequestStatus } from '../../models/admin-leave-request.model';
@@ -23,25 +24,37 @@ export class AdminLeaveApprovalComponent {
   private readonly confirmService = inject(SsConfirmService);
   private readonly toast = inject(SsToastService);
 
-  readonly requests = signal(this.leaveService.requests);
+  readonly requests = signal<AdminLeaveRequest[]>([]);
+  readonly loading = signal(false);
   readonly selectedRequest = signal<AdminLeaveRequest | null>(null);
   readonly detailVisible = signal(false);
   readonly rejectVisible = signal(false);
   readonly rejectForm: LeaveDecisionForm = { reason: '' };
-  readonly approvalPeriod = 'Tháng 10/2025';
-  readonly lastUpdated = 'Cập nhật lúc 08:45 hôm nay';
+  readonly approvalPeriod = new Intl.DateTimeFormat('vi-VN', { month: 'long', year: 'numeric' }).format(new Date());
 
-  readonly reviewQueue = [
-    { label: 'Cần xử lý trong hôm nay', value: 4, caption: 'Đơn bắt đầu nghỉ trước 14/10', tone: 'urgent', icon: 'clock-circle' },
-    { label: 'Đơn phép năm', value: 2, caption: 'Ưu tiên rà soát lịch bàn giao', tone: 'annual', icon: 'calendar' },
-    { label: 'Đơn có hồ sơ đính kèm', value: 1, caption: 'Cần mở chi tiết để kiểm tra', tone: 'document', icon: 'paper-clip' },
-  ];
+  readonly reviewQueue = computed(() => {
+    const pending = this.requests().filter((request) => request.status === 'Chờ duyệt');
+    const today = this.toIsoDate(new Date().toLocaleDateString('vi-VN'));
+    const soon = this.toIsoDate(new Date(Date.now() + 2 * 86400000).toLocaleDateString('vi-VN'));
+    const startingSoon = pending.filter((request) => this.toIsoDate(request.startDate) <= soon && this.toIsoDate(request.endDate) >= today).length;
+    return [
+      { label: 'Bắt đầu nghỉ trong 48 giờ', value: startingSoon, caption: 'Đơn đang chờ cần xử lý sớm', tone: 'urgent', icon: 'clock-circle' },
+      { label: 'Đơn phép năm', value: pending.filter((request) => request.type.toLowerCase().includes('năm')).length, caption: 'Đang chờ phê duyệt', tone: 'annual', icon: 'calendar' },
+      { label: 'Có minh chứng', value: pending.filter((request) => Boolean(request.evidenceUrl)).length, caption: 'Mở chi tiết để kiểm tra hồ sơ', tone: 'document', icon: 'paper-clip' },
+    ];
+  });
 
-  readonly approvalFlow = [
-    { label: 'Đã tiếp nhận', value: 8, percentage: 100, color: '#4d8dff' },
-    { label: 'Đang chờ duyệt', value: 4, percentage: 50, color: '#f59f3d' },
-    { label: 'Đã xử lý', value: 4, percentage: 50, color: '#32b36b' },
-  ];
+  readonly approvalFlow = computed(() => {
+    const total = this.requests().length;
+    const waiting = this.pendingCount;
+    const handled = this.requests().filter((request) => request.status === 'Đã duyệt' || request.status === 'Từ chối').length;
+    const percentage = (value: number) => total ? Math.round(value * 100 / total) : 0;
+    return [
+      { label: 'Đã tiếp nhận', value: total, percentage: total ? 100 : 0, color: '#4d8dff' },
+      { label: 'Đang chờ duyệt', value: waiting, percentage: percentage(waiting), color: '#f59f3d' },
+      { label: 'Đã xử lý', value: handled, percentage: percentage(handled), color: '#32b36b' },
+    ];
+  });
 
   readonly leaveColumns: SsDtColumn<AdminLeaveRequest>[] = [
     { key: 'requestCode', header: 'Mã đơn', field: 'requestCode', width: '135px', sortable: true, filterable: true },
@@ -118,6 +131,10 @@ export class AdminLeaveApprovalComponent {
     emptyText: 'Không có đơn nghỉ phép phù hợp',
   };
 
+  constructor() {
+    this.loadRequests();
+  }
+
   get pendingCount(): number {
     return this.requests().filter((request) => request.status === 'Chờ duyệt').length;
   }
@@ -140,7 +157,7 @@ export class AdminLeaveApprovalComponent {
 
   onPrimaryClick(button: SsDtButton): void {
     if (button.key === 'refresh') {
-      this.toast.show({ severity: 'success', summary: 'Đã làm mới danh sách', detail: 'Hàng đợi duyệt đơn đang hiển thị dữ liệu mới nhất.' });
+      this.loadRequests(true);
       return;
     }
     if (button.key === 'export') {
@@ -182,17 +199,27 @@ export class AdminLeaveApprovalComponent {
       { type: 'warning', okText: 'Duyệt đơn' },
     );
     if (!confirmed) return;
-    this.updateRequest(request, { status: 'Đã duyệt', processedAt: '07/10/2025 08:50', approver: 'Quản trị viên', decisionNote: 'Đơn đã được phê duyệt.' });
-    this.toast.show({ severity: 'success', summary: 'Duyệt đơn thành công', detail: `${request.employeeName} đã được ghi nhận lịch nghỉ.` });
+    this.leaveService.approve(request.id).subscribe({
+      next: () => {
+        this.toast.show({ severity: 'success', summary: 'Duyệt đơn thành công', detail: `${request.employeeName} đã được ghi nhận lịch nghỉ.` });
+        this.loadRequests();
+      },
+      error: () => undefined,
+    });
   }
 
   saveRejection(formValid: boolean): void {
     const request = this.selectedRequest();
     const reason = this.rejectForm.reason.trim();
     if (!request || !formValid || !reason) return;
-    this.updateRequest(request, { status: 'Từ chối', processedAt: '07/10/2025 08:50', approver: 'Quản trị viên', decisionNote: reason });
-    this.closeRejectDialog();
-    this.toast.show({ severity: 'success', summary: 'Đã từ chối đơn', detail: `Đơn ${request.requestCode} đã được cập nhật trạng thái.` });
+    this.leaveService.reject(request.id, reason).subscribe({
+      next: () => {
+        this.closeRejectDialog();
+        this.toast.show({ severity: 'success', summary: 'Đã từ chối đơn', detail: `Đơn ${request.requestCode} đã được cập nhật trạng thái.` });
+        this.loadRequests();
+      },
+      error: () => undefined,
+    });
   }
 
   statusTone(status: AdminLeaveRequestStatus): 'success' | 'warning' | 'error' | 'info' {
@@ -206,10 +233,20 @@ export class AdminLeaveApprovalComponent {
     return name.split(' ').slice(-2).map((part) => part[0]).join('');
   }
 
-  private updateRequest(request: AdminLeaveRequest, changes: Partial<AdminLeaveRequest>): void {
-    const updatedRequest = { ...request, ...changes };
-    this.requests.update((requests) => requests.map((item) => item.id === request.id ? updatedRequest : item));
-    this.leaveTableSettings = { ...this.leaveTableSettings, cardStatusLabel: `${this.pendingCount} đơn chờ duyệt` };
-    this.selectedRequest.set(updatedRequest);
+  private loadRequests(showToast = false): void {
+    this.loading.set(true);
+    this.leaveService.getRequests().pipe(finalize(() => this.loading.set(false))).subscribe({
+      next: (requests) => {
+        this.requests.set(requests);
+        this.leaveTableSettings = { ...this.leaveTableSettings, cardStatusLabel: `${this.pendingCount} đơn chờ duyệt` };
+        if (showToast) this.toast.show({ severity: 'success', summary: 'Đã làm mới danh sách', detail: 'Hàng đợi duyệt đơn đã được tải lại.' });
+      },
+      error: () => undefined,
+    });
+  }
+
+  private toIsoDate(value: string): string {
+    const [day, month, year] = value.split('/');
+    return year && month && day ? `${year}-${month}-${day}` : value;
   }
 }
