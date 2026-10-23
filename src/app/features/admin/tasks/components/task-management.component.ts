@@ -66,7 +66,7 @@ export class TaskManagementComponent implements OnInit {
     ] },
   ];
   readonly taskTableSettings: SsDtConfig<EmployeeTask> = {
-    rowKey: 'id', title: 'Danh sách công việc', description: 'Theo dõi kết quả hoàn thành và bằng chứng nghiệm thu', cardIcon: 'unordered-list',
+    rowKey: 'id', title: 'Danh sách công việc', description: 'Theo dõi kết quả hoàn thành và bằng chứng nghiệm thu', cardIcon: 'ordered-list',
     primaryButtons: [{ key: 'create-task', label: 'Thêm mới', type: 'primary', icon: 'plus' }],
     searchable: true, searchPlaceholder: 'Tìm theo tên công việc hoặc mã nhân viên', showSort: true, showSetting: true,
     quickFilters: [{ key: 'employeeCode', placeholder: 'Lọc theo mã nhân viên', options: [], showSearch: true, width: '220px' }],

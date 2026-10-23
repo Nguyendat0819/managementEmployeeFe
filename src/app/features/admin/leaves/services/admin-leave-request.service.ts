@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { EMPTY, Observable, expand, map, reduce } from 'rxjs';
 import { LeaveApiService } from '@core/services/leave-api.service';
 import { LeaveRequestDto } from '@core/models/leave-api.model';
 import { AdminLeaveRequest, AdminLeaveRequestStatus } from '../models/admin-leave-request.model';
@@ -9,8 +9,13 @@ export class AdminLeaveRequestService {
   constructor(private readonly leaveApi: LeaveApiService) {}
 
   getRequests(): Observable<AdminLeaveRequest[]> {
-    return this.leaveApi.searchRequests({ page: 0, size: 100 })
-      .pipe(map((page) => page.content.map((request) => this.toRequest(request))));
+    return this.leaveApi.searchRequests({ page: 0, size: 100 }).pipe(
+      expand((page) => page.last
+        ? EMPTY
+        : this.leaveApi.searchRequests({ page: page.page + 1, size: 100 })),
+      reduce((requests, page) => requests.concat(page.content.map((request) => this.toRequest(request))),
+        [] as AdminLeaveRequest[]),
+    );
   }
 
   approve(id: number): Observable<AdminLeaveRequest> {

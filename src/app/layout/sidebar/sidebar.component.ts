@@ -39,14 +39,28 @@ export class SidebarComponent {
     const claims = this.auth.claims;
     return (
       this.stringClaim(claims, 'user', 'userName', 'username', 'name', 'preferred_username') ??
-      'HRM User'
+      'Người dùng'
     );
   }
 
   get roleName(): string {
     const roles = this.auth.claims['roles'];
-    if (Array.isArray(roles) && typeof roles[0] === 'string') return roles[0];
-    return this.stringClaim(this.auth.claims, 'role') ?? 'Nhân sự';
+    const role = Array.isArray(roles) && typeof roles[0] === 'string'
+      ? roles[0]
+      : this.stringClaim(this.auth.claims, 'role');
+    if (!role) return 'Nhân sự';
+
+    const translatedRoles: Record<string, string> = {
+      ADMIN: 'Quản trị viên',
+      ROLE_ADMIN: 'Quản trị viên',
+      USER: 'Nhân viên',
+      ROLE_USER: 'Nhân viên',
+      EMPLOYEE: 'Nhân viên',
+      ROLE_EMPLOYEE: 'Nhân viên',
+      MANAGER: 'Quản lý',
+      ROLE_MANAGER: 'Quản lý',
+    };
+    return translatedRoles[role.toUpperCase()] ?? role;
   }
 
   isActive(item: MenuItem): boolean {

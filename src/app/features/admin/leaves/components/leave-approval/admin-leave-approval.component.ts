@@ -59,6 +59,8 @@ export class AdminLeaveApprovalComponent {
   readonly leaveColumns: SsDtColumn<AdminLeaveRequest>[] = [
     { key: 'requestCode', header: 'Mã đơn', field: 'requestCode', width: '135px', sortable: true, filterable: true },
     { key: 'employeeName', header: 'Nhân viên', field: 'employeeName', width: '190px', sortable: true, filterable: true },
+    { key: 'employeeCode', header: 'Mã nhân viên', field: 'employeeCode', hidden: true },
+    { key: 'reason', header: 'Lý do', field: 'reason', hidden: true },
     { key: 'department', header: 'Phòng ban', field: 'department', width: '170px', filterable: true },
     { key: 'type', header: 'Loại phép', field: 'type', width: '145px', filterable: true },
     { key: 'period', header: 'Thời gian nghỉ', format: (row) => row.startDate === row.endDate ? row.startDate : `${row.startDate} - ${row.endDate}`, width: '220px', sortable: true },
@@ -90,7 +92,7 @@ export class AdminLeaveApprovalComponent {
       { key: 'refresh', label: 'Làm mới', type: 'secondary', icon: 'reload' },
     ],
     searchable: true,
-    searchPlaceholder: 'Tìm theo mã đơn, tên nhân viên hoặc lý do',
+    searchPlaceholder: 'Tìm theo mã đơn, mã/tên nhân viên hoặc lý do',
     showSort: true,
     showFilter: true,
     showSetting: true,
@@ -116,12 +118,13 @@ export class AdminLeaveApprovalComponent {
       {
         key: 'type',
         placeholder: 'Tất cả loại phép',
-        options: [
-          { label: 'Phép năm', value: 'Phép năm' },
-          { label: 'Phép ốm', value: 'Phép ốm' },
-          { label: 'Phép đặc biệt', value: 'Phép đặc biệt' },
-          { label: 'Phép không lương', value: 'Phép không lương' },
-        ],
+        options: [],
+      },
+      {
+        key: 'employeeCode',
+        placeholder: 'Tất cả nhân viên',
+        options: [],
+        showSearch: true,
       },
     ],
     rowClass: (row) => row.status === 'Chờ duyệt' ? 'pending-leave-row' : '',
@@ -238,7 +241,41 @@ export class AdminLeaveApprovalComponent {
     this.leaveService.getRequests().pipe(finalize(() => this.loading.set(false))).subscribe({
       next: (requests) => {
         this.requests.set(requests);
-        this.leaveTableSettings = { ...this.leaveTableSettings, cardStatusLabel: `${this.pendingCount} đơn chờ duyệt` };
+        const typeOptions = [...new Set(requests.map((request) => request.type).filter(Boolean))]
+          .sort((first, second) => first.localeCompare(second, 'vi'))
+          .map((type) => ({ label: type, value: type }));
+        const employeeByCode = new Map<string, AdminLeaveRequest>();
+        for (const request of requests) {
+          if (request.employeeCode && !employeeByCode.has(request.employeeCode)) {
+            employeeByCode.set(request.employeeCode, request);
+          }
+        }
+        const employeeOptions = [...employeeByCode.entries()]
+          .sort(([, first], [, second]) => first.employeeName.localeCompare(second.employeeName, 'vi'))
+          .map(([employeeCode, request]) => ({
+            label: request.employeeName && request.employeeName !== employeeCode
+              ? `${request.employeeName} (${employeeCode})`
+              : employeeCode,
+            value: employeeCode,
+          }));
+        this.leaveTableSettings = {
+          ...this.leaveTableSettings,
+          cardStatusLabel: `${this.pendingCount} đơn chờ duyệt`,
+          quickFilters: [
+            {
+              key: 'status',
+              placeholder: 'Tất cả trạng thái',
+              options: [
+                { label: 'Chờ duyệt', value: 'Chờ duyệt' },
+                { label: 'Đã duyệt', value: 'Đã duyệt' },
+                { label: 'Từ chối', value: 'Từ chối' },
+                { label: 'Đã hủy', value: 'Đã hủy' },
+              ],
+            },
+            { key: 'type', placeholder: 'Tất cả loại phép', options: typeOptions },
+            { key: 'employeeCode', placeholder: 'Tất cả nhân viên', options: employeeOptions, showSearch: true },
+          ],
+        };
         if (showToast) this.toast.show({ severity: 'success', summary: 'Đã làm mới danh sách', detail: 'Hàng đợi duyệt đơn đã được tải lại.' });
       },
       error: () => undefined,

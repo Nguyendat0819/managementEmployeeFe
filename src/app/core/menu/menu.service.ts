@@ -17,7 +17,7 @@ export class MenuService {
       children: [
         {
           id: 'ess-dashboard',
-          label: 'Trang chủ Dashboard cá nhân',
+          label: 'Trang chủ',
           icon: 'home',
           iconColor: '#52c41a',
           path: '/user/dashboard',
@@ -37,8 +37,8 @@ export class MenuService {
         },
         {
           id: 'ess-tasks',
-          label: 'Task được giao',
-          icon: 'profile',
+          label: 'Công việc được giao',
+          icon: 'ordered-list',
           iconColor: '#13c2c2',
           path: '/user/tasks',
           order: 25,
@@ -97,7 +97,7 @@ export class MenuService {
     // =========================================================
     {
       id: 'admin',
-      label: 'Quản lý & HR',
+      label: 'Quản lý nhân sự',
       icon: 'setting',
       iconColor: '#722ed1',
       order: 30,
@@ -108,7 +108,7 @@ export class MenuService {
         // -----------------------------------------------------
         {
           id: 'admin-dashboard',
-          label: 'Executive Dashboard HR',
+          label: 'Tổng quan nhân sự',
           icon: 'dashboard',
           iconColor: '#1677ff',
           path: '/admin/dashboard',
@@ -234,7 +234,7 @@ export class MenuService {
         // -----------------------------------------------------
         {
           id: 'admin-leaves',
-          label: 'Trung tâm phê duyệt Đơn từ',
+          label: 'Quản lý nghỉ phép',
           icon: 'audit',
           iconColor: '#eb2f96',
           order: 50,
@@ -273,12 +273,12 @@ export class MenuService {
           permissions: ['employee:notification:create'],
         },
         // -----------------------------------------------------
-        // Quản lý task
+        // Quản lý công việc
         // -----------------------------------------------------
         {
           id: 'admin-tasks',
-          label: 'Quản lý task & thưởng',
-          icon: 'profile',
+          label: 'Quản lý công việc & thưởng',
+          icon: 'ordered-list',
           iconColor: '#13c2c2',
           path: '/admin/tasks',
           order: 5,
@@ -286,11 +286,11 @@ export class MenuService {
           permissions: ['employee:task:manage'],
         },
         // -----------------------------------------------------
-        // Payroll
+        // Tiền lương
         // -----------------------------------------------------
         {
           id: 'admin-payroll',
-          label: 'Cấu hình & Kỳ tính lương Payroll',
+          label: 'Quản lý tiền lương',
           icon: 'dollar',
           iconColor: '#52c41a',
           order: 60,
@@ -320,11 +320,11 @@ export class MenuService {
         },
 
         // -----------------------------------------------------
-        // System
+        // Tài khoản và phân quyền
         // -----------------------------------------------------
         {
           id: 'admin-system',
-          label: 'Tài khoản, Phân quyền & Audit Log',
+          label: 'Tài khoản & phân quyền',
           icon: 'safety',
           iconColor: '#f5222d',
           order: 70,
@@ -352,7 +352,7 @@ export class MenuService {
             },
             {
               id: 'admin-audit-logs',
-              label: 'Audit Log',
+              label: 'Nhật ký hoạt động',
               icon: 'file-search',
               iconColor: '#8c8c8c',
               path: '/admin/audit-logs',

@@ -1,9 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
 import { finalize } from 'rxjs/operators';
-import { SsButtonComponent, SsCardComponent, SsCardFooterStartDirective, SsConfirmService, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtActionClick, SsDtColumn, SsDtConfig, SsStatComponent, SsToastService } from '@platform/ui-kit';
+import { SsButtonComponent, SsCardComponent, SsCardFooterStartDirective, SsConfirmService, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtActionClick, SsDtColumn, SsDtConfig, SsSelectComponent, SsStatComponent, SsToastService } from '@platform/ui-kit';
 import { LeaveApiService } from '@core/services/leave-api.service';
 import { LeaveBalanceDto, LeaveRequestDto, LeaveTypeDto } from '@core/models/leave-api.model';
 import { LeaveRequest } from '../model/leave_employee.model';
@@ -11,7 +10,7 @@ import { LeaveRequest } from '../model/leave_employee.model';
 @Component({
   selector: 'app-leave-employee',
   standalone: true,
-  imports: [CommonModule, FormsModule, SsButtonComponent, SsCardComponent, SsCardFooterStartDirective, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsStatComponent],
+  imports: [CommonModule, FormsModule, SsButtonComponent, SsCardComponent, SsCardFooterStartDirective, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsSelectComponent, SsStatComponent],
   templateUrl: './leave_employee.component.html',
   styleUrl: './leave_employee.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -23,9 +22,12 @@ export class LeaveEmployeeComponent {
 
   readonly balances = signal<LeaveBalanceView[]>([]);
   readonly leaveTypes = signal<LeaveTypeDto[]>([]);
-  readonly evidenceRequired = computed(() => this.leaveTypes().find((type) => type.id === this.leaveForm.leaveTypeId)?.requireDocument ?? false);
+  readonly selectedLeaveTypeId = signal<number | null>(null);
+  readonly leaveTypeOptions = computed(() => this.leaveTypes().map((type) => ({ label: type.name, value: type.id })));
+  readonly evidenceRequired = computed(() => this.leaveTypes().find((type) => type.id === this.selectedLeaveTypeId())?.requireDocument ?? false);
   readonly requests = signal<LeaveRequest[]>([]);
-  readonly loading = signal(false);
+  readonly leaveTypesLoading = signal(false);
+  readonly leaveTypeLoadMessage = signal('');
   readonly submitting = signal(false);
   readonly currentYear = new Date().getFullYear();
   readonly totalRemaining = computed(() => this.balances().reduce((total, balance) => total + balance.remaining, 0));
@@ -39,7 +41,7 @@ export class LeaveEmployeeComponent {
   });
   readonly dialogVisible = signal(false);
   readonly policyDialogVisible = signal(false);
-  readonly leaveForm = { leaveTypeId: null as number | null, startDate: '', endDate: '', reason: '', evidenceUrl: '' };
+  readonly leaveForm = { startDate: '', endDate: '', reason: '', evidenceUrl: '' };
   readonly leaveColumns: SsDtColumn<LeaveRequest>[] = [
     { key: 'type', header: 'Loại phép', field: 'type', filterable: true },
     { key: 'period', header: 'Thời gian nghỉ', format: (row) => row.startDate + ' - ' + row.endDate, sortable: true },
@@ -73,29 +75,50 @@ export class LeaveEmployeeComponent {
   }
 
   loadLeaveData(): void {
-    this.loading.set(true);
-    forkJoin({
-      requests: this.leaveService.getMyRequests(),
-      balances: this.leaveService.getMyBalances(this.currentYear),
-      leaveTypes: this.leaveService.getLeaveTypes(),
-    }).pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: ({ requests, balances, leaveTypes }) => {
-        this.requests.set(requests.map((item) => this.toLeaveRequest(item)));
-        this.balances.set(balances.map((item) => this.toLeaveBalance(item)));
-        this.leaveTypes.set(leaveTypes);
-        if (!this.leaveForm.leaveTypeId && leaveTypes.length) this.leaveForm.leaveTypeId = leaveTypes[0].id;
-      },
+    this.leaveService.getMyRequests().subscribe({
+      next: (requests) => this.requests.set(requests.map((item) => this.toLeaveRequest(item))),
       error: () => undefined,
+    });
+    this.leaveService.getMyBalances(this.currentYear).subscribe({
+      next: (balances) => this.balances.set(balances.map((item) => this.toLeaveBalance(item))),
+      error: () => undefined,
+    });
+    this.loadLeaveTypes();
+  }
+
+  loadLeaveTypes(): void {
+    this.leaveTypesLoading.set(true);
+    this.leaveTypeLoadMessage.set('');
+    this.leaveService.getLeaveTypes().pipe(finalize(() => this.leaveTypesLoading.set(false))).subscribe({
+      next: (leaveTypes) => {
+        this.leaveTypes.set(leaveTypes);
+        const selectedId = this.selectedLeaveTypeId();
+        if (!leaveTypes.some((type) => type.id === selectedId)) {
+          this.selectedLeaveTypeId.set(leaveTypes[0]?.id ?? null);
+        }
+        if (!leaveTypes.length) {
+          this.leaveTypeLoadMessage.set('Chưa có loại phép đang áp dụng. Vui lòng liên hệ bộ phận nhân sự.');
+        }
+      },
+      error: () => {
+        this.leaveTypes.set([]);
+        this.selectedLeaveTypeId.set(null);
+        this.leaveTypeLoadMessage.set('Không tải được danh sách loại phép. Vui lòng thử lại.');
+      },
     });
   }
 
   openRequestDialog(): void {
-    this.leaveForm.leaveTypeId = this.leaveTypes()[0]?.id ?? null;
+    this.selectedLeaveTypeId.set(this.leaveTypes()[0]?.id ?? null);
     this.leaveForm.startDate = '';
     this.leaveForm.endDate = '';
     this.leaveForm.reason = '';
     this.leaveForm.evidenceUrl = '';
     this.dialogVisible.set(true);
+  }
+
+  onLeaveTypeChange(value: unknown): void {
+    this.selectedLeaveTypeId.set(typeof value === 'number' ? value : null);
   }
 
   balancePercent(balance: LeaveBalanceView): number {
@@ -111,7 +134,8 @@ export class LeaveEmployeeComponent {
   }
 
   submitRequest(): void {
-    if (!this.leaveForm.leaveTypeId || !this.leaveForm.startDate || !this.leaveForm.endDate || !this.leaveForm.reason.trim()) {
+    const leaveTypeId = this.selectedLeaveTypeId();
+    if (!leaveTypeId || !this.leaveForm.startDate || !this.leaveForm.endDate || !this.leaveForm.reason.trim()) {
       this.toast.show({ severity: 'warning', summary: 'Chưa đủ thông tin', detail: 'Vui lòng chọn loại phép, thời gian nghỉ và nhập lý do.' });
       return;
     }
@@ -130,7 +154,7 @@ export class LeaveEmployeeComponent {
     }
     this.submitting.set(true);
     this.leaveService.createRequest({
-      leaveTypeId: this.leaveForm.leaveTypeId,
+      leaveTypeId,
       startDate: this.leaveForm.startDate,
       endDate: this.leaveForm.endDate,
       reason: this.leaveForm.reason.trim(),

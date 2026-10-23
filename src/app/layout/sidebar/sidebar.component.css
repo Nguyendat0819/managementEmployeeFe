@@ -40,6 +40,11 @@
   font-weight: 700;
 }
 
+img.brand-logo {
+  object-fit: cover;
+  background: none;
+}
+
 .brand-text,
 .profile-text {
   display: flex;
