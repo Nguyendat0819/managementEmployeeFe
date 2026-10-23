@@ -51,6 +51,7 @@ export class API_ENDPOINTS {
     MY_REQUESTS: 'api/leave-requests/me',
     MY_BALANCES: 'api/leave-balances/me',
     TYPES: 'api/leave-types',
+    HOLIDAYS: 'api/holidays',
   };
 
   public static readonly Notifications = {

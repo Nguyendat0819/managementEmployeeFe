@@ -4,6 +4,7 @@ import { API_ENDPOINTS } from '@core/constants/api-endpoint';
 import { ApiResponse } from '@core/models/api-response.interface';
 import {
   LeaveBalanceDto,
+  LeaveHolidayDto,
   LeaveRequestDto,
   LeaveRequestPageDto,
   LeaveTypeDto,
@@ -32,6 +33,11 @@ export class LeaveApiService extends BaseService {
 
   getMyBalances(year: number): Observable<LeaveBalanceDto[]> {
     return this.get<ApiResponse<LeaveBalanceDto[]>>(`${this.serviceBase}/${API_ENDPOINTS.Leave.MY_BALANCES}`, undefined, { params: { year } })
+      .pipe(map(({ data }) => data ?? []));
+  }
+
+  getHolidays(from: string, to: string): Observable<LeaveHolidayDto[]> {
+    return this.get<ApiResponse<LeaveHolidayDto[]>>(`${this.serviceBase}/${API_ENDPOINTS.Leave.HOLIDAYS}`, undefined, { params: { from, to } })
       .pipe(map(({ data }) => data ?? []));
   }
 

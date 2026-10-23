@@ -32,6 +32,15 @@ export interface LeaveBalanceDto {
   remainingDays: number;
 }
 
+export interface LeaveHolidayDto {
+  id: number;
+  startDate: string;
+  endDate: string;
+  name: string;
+  type: string;
+  notes: string | null;
+}
+
 export interface LeaveTypeDto {
   id: number;
   code: string;

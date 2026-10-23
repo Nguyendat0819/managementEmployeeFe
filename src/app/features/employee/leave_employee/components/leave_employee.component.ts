@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import { SsButtonComponent, SsCardComponent, SsCardFooterStartDirective, SsConfirmService, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtActionClick, SsDtColumn, SsDtConfig, SsSelectComponent, SsStatComponent, SsToastService } from '@platform/ui-kit';
 import { LeaveApiService } from '@core/services/leave-api.service';
-import { LeaveBalanceDto, LeaveRequestDto, LeaveTypeDto } from '@core/models/leave-api.model';
+import { LeaveBalanceDto, LeaveHolidayDto, LeaveRequestDto, LeaveTypeDto } from '@core/models/leave-api.model';
 import { LeaveRequest } from '../model/leave_employee.model';
 
 @Component({
@@ -19,12 +20,56 @@ export class LeaveEmployeeComponent {
   private readonly leaveService = inject(LeaveApiService);
   private readonly toast = inject(SsToastService);
   private readonly confirmService = inject(SsConfirmService);
+  private holidayRequest?: Subscription;
 
   readonly balances = signal<LeaveBalanceView[]>([]);
+  readonly balancesLoading = signal(false);
+  readonly balancesLoadError = signal(false);
   readonly leaveTypes = signal<LeaveTypeDto[]>([]);
   readonly selectedLeaveTypeId = signal<number | null>(null);
+  readonly holidayDates = signal<Set<string>>(new Set());
+  readonly holidayLoading = signal(false);
+  readonly holidayLoadError = signal(false);
+  readonly holidayRangeKey = signal('');
+  private readonly dateRangeRevision = signal(0);
+  readonly startDateErrors = { required: 'Vui lòng chọn ngày bắt đầu.', invalidDate: 'Ngày bắt đầu không hợp lệ.' };
+  readonly endDateErrors = { required: 'Vui lòng chọn ngày kết thúc.', invalidDate: 'Ngày kết thúc không hợp lệ.' };
   readonly leaveTypeOptions = computed(() => this.leaveTypes().map((type) => ({ label: type.name, value: type.id })));
   readonly evidenceRequired = computed(() => this.leaveTypes().find((type) => type.id === this.selectedLeaveTypeId())?.requireDocument ?? false);
+  readonly validDateRange = computed(() => {
+    this.dateRangeRevision();
+    const start = this.parseIsoDate(this.leaveForm.startDate);
+    const end = this.parseIsoDate(this.leaveForm.endDate);
+    if (!start || !end || this.leaveForm.startDate > this.leaveForm.endDate) return null;
+    if (start.getUTCFullYear() !== end.getUTCFullYear()) return null;
+    return { start, end, key: `${this.leaveForm.startDate}|${this.leaveForm.endDate}` };
+  });
+  readonly dateRangeMessage = computed(() => {
+    this.dateRangeRevision();
+    const start = this.parseIsoDate(this.leaveForm.startDate);
+    const end = this.parseIsoDate(this.leaveForm.endDate);
+    if (!this.leaveForm.startDate || !this.leaveForm.endDate || !start || !end) return '';
+    if (this.leaveForm.endDate < this.leaveForm.startDate) return 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.';
+    if (start.getUTCFullYear() !== end.getUTCFullYear()) return 'Mỗi đơn nghỉ phép chỉ được đăng ký trong cùng một năm.';
+    return '';
+  });
+  readonly requestedDays = computed(() => {
+    const range = this.validDateRange();
+    if (!range || this.holidayLoading() || this.holidayLoadError() || this.holidayRangeKey() !== range.key) return null;
+    let days = 0;
+    for (let timestamp = range.start.getTime(); timestamp <= range.end.getTime(); timestamp += 86_400_000) {
+      const date = new Date(timestamp);
+      const weekday = date.getUTCDay();
+      if (weekday !== 0 && weekday !== 6 && !this.holidayDates().has(this.toIsoUtcDate(date))) days += 1;
+    }
+    return days;
+  });
+  readonly quotaPreview = computed(() => {
+    const requested = this.requestedDays();
+    const balance = this.balances().find((item) => item.leaveTypeId === this.selectedLeaveTypeId());
+    if (requested === null || !balance) return null;
+    return { ...balance, requested, exceeded: Math.max(0, requested - balance.remaining), remainingAfterRequest: balance.remaining - requested };
+  });
   readonly requests = signal<LeaveRequest[]>([]);
   readonly leaveTypesLoading = signal(false);
   readonly leaveTypeLoadMessage = signal('');
@@ -61,8 +106,8 @@ export class LeaveEmployeeComponent {
     showFilter: true,
     showSetting: true,
     showPagination: true,
-    pageSize: 5,
-    pageSizeOptions: [5, 10, 20],
+    pageSize: 10,
+    pageSizeOptions: [10, 20, 50, 100],
     striped: true,
     size: 'small',
     scrollY: '280px',
@@ -79,11 +124,17 @@ export class LeaveEmployeeComponent {
       next: (requests) => this.requests.set(requests.map((item) => this.toLeaveRequest(item))),
       error: () => undefined,
     });
-    this.leaveService.getMyBalances(this.currentYear).subscribe({
-      next: (balances) => this.balances.set(balances.map((item) => this.toLeaveBalance(item))),
-      error: () => undefined,
-    });
+    this.loadBalances();
     this.loadLeaveTypes();
+  }
+
+  loadBalances(): void {
+    this.balancesLoading.set(true);
+    this.balancesLoadError.set(false);
+    this.leaveService.getMyBalances(this.currentYear).pipe(finalize(() => this.balancesLoading.set(false))).subscribe({
+      next: (balances) => this.balances.set(balances.map((item) => this.toLeaveBalance(item))),
+      error: () => this.balancesLoadError.set(true),
+    });
   }
 
   loadLeaveTypes(): void {
@@ -112,13 +163,27 @@ export class LeaveEmployeeComponent {
     this.selectedLeaveTypeId.set(this.leaveTypes()[0]?.id ?? null);
     this.leaveForm.startDate = '';
     this.leaveForm.endDate = '';
+    this.dateRangeRevision.update((revision) => revision + 1);
     this.leaveForm.reason = '';
     this.leaveForm.evidenceUrl = '';
+    this.clearHolidayPreview();
     this.dialogVisible.set(true);
   }
 
   onLeaveTypeChange(value: unknown): void {
     this.selectedLeaveTypeId.set(typeof value === 'number' ? value : null);
+  }
+
+  onStartDateChange(value: unknown): void {
+    this.leaveForm.startDate = typeof value === 'string' ? value : '';
+    this.dateRangeRevision.update((revision) => revision + 1);
+    this.updateHolidayPreview();
+  }
+
+  onEndDateChange(value: unknown): void {
+    this.leaveForm.endDate = typeof value === 'string' ? value : '';
+    this.dateRangeRevision.update((revision) => revision + 1);
+    this.updateHolidayPreview();
   }
 
   balancePercent(balance: LeaveBalanceView): number {
@@ -127,6 +192,11 @@ export class LeaveEmployeeComponent {
 
   closeRequestDialog(): void {
     this.dialogVisible.set(false);
+    this.clearHolidayPreview();
+  }
+
+  retryHolidayPreview(): void {
+    this.updateHolidayPreview(true);
   }
 
   openPolicyDialog(): void {
@@ -141,6 +211,10 @@ export class LeaveEmployeeComponent {
     }
     if (this.leaveForm.endDate < this.leaveForm.startDate) {
       this.toast.show({ severity: 'warning', summary: 'Thời gian không hợp lệ', detail: 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.' });
+      return;
+    }
+    if (!this.validDateRange()) {
+      this.toast.show({ severity: 'warning', summary: 'Thời gian không hợp lệ', detail: 'Mỗi đơn nghỉ phép chỉ được đăng ký trong cùng một năm và ngày phải hợp lệ.' });
       return;
     }
     const evidenceUrl = this.leaveForm.evidenceUrl.trim();
@@ -216,6 +290,71 @@ export class LeaveEmployeeComponent {
       pending: Number(item.pendingDays ?? 0),
       tone: 'primary',
     };
+  }
+
+  private updateHolidayPreview(force = false): void {
+    const range = this.validDateRange();
+    this.holidayRequest?.unsubscribe();
+    this.holidayRequest = undefined;
+    this.holidayLoading.set(false);
+    this.holidayLoadError.set(false);
+    if (!range) {
+      this.holidayDates.set(new Set());
+      this.holidayRangeKey.set('');
+      return;
+    }
+    if (!force && this.holidayRangeKey() === range.key) return;
+
+    this.holidayDates.set(new Set());
+    this.holidayRangeKey.set('');
+    this.holidayLoading.set(true);
+    this.holidayRequest = this.leaveService.getHolidays(this.leaveForm.startDate, this.leaveForm.endDate).subscribe({
+      next: (holidays) => {
+        this.holidayDates.set(this.collectHolidayDates(holidays));
+        this.holidayRangeKey.set(range.key);
+      },
+      error: () => {
+        this.holidayLoadError.set(true);
+        this.holidayLoading.set(false);
+      },
+      complete: () => this.holidayLoading.set(false),
+    });
+  }
+
+  private clearHolidayPreview(): void {
+    this.holidayRequest?.unsubscribe();
+    this.holidayRequest = undefined;
+    this.holidayDates.set(new Set());
+    this.holidayRangeKey.set('');
+    this.holidayLoading.set(false);
+    this.holidayLoadError.set(false);
+  }
+
+  private collectHolidayDates(holidays: LeaveHolidayDto[]): Set<string> {
+    const dates = new Set<string>();
+    for (const holiday of holidays) {
+      const start = this.parseIsoDate(holiday.startDate);
+      const end = this.parseIsoDate(holiday.endDate);
+      if (!start || !end) continue;
+      for (let timestamp = start.getTime(); timestamp <= end.getTime(); timestamp += 86_400_000) {
+        dates.add(this.toIsoUtcDate(new Date(timestamp)));
+      }
+    }
+    return dates;
+  }
+
+  private parseIsoDate(value: string): Date | null {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+    const [year, month, day] = value.split('-').map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day ? date : null;
+  }
+
+  private toIsoUtcDate(value: Date): string {
+    const year = value.getUTCFullYear();
+    const month = String(value.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(value.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   private statusLabel(statusCode: string): string {

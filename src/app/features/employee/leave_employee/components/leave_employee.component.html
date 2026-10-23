@@ -31,8 +31,32 @@
   <ss-dialog [visible]="dialogVisible()" [title]="'Tạo đơn nghỉ phép'" [width]="560" [maskClosable]="false" (visibleChange)="dialogVisible.set($event)">
     <form class="leave-form" (ngSubmit)="submitRequest()">
       <div class="form-field"><label for="leave-type">Loại phép <b>*</b></label><ss-select id="leave-type" name="leaveTypeId" [ngModel]="selectedLeaveTypeId()" (ngModelChange)="onLeaveTypeChange($event)" [options]="leaveTypeOptions()" [loading]="leaveTypesLoading()" [disabled]="leaveTypesLoading() || !leaveTypes().length" [showSearch]="true" [allowClear]="false" required placeholder="Chọn loại phép"></ss-select><p class="leave-type-message" *ngIf="leaveTypeLoadMessage()" role="status">{{ leaveTypeLoadMessage() }} <button type="button" (click)="loadLeaveTypes()" [disabled]="leaveTypesLoading()">Tải lại</button></p></div>
-      <div class="form-grid"><div class="form-field"><label>Từ ngày</label><ss-datepicker name="startDate" [(ngModel)]="leaveForm.startDate" format="dd/MM/yyyy" valueFormat="yyyy-MM-dd" placeholder="dd/MM/yyyy" required></ss-datepicker></div><div class="form-field"><label>Đến ngày</label><ss-datepicker name="endDate" [(ngModel)]="leaveForm.endDate" format="dd/MM/yyyy" valueFormat="yyyy-MM-dd" placeholder="dd/MM/yyyy" required></ss-datepicker></div></div>
-      <div class="form-field"><label for="leave-reason">Lý do nghỉ</label><textarea id="leave-reason" name="reason" rows="3" maxlength="250" [(ngModel)]="leaveForm.reason" placeholder="Nhập lý do nghỉ phép" required></textarea></div>
+      <div class="form-grid"><div class="form-field"><label for="leave-start-date">Từ ngày <b>*</b></label><ss-datepicker id="leave-start-date" name="startDate" [ngModel]="leaveForm.startDate" (ngModelChange)="onStartDateChange($event)" [errorMessages]="startDateErrors" [reserveErrorSpace]="true" format="dd/MM/yyyy" valueFormat="yyyy-MM-dd" placeholder="dd/MM/yyyy" required></ss-datepicker></div><div class="form-field"><label for="leave-end-date">Đến ngày <b>*</b></label><ss-datepicker id="leave-end-date" name="endDate" [ngModel]="leaveForm.endDate" (ngModelChange)="onEndDateChange($event)" [errorMessages]="endDateErrors" [reserveErrorSpace]="true" format="dd/MM/yyyy" valueFormat="yyyy-MM-dd" placeholder="dd/MM/yyyy" required></ss-datepicker></div></div>
+      <p class="date-range-message" *ngIf="dateRangeMessage()" role="alert">{{ dateRangeMessage() }}</p>
+      <section class="quota-preview" *ngIf="validDateRange()" aria-live="polite">
+        <strong>Đối chiếu số ngày phép</strong>
+        <p *ngIf="holidayLoading()" class="quota-hint">Đang tính ngày làm việc và kiểm tra lịch nghỉ lễ…</p>
+        <p *ngIf="holidayLoadError()" class="quota-hint quota-hint--error" role="alert">Không tải được lịch nghỉ lễ nên chưa thể tính chính xác số ngày. <button type="button" (click)="retryHolidayPreview()">Thử lại</button></p>
+        <ng-container *ngIf="!holidayLoading() && !holidayLoadError()">
+          <ng-container *ngIf="quotaPreview() as preview; else balancePending">
+            <div class="quota-metrics">
+              <span>Hạn mức <b>{{ preview.total }} ngày</b></span>
+              <span>Đã dùng <b>{{ preview.used }} ngày</b></span>
+              <span>Đang chờ <b>{{ preview.pending }} ngày</b></span>
+              <span>Còn lại <b>{{ preview.remaining }} ngày</b></span>
+              <span>Đơn này <b>{{ preview.requested }} ngày</b></span>
+            </div>
+            <p *ngIf="preview.exceeded > 0" class="quota-status quota-status--over" role="alert">Yêu cầu vượt số phép còn lại {{ preview.exceeded }} ngày. Vui lòng giảm số ngày hoặc chọn loại phép khác.</p>
+            <p *ngIf="preview.exceeded === 0" class="quota-status">Đơn không vượt số phép còn lại. Sau khi gửi, dự kiến còn {{ preview.remainingAfterRequest }} ngày.</p>
+          </ng-container>
+          <ng-template #balancePending>
+            <p *ngIf="balancesLoading()" class="quota-hint">Đang tải số dư phép của loại đã chọn…</p>
+            <p *ngIf="balancesLoadError()" class="quota-hint quota-hint--error" role="alert">Không tải được số dư phép. <button type="button" (click)="loadBalances()">Thử tải lại</button></p>
+            <p *ngIf="!balancesLoading() && !balancesLoadError()" class="quota-hint">Chưa có số dư cho loại phép này. Hệ thống sẽ kiểm tra hạn mức khi gửi đơn.</p>
+          </ng-template>
+        </ng-container>
+      </section>
+      <div class="form-field"><label for="leave-reason">Lý do nghỉ <b>*</b></label><textarea id="leave-reason" name="reason" rows="3" maxlength="250" [(ngModel)]="leaveForm.reason" placeholder="Nhập lý do nghỉ phép" required></textarea></div>
       <div class="form-field"><label for="leave-evidence">Đường dẫn minh chứng {{ evidenceRequired() ? '*' : '(nếu có)' }}</label><input id="leave-evidence" name="evidenceUrl" type="url" [(ngModel)]="leaveForm.evidenceUrl" [required]="evidenceRequired()" placeholder="https://..."></div>
       <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeRequestDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="submitting() || !leaveTypes().length">Gửi đơn</ss-button></div>
     </form>

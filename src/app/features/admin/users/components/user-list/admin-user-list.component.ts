@@ -62,7 +62,7 @@ export class AdminUserListComponent {
     showSetting: true,
     showPagination: true,
     pageSize: 10,
-    pageSizeOptions: [10, 20, 50],
+    pageSizeOptions: [10, 20, 50, 100],
     rowActions: [
       { key: 'reset-password', label: 'Đặt lại mật khẩu', icon: 'key' },
       { key: 'lock', label: 'Khóa tài khoản', icon: 'lock', danger: true, visible: (row) => row.status === 'Hoạt động' },

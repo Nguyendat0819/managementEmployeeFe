@@ -91,7 +91,8 @@ export class templateModule {
     bordered: true,
     striped: true,
     showPagination: true,
-    pageSize: 5,
+    pageSize: 10,
+    pageSizeOptions: [10, 20, 50, 100],
     searchable: true,
     searchPlaceholder: 'Tìm kiếm dịch vụ...',
   };

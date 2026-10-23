@@ -48,7 +48,7 @@ export class MyTasksComponent implements OnInit {
   readonly taskTableSettings: SsDtConfig<EmployeeTask> = {
     rowKey: 'id', title: 'Danh sách công việc của tôi', description: 'Gửi kết quả và minh chứng để quản lý nghiệm thu', cardIcon: 'ordered-list',
     searchable: true, searchPlaceholder: 'Tìm theo tên công việc', showSort: true, showSetting: true,
-    showPagination: true, pageSize: 10, pageSizeOptions: [10, 20, 50], striped: true, size: 'small',
+    showPagination: true, pageSize: 10, pageSizeOptions: [10, 20, 50, 100], striped: true, size: 'small',
     rowActions: [
       { key: 'start', label: 'Bắt đầu / làm lại', icon: 'play-circle', visible: (task) => task.status === 'TODO' || task.status === 'REJECTED', disabled: (task) => this.busyTaskId() === task.id },
       { key: 'submit', label: 'Cập nhật tiến độ', icon: 'upload', visible: (task) => task.status === 'IN_PROGRESS', disabled: (task) => this.busyTaskId() === task.id },

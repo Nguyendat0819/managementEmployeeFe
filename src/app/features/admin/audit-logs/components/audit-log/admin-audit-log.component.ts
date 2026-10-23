@@ -63,7 +63,7 @@ export class AdminAuditLogComponent {
     showSetting: true,
     showPagination: true,
     pageSize: 10,
-    pageSizeOptions: [10, 20, 50],
+    pageSizeOptions: [10, 20, 50, 100],
     rowActions: [{ key: 'detail', label: 'Xem chi tiết', icon: 'eye' }],
     quickFilters: [
       { key: 'module', placeholder: 'Tất cả phân hệ', options: ['Xác thực', 'Nhân viên', 'Vai trò', 'Hợp đồng', 'Nghỉ phép', 'Tài khoản', 'Tính lương', 'Cấu hình'].map((value) => ({ label: value, value })) },

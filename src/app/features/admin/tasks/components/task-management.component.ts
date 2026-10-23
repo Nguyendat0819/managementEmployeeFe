@@ -70,7 +70,7 @@ export class TaskManagementComponent implements OnInit {
     primaryButtons: [{ key: 'create-task', label: 'Thêm mới', type: 'primary', icon: 'plus' }],
     searchable: true, searchPlaceholder: 'Tìm theo tên công việc hoặc mã nhân viên', showSort: true, showSetting: true,
     quickFilters: [{ key: 'employeeCode', placeholder: 'Lọc theo mã nhân viên', options: [], showSearch: true, width: '220px' }],
-    showPagination: true, pageSize: 10, pageSizeOptions: [10, 20, 50], striped: true, size: 'small',
+    showPagination: true, pageSize: 10, pageSizeOptions: [10, 20, 50, 100], striped: true, size: 'small',
     rowActions: [
       { key: 'edit', label: 'Sửa công việc', icon: 'edit', visible: (task) => task.status === 'TODO' },
       { key: 'verify', label: 'Xem bằng chứng', icon: 'file-search', visible: (task) => task.status === 'SUBMITTED' },

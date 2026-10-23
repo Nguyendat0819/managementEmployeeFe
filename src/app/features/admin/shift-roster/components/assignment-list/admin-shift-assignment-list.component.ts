@@ -79,8 +79,8 @@ export class AdminShiftAssignmentListComponent implements OnInit {
     showFilter: true,
     showSetting: true,
     showPagination: true,
-    pageSize: 6,
-    pageSizeOptions: [6, 10, 20],
+    pageSize: 10,
+    pageSizeOptions: [10, 20, 50, 100],
     rowActions: [
       { key: 'detail', label: 'Xem phân ca', icon: 'eye' },
       { key: 'edit', label: 'Sửa', icon: 'edit' },
