@@ -1,7 +1,35 @@
 <main class="admin-user-page">
+  <section class="password-reset-requests" aria-labelledby="password-reset-requests-title">
+    <div class="requests-heading">
+      <div>
+        <h2 id="password-reset-requests-title">Yêu cầu đặt lại mật khẩu</h2>
+        <p>Nhân viên gửi yêu cầu sẽ được quản trị viên hỗ trợ đặt mật khẩu mới.</p>
+      </div>
+      <span class="request-count">{{ passwordResetRequests().length }} đang chờ</span>
+    </div>
+    @if (loadingPasswordResetRequests()) {
+      <p class="request-empty">Đang tải yêu cầu...</p>
+    } @else if (passwordResetRequests().length === 0) {
+      <p class="request-empty">Hiện không có yêu cầu nào đang chờ xử lý.</p>
+    } @else {
+      <div class="request-list">
+        @for (request of passwordResetRequests(); track request.id) {
+          <article class="request-item">
+            <div class="request-info">
+              <strong>{{ request.fullName }} <span>({{ request.userName }})</span></strong>
+              <span>{{ request.email }}</span>
+              <small>Gửi lúc {{ request.requestedAt | date:'dd/MM/yyyy HH:mm' }}</small>
+            </div>
+            <ss-button color="primary" icon="key" (onClick)="resetPasswordFromRequest(request)">Đặt lại mật khẩu</ss-button>
+          </article>
+        }
+      </div>
+    }
+  </section>
+
   <ss-data-table [data]="users()" [columns]="userColumns" [settings]="userTableSettings" (primaryClick)="onPrimaryClick($event)" (actionClick)="onActionClick($event)"></ss-data-table>
 
-  <ss-dialog [visible]="createVisible()" title="Thêm tài khoản người dùng" [width]="680" [maskClosable]="false" (visibleChange)="createVisible.set($event)">
+  <ss-dialog [visible]="createVisible()" title="Thêm tài khoản người dùng" [width]="680" [maskClosable]="false" (visibleChange)="onCreateDialogVisibilityChange($event)">
     <form #userFormRef="ngForm" class="user-form" (ngSubmit)="saveUser(userFormRef.valid)">
       <p class="dialog-description">Nhập thông tin đăng nhập và phân quyền ban đầu cho tài khoản mới.</p>
       <div class="form-grid">
@@ -13,7 +41,18 @@
         <div class="form-field"><label for="user-role">Vai trò <b>*</b></label><select id="user-role" name="roleCode" [(ngModel)]="userForm.roleCode" required>@for (role of roleOptions; track role.value) { <option [ngValue]="role.value">{{ role.label }}</option> }</select></div>
         <div class="form-field"><label for="user-status">Trạng thái <b>*</b></label><select id="user-status" name="status" [(ngModel)]="userForm.status" required><option>Hoạt động</option><option>Tạm khóa</option></select></div>
       </div>
-      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeCreateDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="userFormRef.invalid">Tạo tài khoản</ss-button></div>
+      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeCreateDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="userFormRef.invalid || saving()" [loading]="saving()">Tạo tài khoản</ss-button></div>
+    </form>
+  </ss-dialog>
+
+  <ss-dialog [visible]="resetPasswordVisible()" title="Đổi mật khẩu tài khoản" [width]="520" [maskClosable]="false" (visibleChange)="onResetPasswordVisibilityChange($event)">
+    <form #resetPasswordRef="ngForm" class="user-form" (ngSubmit)="saveResetPassword(resetPasswordRef.valid)">
+      <p class="dialog-description">Đặt mật khẩu mới cho tài khoản <strong>{{ selectedUser()?.userName }}</strong>.</p>
+      <div class="form-grid">
+        <div class="form-field form-field-wide"><label for="reset-user-password">Mật khẩu mới <b>*</b></label><input id="reset-user-password" name="password" type="password" [(ngModel)]="resetPasswordForm.password" required minlength="8" maxlength="100" autocomplete="new-password" placeholder="Ít nhất 8 ký tự"></div>
+        <div class="form-field form-field-wide"><label for="reset-user-password-confirm">Xác nhận mật khẩu <b>*</b></label><input id="reset-user-password-confirm" name="passwordConfirm" type="password" [(ngModel)]="resetPasswordForm.passwordConfirm" required minlength="8" maxlength="100" autocomplete="new-password" placeholder="Nhập lại mật khẩu mới"></div>
+      </div>
+      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeResetPasswordDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="resetPasswordRef.invalid || saving()" [loading]="saving()">Cập nhật mật khẩu</ss-button></div>
     </form>
   </ss-dialog>
 </main>

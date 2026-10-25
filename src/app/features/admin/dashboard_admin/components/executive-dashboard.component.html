@@ -2,61 +2,67 @@
   <section class="hero-panel">
     <div class="hero-content">
       <p class="eyebrow">HR MANAGEMENT · EXECUTIVE VIEW</p>
-      <h1>Executive Dashboard HR</h1>
-      <p class="hero-copy">Tổng quan vận hành nhân sự, mức độ gắn kết và các công việc HR cần ưu tiên.</p>
+      <h1>Tổng quan nhân sự</h1>
+      <p class="hero-copy">Theo dõi nhân sự, chấm công, yêu cầu nghỉ phép và kỳ lương từ dữ liệu các phân hệ đang vận hành.</p>
       <div class="hero-meta">
-        <span class="status-dot" aria-hidden="true"></span>
-        <span>Dữ liệu đang đồng bộ</span>
+        <span class="status-dot" [class.status-dot-warning]="!loading() && sourceStatus() !== 'Dữ liệu trực tiếp từ hệ thống'" aria-hidden="true"></span>
+        <span>{{ sourceStatus() }}</span>
         <span class="meta-divider" aria-hidden="true"></span>
-        <span>{{ lastUpdated }}</span>
+        <span>{{ lastUpdated() ? 'Cập nhật lúc ' + lastUpdated() : 'Đang đồng bộ...' }}</span>
       </div>
     </div>
 
     <div class="period-control">
       <span class="period-label">Kỳ báo cáo</span>
-      <button type="button" class="period-button">
-        <span>{{ currentPeriod }}</span>
-        <span nz-icon nzType="down" aria-hidden="true"></span>
-      </button>
-      <span class="period-caption">So với tháng 08/2025</span>
+      <div class="period-button" aria-label="Kỳ báo cáo hiện tại">
+        <span>{{ currentPeriod() }}</span>
+        <span nz-icon nzType="calendar" aria-hidden="true"></span>
+      </div>
+      <span class="period-caption">Chấm công hiển thị trong 7 ngày gần nhất</span>
     </div>
   </section>
 
   <section class="stats-grid" aria-label="Chỉ số nhân sự tổng quan">
-    <ss-stat label="Tổng nhân sự" [value]="248" suffix="người" hint="Tăng 3.2% tháng này" tone="primary" icon="team"></ss-stat>
-    <ss-stat label="Tỷ lệ hiện diện" [value]="'94.6%'" suffix="" hint="Vượt mục tiêu 2.6%" tone="success" icon="check-circle"></ss-stat>
-    <ss-stat label="Đơn cần phê duyệt" [value]="12" suffix="đơn" hint="8 đơn nghỉ phép · 4 đề xuất" tone="warning" icon="audit"></ss-stat>
-    <ss-stat label="Chi phí nhân sự" [value]="'1.840.000.000'" suffix="VNĐ" hint="Đạt 96% ngân sách tháng" tone="info" icon="dollar"></ss-stat>
+    <ss-stat label="Tổng nhân sự" [value]="totalEmployees()" suffix="người" [hint]="activeEmployees() === null ? 'Không tải được dữ liệu nhân viên' : activeEmployees() + ' đang làm việc'" tone="primary" icon="team"></ss-stat>
+    <ss-stat label="Lượt chấm công 7 ngày" [value]="attendanceCount() ?? '—'" [suffix]="attendanceCount() === null ? '' : 'lượt'" [hint]="attendanceCount() === null ? 'Không tải được dữ liệu chấm công' : attendanceDateRange()" tone="success" icon="check-circle"></ss-stat>
+    <ss-stat label="Đơn cần phê duyệt" [value]="pendingLeaveCount() ?? '—'" [suffix]="pendingLeaveCount() === null ? '' : 'đơn'" [hint]="pendingLeaveCount() === null ? 'Không tải được dữ liệu nghỉ phép' : 'Đơn nghỉ phép đang chờ duyệt'" tone="warning" icon="audit"></ss-stat>
+    <ss-stat label="Chi phí kỳ lương mới nhất" [value]="payrollCostDisplay()" suffix="" [hint]="payrollCostHint()" tone="info" icon="dollar"></ss-stat>
   </section>
 
   <section class="primary-grid">
-    <ss-card title="Tình hình hiện diện" description="Tỷ lệ nhân viên có mặt trong 7 ngày gần nhất" icon="line-chart" iconColor="#1677ff">
+    <ss-card title="Tình hình chấm công" [description]="'Nhân viên có giờ vào hoặc giờ ra · ' + attendanceDateRange()" icon="line-chart" iconColor="#1677ff">
       <div class="chart-summary">
         <div>
-          <strong>94.6%</strong>
-          <span><span nz-icon nzType="arrow-up" aria-hidden="true"></span> 2.4% so với tuần trước</span>
+          <strong>{{ attendanceCount() ?? '—' }}</strong>
+          <span>Lượt chấm công đã ghi nhận trong 7 ngày</span>
         </div>
-        <ss-tag status="success">Ổn định</ss-tag>
+        <ss-tag [status]="attendanceRecords() === null ? 'warning' : hasAttendanceEntries() ? 'success' : 'info'">{{ attendanceRecords() === null ? 'Chưa tải' : hasAttendanceEntries() ? 'Đã đồng bộ' : 'Chưa có bản ghi' }}</ss-tag>
       </div>
-      <div class="trend-chart" aria-label="Biểu đồ tỷ lệ hiện diện theo ngày">
-        <div class="chart-gridline gridline-high"><span>100%</span></div>
-        <div class="chart-gridline gridline-middle"><span>80%</span></div>
-        <div class="chart-gridline gridline-low"><span>60%</span></div>
-        <div class="chart-bars">
-          <div class="bar-column" *ngFor="let day of attendanceTrend">
-            <div class="bar-value">{{ day.value }}%</div>
-            <div class="bar-track"><div class="bar-fill" [style.height.%]="day.value" [class.low]="day.value < 80"></div></div>
-            <span class="bar-label">{{ day.label }}</span>
+      <ng-container *ngIf="attendanceRecords() !== null; else attendanceUnavailable">
+        <ng-container *ngIf="hasAttendanceEntries(); else attendanceEmpty">
+          <div class="trend-chart" aria-label="Số nhân viên có ghi nhận chấm công theo ngày">
+            <div class="chart-gridline gridline-high"><span>{{ attendanceAxis()[0] }}</span></div>
+            <div class="chart-gridline gridline-middle"><span>{{ attendanceAxis()[1] }}</span></div>
+            <div class="chart-gridline gridline-low"><span>{{ attendanceAxis()[2] }}</span></div>
+            <div class="chart-bars">
+              <div class="bar-column" *ngFor="let day of attendanceTrend()">
+                <div class="bar-value">{{ day.value }}</div>
+                <div class="bar-track"><div class="bar-fill" [class.empty]="day.value === 0" [style.height.%]="day.heightPercent"></div></div>
+                <span class="bar-label">{{ day.label }}</span>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      <div cardFooterStart class="card-note">Tỷ lệ được tính theo dữ liệu chấm công đã ghi nhận.</div>
+        </ng-container>
+      </ng-container>
+      <ng-template #attendanceUnavailable><div class="chart-empty">{{ loading() ? 'Đang tải dữ liệu chấm công...' : 'Không tải được dữ liệu từ Attendance Service.' }}</div></ng-template>
+      <ng-template #attendanceEmpty><div class="chart-empty">Chưa có lượt chấm công nào trong 7 ngày gần nhất.</div></ng-template>
+      <div cardFooterStart class="card-note">Biểu đồ đếm số nhân viên có bản ghi vào/ra theo từng ngày.</div>
       <ss-button variant="text" color="primary" icon="arrow-right" (onClick)="open('/admin/attendance')">Xem báo cáo chấm công</ss-button>
     </ss-card>
 
-    <ss-card title="Phân bổ nhân sự" description="Theo phòng ban · 248 nhân viên" icon="apartment" iconColor="#722ed1">
-      <div class="department-list">
-        <div class="department-row" *ngFor="let department of departmentStats">
+    <ss-card title="Phân bổ nhân sự" [description]="employees() === null ? 'Đang tải hồ sơ nhân viên' : 'Theo phòng ban · ' + employees()!.length + ' nhân viên'" icon="apartment" iconColor="#722ed1">
+      <div class="department-list" *ngIf="departmentStats().length; else departmentEmpty">
+        <div class="department-row" *ngFor="let department of departmentStats()">
           <div class="department-heading">
             <span class="department-name"><span class="department-dot" [style.backgroundColor]="department.color"></span>{{ department.name }}</span>
             <strong>{{ department.count }}</strong>
@@ -64,22 +70,23 @@
           <div class="department-progress"><span [style.width.%]="department.percentage" [style.backgroundColor]="department.color"></span></div>
         </div>
       </div>
-      <div cardFooterStart class="card-note">Khối Kỹ thuật & Sản phẩm đang chiếm tỷ trọng cao nhất.</div>
+      <ng-template #departmentEmpty><div class="chart-empty">{{ loading() ? 'Đang tải dữ liệu nhân viên...' : employees() === null ? 'Không tải được dữ liệu nhân viên.' : 'Chưa có hồ sơ nhân viên để phân bổ.' }}</div></ng-template>
+      <div cardFooterStart class="card-note">Hiển thị tối đa 6 phòng ban có số nhân viên lớn nhất.</div>
       <ss-button variant="text" color="primary" icon="arrow-right" (onClick)="open('/admin/departments')">Xem cơ cấu tổ chức</ss-button>
     </ss-card>
   </section>
 
   <section class="secondary-grid">
-    <ss-card title="Ưu tiên của HR" description="Các chỉ báo cần được theo dõi trong kỳ này" icon="flag" iconColor="#fa8c16">
+    <ss-card title="Ưu tiên của HR" description="Cảnh báo được tổng hợp từ dữ liệu hiện tại" icon="flag" iconColor="#fa8c16">
       <div class="alert-list">
-        <button type="button" class="alert-row" *ngFor="let alert of alerts" (click)="open('/admin/leaves')">
+        <button type="button" class="alert-row" *ngFor="let alert of alerts()" (click)="open(alert.path)">
           <span class="alert-icon" [class]="alert.status"><span nz-icon [nzType]="alert.icon" aria-hidden="true"></span></span>
           <span class="alert-copy"><strong>{{ alert.title }}</strong><small>{{ alert.description }}</small></span>
           <ss-tag [status]="alert.status">{{ alert.statusLabel }}</ss-tag>
           <span nz-icon nzType="right" class="row-arrow" aria-hidden="true"></span>
         </button>
       </div>
-      <div cardFooterStart class="card-note">Tổng hợp từ các module nhân sự đang hoạt động.</div>
+      <div cardFooterStart class="card-note">Số liệu cảnh báo được lấy từ yêu cầu nghỉ phép, hồ sơ nhân viên và kỳ lương.</div>
     </ss-card>
 
     <ss-card title="Truy cập nhanh" description="Tác vụ quản trị thường dùng" icon="appstore" iconColor="#13c2c2">

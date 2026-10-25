@@ -1,4 +1,4 @@
-export type AuthMode = 'login' | 'register';
+export type AuthMode = 'login' | 'register' | 'forgot';
 
 export interface RegisterRequest {
   username: string;

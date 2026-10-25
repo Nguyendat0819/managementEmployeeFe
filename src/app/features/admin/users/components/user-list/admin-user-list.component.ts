@@ -1,9 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { timer } from 'rxjs';
 import { FormsModule } from '@angular/forms';
-import { SsButtonComponent, SsConfirmService, SsDataTableComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsToastService } from '@platform/ui-kit';
+import { SsButtonComponent, SsDataTableComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsToastService } from '@platform/ui-kit';
 import { AdminUser, AdminUserStatus } from '../../models/admin-user.model';
-import { AdminUserService } from '../../services/admin-user.service';
+import { AdminUserService, CreateAdminUserRequest, PasswordResetRequest } from '../../services/admin-user.service';
 
 interface UserForm {
   userName: string;
@@ -15,6 +17,12 @@ interface UserForm {
   status: AdminUserStatus;
 }
 
+interface PasswordResetTarget {
+  id: number;
+  userName: string;
+  fullName: string;
+}
+
 @Component({
   selector: 'app-admin-user-list',
   standalone: true,
@@ -23,14 +31,23 @@ interface UserForm {
   styleUrl: './admin-user-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AdminUserListComponent {
+export class AdminUserListComponent implements OnInit {
   private readonly userService = inject(AdminUserService);
-  private readonly confirmService = inject(SsConfirmService);
   private readonly toast = inject(SsToastService);
+  private readonly destroyRef = inject(DestroyRef);
+  private knownPasswordResetRequests = new Map<number, string>();
+  private hasLoadedPasswordResetRequests = false;
 
-  readonly users = signal(this.userService.users);
+  readonly users = signal<AdminUser[]>([]);
   readonly createVisible = signal(false);
+  readonly resetPasswordVisible = signal(false);
+  readonly selectedUser = signal<PasswordResetTarget | null>(null);
+  readonly loadingUsers = signal(false);
+  readonly passwordResetRequests = signal<PasswordResetRequest[]>([]);
+  readonly loadingPasswordResetRequests = signal(false);
+  readonly saving = signal(false);
   readonly userForm: UserForm = this.emptyUserForm();
+  readonly resetPasswordForm = { password: '', passwordConfirm: '' };
   readonly roleOptions = [
     { label: 'Quản trị viên', value: 'ADMIN' },
     { label: 'Nhân sự', value: 'HR' },
@@ -67,7 +84,6 @@ export class AdminUserListComponent {
       { key: 'reset-password', label: 'Đặt lại mật khẩu', icon: 'key' },
       { key: 'lock', label: 'Khóa tài khoản', icon: 'lock', danger: true, visible: (row) => row.status === 'Hoạt động' },
       { key: 'unlock', label: 'Mở khóa tài khoản', icon: 'unlock', visible: (row) => row.status === 'Tạm khóa' },
-      { key: 'delete', label: 'Xóa tài khoản', icon: 'delete', danger: true, visible: (row) => row.userName !== 'admin' },
     ],
     quickFilters: [
       { key: 'roleCode', placeholder: 'Tất cả vai trò', options: this.roleOptions },
@@ -79,6 +95,14 @@ export class AdminUserListComponent {
     emptyText: 'Không có tài khoản phù hợp',
   };
 
+  ngOnInit(): void {
+    this.loadUsers();
+    this.loadPasswordResetRequests(true);
+    timer(30_000, 30_000)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.loadPasswordResetRequests());
+  }
+
   onPrimaryClick(button: SsDtButton): void {
     if (button.key !== 'create-user') return;
     Object.assign(this.userForm, this.emptyUserForm());
@@ -87,64 +111,145 @@ export class AdminUserListComponent {
 
   closeCreateDialog(): void {
     this.createVisible.set(false);
+    Object.assign(this.userForm, this.emptyUserForm());
+  }
+
+  onCreateDialogVisibilityChange(visible: boolean): void {
+    if (visible) this.createVisible.set(true);
+    else this.closeCreateDialog();
   }
 
   saveUser(formValid: boolean): void {
     if (!formValid) return;
     const userName = this.userForm.userName.trim();
     const email = this.userForm.email.trim().toLowerCase();
-    if (this.users().some((user) => user.userName.toLowerCase() === userName.toLowerCase())) {
-      this.toast.show({ severity: 'warning', summary: 'Tên đăng nhập đã tồn tại', detail: 'Vui lòng sử dụng một tên đăng nhập khác.' });
-      return;
-    }
-    if (this.users().some((user) => user.email.toLowerCase() === email)) {
-      this.toast.show({ severity: 'warning', summary: 'Email đã tồn tại', detail: 'Vui lòng sử dụng một địa chỉ email khác.' });
-      return;
-    }
     if (this.userForm.password !== this.userForm.passwordConfirm) {
       this.toast.show({ severity: 'warning', summary: 'Mật khẩu xác nhận không khớp', detail: 'Vui lòng nhập lại mật khẩu xác nhận.' });
       return;
     }
 
-    const newUser: AdminUser = {
-      id: Date.now(),
-      userName,
-      fullName: this.userForm.fullName.trim(),
+    const [firstName, ...lastNameParts] = this.userForm.fullName.trim().split(/\s+/);
+    const request: CreateAdminUserRequest = {
+      username: userName,
       email,
+      firstName,
+      lastName: lastNameParts.join(' '),
+      password: this.userForm.password,
       roleCode: this.userForm.roleCode,
-      lastLoginAt: 'Chưa đăng nhập',
-      createdAt: '07/10/2025',
-      status: this.userForm.status,
+      status: this.userForm.status === 'Hoạt động' ? 'ACTIVE' : 'INACTIVE',
     };
-    this.users.update((users) => [newUser, ...users]);
-    this.refreshTableStatus();
-    this.closeCreateDialog();
-    this.toast.show({ severity: 'success', summary: 'Đã thêm tài khoản', detail: `Tài khoản ${userName} đã được tạo thành công.` });
+    this.saving.set(true);
+    this.userService.createUser(request).subscribe({
+      next: (newUser) => {
+        this.users.update((users) => [newUser, ...users]);
+        this.refreshTableStatus();
+        this.closeCreateDialog();
+        this.toast.show({ severity: 'success', summary: 'Đã thêm tài khoản', detail: `Tài khoản ${userName} đã được tạo thành công.` });
+        this.saving.set(false);
+      },
+      error: () => this.saving.set(false),
+    });
   }
 
   onActionClick(event: SsDtActionClick<AdminUser>): void {
     if (event.action.key === 'reset-password') {
-      this.toast.show({ severity: 'info', summary: 'Đã gửi yêu cầu đặt lại mật khẩu', detail: `Liên kết đặt lại mật khẩu đã được gửi tới ${event.row.email}.` });
+      this.selectedUser.set({ id: event.row.id, userName: event.row.userName, fullName: event.row.fullName });
+      this.resetPasswordForm.password = '';
+      this.resetPasswordForm.passwordConfirm = '';
+      this.resetPasswordVisible.set(true);
       return;
     }
     if (event.action.key === 'lock' || event.action.key === 'unlock') {
       this.toggleStatus(event.row, event.action.key === 'lock' ? 'Tạm khóa' : 'Hoạt động');
       return;
     }
-    if (event.action.key === 'delete') void this.deleteUser(event.row);
+  }
+
+  resetPasswordFromRequest(request: PasswordResetRequest): void {
+    this.selectedUser.set({ id: request.userId, userName: request.userName, fullName: request.fullName });
+    this.resetPasswordForm.password = '';
+    this.resetPasswordForm.passwordConfirm = '';
+    this.resetPasswordVisible.set(true);
   }
 
   private toggleStatus(user: AdminUser, status: AdminUserStatus): void {
-    this.users.update((users) => users.map((item) => item.id === user.id ? { ...item, status } : item));
-    this.toast.show({ severity: status === 'Hoạt động' ? 'success' : 'warning', summary: status === 'Hoạt động' ? 'Đã mở khóa tài khoản' : 'Đã khóa tài khoản', detail: `Tài khoản ${user.userName} hiện ở trạng thái ${status.toLowerCase()}.` });
+    const action = status === 'Hoạt động' ? 'RESTORE' : 'REVOKE';
+    this.userService.updateStatus(user.userName, action).subscribe({
+      next: (updatedUser) => {
+        this.users.update((users) => users.map((item) => item.id === user.id ? updatedUser : item));
+        this.toast.show({ severity: status === 'Hoạt động' ? 'success' : 'warning', summary: status === 'Hoạt động' ? 'Đã mở khóa tài khoản' : 'Đã khóa tài khoản', detail: `Tài khoản ${user.userName} hiện ở trạng thái ${status.toLowerCase()}.` });
+      },
+    });
   }
 
-  private async deleteUser(user: AdminUser): Promise<void> {
-    const confirmed = await this.confirmService.confirm('Xác nhận xóa tài khoản', `Bạn có chắc muốn xóa tài khoản "${user.userName}" không?`, { type: 'danger', okText: 'Xóa' });
-    if (!confirmed) return;
-    this.users.update((users) => users.filter((item) => item.id !== user.id));
-    this.refreshTableStatus();
-    this.toast.show({ severity: 'success', summary: 'Đã xóa tài khoản', detail: `Tài khoản ${user.userName} đã được xóa.` });
+  saveResetPassword(formValid: boolean): void {
+    const user = this.selectedUser();
+    if (!user || !formValid) return;
+    if (this.resetPasswordForm.password !== this.resetPasswordForm.passwordConfirm) {
+      this.toast.show({ severity: 'warning', summary: 'Mật khẩu xác nhận không khớp', detail: 'Vui lòng nhập lại mật khẩu xác nhận.' });
+      return;
+    }
+
+    this.saving.set(true);
+    this.userService.resetPassword(user.userName, this.resetPasswordForm.password).subscribe({
+      next: () => {
+        this.passwordResetRequests.update((requests) => requests.filter((request) => request.userId !== user.id));
+        this.resetPasswordVisible.set(false);
+        this.selectedUser.set(null);
+        this.resetPasswordForm.password = '';
+        this.resetPasswordForm.passwordConfirm = '';
+        this.toast.show({ severity: 'success', summary: 'Đã đổi mật khẩu', detail: `Mật khẩu của tài khoản ${user.userName} đã được cập nhật.` });
+        this.saving.set(false);
+      },
+      error: () => this.saving.set(false),
+    });
+  }
+
+  closeResetPasswordDialog(): void {
+    this.resetPasswordVisible.set(false);
+    this.selectedUser.set(null);
+    this.resetPasswordForm.password = '';
+    this.resetPasswordForm.passwordConfirm = '';
+  }
+
+  onResetPasswordVisibilityChange(visible: boolean): void {
+    if (visible) this.resetPasswordVisible.set(true);
+    else this.closeResetPasswordDialog();
+  }
+
+  private loadUsers(): void {
+    this.loadingUsers.set(true);
+    this.userService.getUsers().subscribe({
+      next: (users) => {
+        this.users.set(users);
+        this.refreshTableStatus();
+        this.loadingUsers.set(false);
+      },
+      error: () => this.loadingUsers.set(false),
+    });
+  }
+
+  private loadPasswordResetRequests(showError = false): void {
+    this.loadingPasswordResetRequests.set(true);
+    this.userService.getPasswordResetRequests().subscribe({
+      next: (requests) => {
+        const hasNewRequest = this.hasLoadedPasswordResetRequests
+          && requests.some((request) => this.knownPasswordResetRequests.get(request.id) !== request.requestedAt);
+        this.knownPasswordResetRequests = new Map(requests.map((request) => [request.id, request.requestedAt]));
+        this.passwordResetRequests.set(requests);
+        this.loadingPasswordResetRequests.set(false);
+        if (hasNewRequest) {
+          this.toast.show({ severity: 'warning', summary: 'Có yêu cầu đặt lại mật khẩu mới', detail: 'Quản trị viên cần xử lý yêu cầu trong danh sách tài khoản.' });
+        }
+        this.hasLoadedPasswordResetRequests = true;
+      },
+      error: () => {
+        this.loadingPasswordResetRequests.set(false);
+        if (showError) {
+          this.toast.show({ severity: 'error', summary: 'Không tải được yêu cầu', detail: 'Không thể tải danh sách yêu cầu đặt lại mật khẩu.' });
+        }
+      },
+    });
   }
 
   private refreshTableStatus(): void {

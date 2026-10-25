@@ -1,8 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Router } from '@angular/router';
+import { AuthService } from '@platform/shared';
 import { SsButtonComponent, SsCardComponent, SsCardFooterStartDirective, SsDialogComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
 import { ProfileEmployeeService } from '../service/profile_employee.service';
+import { AuthFeatureService } from '../../../auth/service/auth.service';
 
 @Component({
   selector: 'app-profile-employee',
@@ -16,11 +20,20 @@ export class ProfileEmployeeComponent implements OnInit {
   private readonly profileService = inject(ProfileEmployeeService);
   private readonly toast = inject(SsToastService);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly auth = inject(AuthService);
+  private readonly authFeature = inject(AuthFeatureService);
+  private readonly router = inject(Router);
 
   readonly profile = this.profileService.profile;
   readonly contract = this.profileService.contract;
   readonly dialogVisible = signal(false);
+  readonly passwordDialogVisible = signal(false);
+  readonly passwordSubmitting = signal(false);
+  readonly showCurrentPassword = signal(false);
+  readonly showNewPassword = signal(false);
+  readonly showConfirmPassword = signal(false);
   readonly profileForm = { phone: '', email: '', address: '' };
+  readonly passwordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
 
   ngOnInit(): void {
     this.profileService.getCurrentProfile().subscribe({
@@ -68,5 +81,65 @@ export class ProfileEmployeeComponent implements OnInit {
     this.profile.address = this.profileForm.address.trim();
     this.closeUpdateDialog();
     this.toast.show({ severity: 'success', summary: 'Đã lưu đề nghị cập nhật', detail: 'Thông tin cập nhật của bạn đã được ghi nhận.' });
+  }
+
+  openPasswordDialog(): void {
+    this.passwordForm.currentPassword = '';
+    this.passwordForm.newPassword = '';
+    this.passwordForm.confirmPassword = '';
+    this.resetPasswordVisibility();
+    this.passwordDialogVisible.set(true);
+  }
+
+  closePasswordDialog(): void {
+    this.passwordDialogVisible.set(false);
+    this.passwordForm.currentPassword = '';
+    this.passwordForm.newPassword = '';
+    this.passwordForm.confirmPassword = '';
+    this.resetPasswordVisibility();
+  }
+
+  private resetPasswordVisibility(): void {
+    this.showCurrentPassword.set(false);
+    this.showNewPassword.set(false);
+    this.showConfirmPassword.set(false);
+  }
+
+  onPasswordDialogVisibilityChange(visible: boolean): void {
+    if (visible) this.passwordDialogVisible.set(true);
+    else this.closePasswordDialog();
+  }
+
+  async changePassword(formValid: boolean): Promise<void> {
+    if (!formValid) return;
+    if (this.passwordForm.newPassword.length < 8) {
+      this.toast.show({ severity: 'warning', summary: 'Mật khẩu chưa đủ dài', detail: 'Mật khẩu mới cần có ít nhất 8 ký tự.' });
+      return;
+    }
+    if (this.passwordForm.newPassword !== this.passwordForm.confirmPassword) {
+      this.toast.show({ severity: 'warning', summary: 'Mật khẩu xác nhận không khớp', detail: 'Vui lòng nhập lại mật khẩu xác nhận.' });
+      return;
+    }
+
+    this.passwordSubmitting.set(true);
+    try {
+      await this.authFeature.changePassword({
+        currentPassword: this.passwordForm.currentPassword,
+        newPassword: this.passwordForm.newPassword,
+      });
+      this.closePasswordDialog();
+      this.toast.show({ severity: 'success', summary: 'Đã đổi mật khẩu', detail: 'Vui lòng đăng nhập lại bằng mật khẩu mới.' });
+      this.auth.logout();
+      await this.router.navigateByUrl('/login');
+    } catch (error) {
+      const status = (error as HttpErrorResponse)?.status;
+      this.toast.show({
+        severity: 'error',
+        summary: status === 401 ? 'Mật khẩu hiện tại không đúng' : 'Không thể đổi mật khẩu',
+        detail: status === 401 ? 'Kiểm tra lại mật khẩu hiện tại và thử lại.' : 'Vui lòng thử lại sau.',
+      });
+    } finally {
+      this.passwordSubmitting.set(false);
+    }
   }
 }

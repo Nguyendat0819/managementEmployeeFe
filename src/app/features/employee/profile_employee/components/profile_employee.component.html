@@ -4,6 +4,7 @@
     <div class="identity"><h2>{{ profile.fullName }}</h2><p>{{ profile.position }}</p><span>{{ profile.department }} · {{ profile.employeeCode }}</span></div>
     <ss-tag status="success">{{ profile.status }}</ss-tag>
     <ss-button variant="soft" color="primary" icon="edit" (onClick)="openUpdateDialog()">Đề nghị cập nhật thông tin</ss-button>
+    <ss-button variant="outline" color="neutral" icon="key" (onClick)="openPasswordDialog()">Đổi mật khẩu</ss-button>
   </section>
 
   <section class="content-grid">
@@ -33,6 +34,41 @@
       <div class="form-field"><label for="profile-email">Email công việc</label><input id="profile-email" name="email" type="email" [(ngModel)]="profileForm.email" required></div>
       <div class="form-field form-field-wide"><label for="profile-address">Địa chỉ</label><textarea id="profile-address" name="address" rows="3" [(ngModel)]="profileForm.address" required></textarea></div>
       <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeUpdateDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit">Lưu</ss-button></div>
+    </form>
+  </ss-dialog>
+
+  <ss-dialog [visible]="passwordDialogVisible()" title="Đổi mật khẩu tài khoản" [width]="520" [maskClosable]="false" (visibleChange)="onPasswordDialogVisibilityChange($event)">
+    <form class="profile-form password-form" #passwordFormRef="ngForm" (ngSubmit)="changePassword(passwordFormRef.valid)">
+      <p class="dialog-description">Nhập mật khẩu hiện tại để xác nhận quyền sở hữu tài khoản.</p>
+      <div class="form-field">
+        <label for="current-password">Mật khẩu hiện tại <b>*</b></label>
+        <div class="password-input-wrap">
+          <input id="current-password" name="currentPassword" [type]="showCurrentPassword() ? 'text' : 'password'" [(ngModel)]="passwordForm.currentPassword" required autocomplete="current-password">
+          <button class="password-visibility" type="button" [attr.aria-label]="showCurrentPassword() ? 'Ẩn mật khẩu hiện tại' : 'Hiện mật khẩu hiện tại'" [attr.aria-pressed]="showCurrentPassword()" (click)="showCurrentPassword.set(!showCurrentPassword())">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path *ngIf="showCurrentPassword()" d="m4 4 16 16"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="form-field">
+        <label for="new-password">Mật khẩu mới <b>*</b></label>
+        <div class="password-input-wrap">
+          <input id="new-password" name="newPassword" [type]="showNewPassword() ? 'text' : 'password'" [(ngModel)]="passwordForm.newPassword" required minlength="8" maxlength="100" autocomplete="new-password">
+          <button class="password-visibility" type="button" [attr.aria-label]="showNewPassword() ? 'Ẩn mật khẩu mới' : 'Hiện mật khẩu mới'" [attr.aria-pressed]="showNewPassword()" (click)="showNewPassword.set(!showNewPassword())">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path *ngIf="showNewPassword()" d="m4 4 16 16"/></svg>
+          </button>
+        </div>
+        <small class="password-hint">Mật khẩu mới cần có ít nhất 8 ký tự.</small>
+      </div>
+      <div class="form-field">
+        <label for="confirm-new-password">Xác nhận mật khẩu mới <b>*</b></label>
+        <div class="password-input-wrap">
+          <input id="confirm-new-password" name="confirmPassword" [type]="showConfirmPassword() ? 'text' : 'password'" [(ngModel)]="passwordForm.confirmPassword" required minlength="8" maxlength="100" autocomplete="new-password">
+          <button class="password-visibility" type="button" [attr.aria-label]="showConfirmPassword() ? 'Ẩn mật khẩu xác nhận' : 'Hiện mật khẩu xác nhận'" [attr.aria-pressed]="showConfirmPassword()" (click)="showConfirmPassword.set(!showConfirmPassword())">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path *ngIf="showConfirmPassword()" d="m4 4 16 16"/></svg>
+          </button>
+        </div>
+      </div>
+      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closePasswordDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="passwordFormRef.invalid || passwordSubmitting()" [loading]="passwordSubmitting()">Cập nhật mật khẩu</ss-button></div>
     </form>
   </ss-dialog>
 </main>

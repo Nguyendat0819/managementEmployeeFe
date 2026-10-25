@@ -67,6 +67,11 @@ h1 {
   box-shadow: 0 0 0 4px rgba(110, 231, 161, .16);
 }
 
+.status-dot-warning {
+  background: #ffd666;
+  box-shadow: 0 0 0 4px rgba(255, 214, 102, .16);
+}
+
 .meta-divider {
   width: 1px;
   height: 14px;
@@ -217,6 +222,10 @@ h1 {
   background: linear-gradient(180deg, #69a9ff 0%, #1677ff 100%);
 }
 
+.bar-fill.empty {
+  min-height: 0;
+}
+
 .bar-fill.low {
   background: linear-gradient(180deg, #b4c9e8 0%, #7b9bc8 100%);
 }
@@ -229,6 +238,16 @@ h1 {
 .card-note {
   color: var(--color-text-secondary);
   font-size: 12px;
+}
+
+.chart-empty {
+  display: grid;
+  min-height: 218px;
+  place-items: center;
+  padding: 20px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  text-align: center;
 }
 
 .department-list {

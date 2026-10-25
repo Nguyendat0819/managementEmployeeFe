@@ -42,27 +42,40 @@ export class LoginComponent {
   }
 
   async submit(): Promise<void> {
+    const mode = this.mode();
     this.error.set('');
     this.success.set('');
     this.form.markAllAsTouched();
-    const loginInvalid = this.form.controls.username.invalid || this.form.controls.password.invalid;
-    if ((this.mode() === 'login' && loginInvalid) || (this.mode() === 'register' && (this.form.invalid || !this.passwordsMatch()))) return;
+    const invalid = mode === 'login'
+      ? this.form.controls.username.invalid || this.form.controls.password.invalid
+      : mode === 'register'
+        ? this.form.controls.username.invalid || this.form.controls.email.invalid || this.form.controls.password.invalid
+          || this.form.controls.confirmPassword.invalid || !this.passwordsMatch()
+        : this.form.controls.email.invalid;
+    if (invalid) return;
 
     this.submitting.set(true);
     try {
-      if (this.mode() === 'login') {
+      if (mode === 'login') {
         await this.auth.login({
           username: this.form.controls.username.value,
           password: this.form.controls.password.value,
         });
         await this.router.navigateByUrl('/user/dashboard');
-      } else {
-        this.register();
+      } else if (mode === 'register') {
+        await this.register();
         this.setMode('login');
         this.success.set('Tài khoản đã được tạo. Bạn có thể đăng nhập ngay bây giờ.');
+      } else if (mode === 'forgot') {
+        await this.authFeature.requestAdminPasswordReset(this.form.controls.email.value.trim());
+        this.success.set('Nếu tài khoản tồn tại, yêu cầu đặt lại mật khẩu đã được chuyển đến quản trị viên. Vui lòng liên hệ quản trị viên để nhận mật khẩu mới.');
       }
     } catch (error) {
-      this.error.set(this.mode() === 'login' ? 'Tên đăng nhập hoặc mật khẩu không đúng.' : this.registrationError(error));
+      this.error.set(mode === 'login'
+        ? 'Tên đăng nhập hoặc mật khẩu không đúng.'
+        : mode === 'register'
+          ? this.registrationError(error)
+          : this.recoveryError(error));
     } finally {
       this.submitting.set(false);
     }
@@ -83,5 +96,11 @@ export class LoginComponent {
     if (response?.status === 409) return 'Tên đăng nhập hoặc email đã được sử dụng.';
     if (response?.status === 0) return 'Không thể kết nối tới máy chủ. Vui lòng thử lại.';
     return 'Không thể tạo tài khoản. Vui lòng kiểm tra thông tin và thử lại.';
+  }
+
+  private recoveryError(error: unknown): string {
+    const response = error as HttpErrorResponse;
+    if (response?.status === 0) return 'Không thể kết nối tới máy chủ. Vui lòng thử lại.';
+    return 'Không thể gửi yêu cầu đến quản trị viên. Vui lòng thử lại sau.';
   }
 }
