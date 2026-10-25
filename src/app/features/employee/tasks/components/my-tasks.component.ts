@@ -158,7 +158,7 @@ export class MyTasksComponent implements OnInit {
   }
 
   formatCurrency(value: number): string {
-    return `${new Intl.NumberFormat('vi-VN').format(value)} ₫`;
+    return `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(value ?? 0)} VNĐ`;
   }
 
   formatDate(value: string | null): string {

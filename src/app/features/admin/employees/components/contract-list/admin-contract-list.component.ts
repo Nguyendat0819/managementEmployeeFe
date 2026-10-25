@@ -5,6 +5,7 @@ import { Observable, finalize, map } from 'rxjs';
 import {
   SsButtonComponent,
   SsConfirmService,
+  SsCurrencyComponent,
   SsDataTableComponent,
   SsDatepickerComponent,
   SsDialogComponent,
@@ -34,10 +35,16 @@ interface ContractForm {
   status: string;
 }
 
+interface EmployeeSalaryRange {
+  position: string;
+  min: number;
+  max: number;
+}
+
 @Component({
   selector: 'app-admin-contract-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, SsButtonComponent, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsSelectComponent, SsStatComponent, SsTagComponent],
+  imports: [CommonModule, FormsModule, SsButtonComponent, SsCurrencyComponent, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsSelectComponent, SsStatComponent, SsTagComponent],
   templateUrl: './admin-contract-list.component.html',
   styleUrl: './admin-contract-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -52,6 +59,7 @@ export class AdminContractListComponent implements OnInit {
 
   readonly contracts = signal<AdminContract[]>([]);
   employeeOptions: { label: string; value: string }[] = [];
+  private readonly employeeSalaryRanges = new Map<string, EmployeeSalaryRange>();
   employeeLoading = false;
   readonly selectedContract = signal<AdminContract | null>(null);
   readonly detailVisible = signal(false);
@@ -69,7 +77,7 @@ export class AdminContractListComponent implements OnInit {
       key: 'actualSalary',
       header: 'Lương thực nhận',
       type: 'number',
-      format: (row) => `${new Intl.NumberFormat('vi-VN').format(row.actualSalary)} VNĐ`,
+      format: (row) => `${this.formatSalary(row.actualSalary)} VNĐ`,
       width: '155px',
       align: 'right',
       sortable: true,
@@ -146,10 +154,20 @@ export class AdminContractListComponent implements OnInit {
       }))
       .subscribe({
         next: (response) => {
-          this.employeeOptions = (response.data ?? []).map((employee) => ({
+          const employees = response.data ?? [];
+          this.employeeOptions = employees.map((employee) => ({
             label: `${employee.employeeCode} - ${employee.fullName}`,
             value: employee.employeeCode,
           }));
+          this.employeeSalaryRanges.clear();
+          for (const employee of employees) {
+            if (employee.positionSalaryMin == null || employee.positionSalaryMax == null) continue;
+            this.employeeSalaryRanges.set(employee.employeeCode, {
+              position: employee.positionName ?? employee.positionCode ?? 'Chức vụ',
+              min: Number(employee.positionSalaryMin),
+              max: Number(employee.positionSalaryMax),
+            });
+          }
           this.changeDetectorRef.markForCheck();
         },
       });
@@ -194,8 +212,19 @@ export class AdminContractListComponent implements OnInit {
 
   get averageSalary(): string {
     if (!this.contracts().length) return '0';
-    const average = this.contracts().reduce((total, contract) => total + contract.actualSalary, 0) / this.contracts().length / 1000000;
-    return average.toFixed(1).replace('.', ',');
+    const average = this.contracts().reduce((total, contract) => total + contract.actualSalary, 0) / this.contracts().length;
+    return this.formatSalary(average);
+  }
+
+  get selectedSalaryRange(): EmployeeSalaryRange | null {
+    return this.employeeSalaryRanges.get(this.contractForm.employeeCode) ?? null;
+  }
+
+  get salaryRangeError(): string | null {
+    const range = this.selectedSalaryRange;
+    const salary = Number(this.contractForm.actualSalary);
+    if (!range || !Number.isFinite(salary) || (salary >= range.min && salary <= range.max)) return null;
+    return `Lương thực nhận phải nằm trong khoảng ${this.formatSalary(range.min)} - ${this.formatSalary(range.max)} VNĐ của chức vụ ${range.position}.`;
   }
 
   openEditDialog(contract: AdminContract): void {
@@ -220,6 +249,10 @@ export class AdminContractListComponent implements OnInit {
 
   saveContract(formValid: boolean): void {
     if (!formValid || this.savingContract()) return;
+    if (this.salaryRangeError) {
+      this.toast.show({ severity: 'error', summary: 'Lương ngoài khung chức vụ', detail: this.salaryRangeError });
+      return;
+    }
     const editingContract = this.editingContract();
     const request: EmployeeContractRequest = {
       contractNo: this.contractForm.contractNo.trim(),
@@ -314,6 +347,10 @@ export class AdminContractListComponent implements OnInit {
       signedDate: '',
       status: 'Đang hiệu lực',
     };
+  }
+
+  formatSalary(value: number): string {
+    return new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(value ?? 0);
   }
 
   private toInputDate(value: string): string {

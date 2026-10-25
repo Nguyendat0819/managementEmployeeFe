@@ -10,7 +10,7 @@
     <ss-stat label="Tổng hợp đồng" [value]="contracts().length" suffix="hợp đồng" hint="Đang được quản lý" tone="primary" icon="file-text"></ss-stat>
     <ss-stat label="Đang hiệu lực" [value]="activeCount" suffix="hợp đồng" hint="Trong thời gian làm việc" tone="success" icon="check-circle"></ss-stat>
     <ss-stat label="Sắp hết hạn" [value]="expiringCount" suffix="hợp đồng" hint="Cần rà soát trong 60 ngày" tone="warning" icon="exclamation-circle"></ss-stat>
-    <ss-stat label="Lương bình quân" [value]="averageSalary" suffix="triệu VNĐ" hint="Theo hợp đồng hiện tại" tone="info" icon="dollar"></ss-stat>
+    <ss-stat label="Lương bình quân" [value]="averageSalary" suffix="VNĐ" hint="Theo hợp đồng hiện tại" tone="info" icon="dollar"></ss-stat>
   </section>
 
   <section class="contract-table" aria-label="Danh sách hợp đồng lao động">
@@ -22,7 +22,7 @@
       <div class="detail-dialog">
         <div class="detail-hero"><div class="contract-icon">▣</div><div><strong>{{ contract.contractNo }}</strong><span>{{ contract.contractType }} · {{ contract.fullName }}</span></div><ss-tag [status]="contractStatusType(contract.status)">{{ contract.status }}</ss-tag></div>
         <div class="detail-section"><h3>Thông tin nhân sự</h3><div class="details-grid"><div><span>Mã nhân viên</span><strong>{{ contract.employeeCode }}</strong></div><div><span>Họ và tên</span><strong>{{ contract.fullName }}</strong></div><div><span>Phòng ban</span><strong>{{ contract.department }}</strong></div><div><span>Chức danh</span><strong>{{ contract.position }}</strong></div><div><span>Loại hình</span><strong>{{ contract.employmentType }}</strong></div></div></div>
-        <div class="detail-section"><h3>Thông tin hợp đồng</h3><div class="details-grid"><div><span>Ngày ký</span><strong>{{ contract.signedDate }}</strong></div><div><span>Ngày bắt đầu</span><strong>{{ contract.startDate }}</strong></div><div><span>Ngày kết thúc</span><strong>{{ contract.endDate }}</strong></div><div><span>Lương thực nhận</span><strong>{{ contract.actualSalary | number:'1.0-0' }} VNĐ</strong></div></div></div>
+        <div class="detail-section"><h3>Thông tin hợp đồng</h3><div class="details-grid"><div><span>Ngày ký</span><strong>{{ contract.signedDate }}</strong></div><div><span>Ngày bắt đầu</span><strong>{{ contract.startDate }}</strong></div><div><span>Ngày kết thúc</span><strong>{{ contract.endDate }}</strong></div><div><span>Lương thực nhận</span><strong>{{ formatSalary(contract.actualSalary) }} VNĐ</strong></div></div></div>
         <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeDetail()">Đóng</ss-button><ss-button color="primary" icon="download" htmlType="button">Tải hợp đồng</ss-button></div>
       </div>
     }
@@ -34,15 +34,15 @@
       <div class="form-grid">
         <div class="form-field"><label for="contract-no">Số hợp đồng <b>*</b></label><input id="contract-no" name="contractNo" [(ngModel)]="contractForm.contractNo" required maxlength="50" [disabled]="!!editingContract()" placeholder="VD: HDLD-2025-0136"></div>
         <div class="form-field"><label for="contract-type">Loại hợp đồng <b>*</b></label><select id="contract-type" name="contractType" [(ngModel)]="contractForm.contractType" required><option>Không xác định thời hạn</option><option>Xác định thời hạn 12 tháng</option><option>Xác định thời hạn 24 tháng</option><option>Hợp đồng thử việc</option></select></div>
-        <div class="form-field"><label for="contract-employee-code">Mã nhân viên <b>*</b></label><ss-select name="employeeCode" [(ngModel)]="contractForm.employeeCode" [options]="employeeOptions" [loading]="employeeLoading" [showSearch]="true" [allowClear]="true" required placeholder="Tìm theo mã hoặc tên nhân viên"></ss-select></div>
+        <div class="form-field"><label for="contract-employee-code">Mã nhân viên <b>*</b></label><ss-select id="contract-employee-code" name="employeeCode" [(ngModel)]="contractForm.employeeCode" [options]="employeeOptions" [loading]="employeeLoading" [showSearch]="true" [allowClear]="true" required placeholder="Tìm theo mã hoặc tên nhân viên"></ss-select>@if (selectedSalaryRange; as range) { <small class="form-hint">Khung lương chức vụ {{ range.position }}: {{ formatSalary(range.min) }} - {{ formatSalary(range.max) }} VNĐ</small> }</div>
         <div class="form-field"><label for="contract-employment-type">Loại hình <b>*</b></label><select id="contract-employment-type" name="employmentType" [(ngModel)]="contractForm.employmentType" required><option>Toàn thời gian</option><option>Bán thời gian</option><option>Thử việc</option></select></div>
-        <div class="form-field"><label for="contract-salary">Lương thực nhận <b>*</b></label><input id="contract-salary" name="actualSalary" type="number" [(ngModel)]="contractForm.actualSalary" required min="0" step="1000" placeholder="Nhập mức lương"></div>
+        <div class="form-field"><label for="contract-salary">Lương thực nhận (VNĐ) <b>*</b></label><ss-currency id="contract-salary" name="actualSalary" [(ngModel)]="contractForm.actualSalary" required [min]="0" [step]="1000" placeholder="Ví dụ: 2.000.000"></ss-currency>@if (salaryRangeError; as error) { <small class="form-error" role="alert">{{ error }}</small> }</div>
         <div class="form-field"><label>Ngày bắt đầu <b>*</b></label><ss-datepicker name="startDate" [(ngModel)]="contractForm.startDate" format="dd/MM/yyyy" valueFormat="yyyy-MM-dd" placeholder="dd/MM/yyyy" required></ss-datepicker></div>
         <div class="form-field"><label>Ngày kết thúc</label><ss-datepicker name="endDate" [(ngModel)]="contractForm.endDate" format="dd/MM/yyyy" valueFormat="yyyy-MM-dd" placeholder="dd/MM/yyyy"></ss-datepicker></div>
         <div class="form-field"><label>Ngày ký <b>*</b></label><ss-datepicker name="signedDate" [(ngModel)]="contractForm.signedDate" format="dd/MM/yyyy" valueFormat="yyyy-MM-dd" placeholder="dd/MM/yyyy" required></ss-datepicker></div>
         <div class="form-field"><label for="contract-status">Trạng thái <b>*</b></label><select id="contract-status" name="status" [(ngModel)]="contractForm.status" required><option>Đang hiệu lực</option><option>Sắp hết hạn</option><option>Đã hết hạn</option></select></div>
       </div>
-      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeFormDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="contractFormRef.invalid" [loading]="savingContract()" loadingText="Đang lưu...">{{ editingContract() ? 'Cập nhật' : 'Lưu hợp đồng' }}</ss-button></div>
+      <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeFormDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="contractFormRef.invalid || !!salaryRangeError" [loading]="savingContract()" loadingText="Đang lưu...">{{ editingContract() ? 'Cập nhật' : 'Lưu hợp đồng' }}</ss-button></div>
     </form>
   </ss-dialog>
 </main>

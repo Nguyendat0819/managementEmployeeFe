@@ -105,12 +105,7 @@ export class templateModule {
       key: 'price',
       header: 'Chi Phí',
       width: '160px',
-      format: (row) =>
-        new Intl.NumberFormat('vi-VN', {
-          style: 'currency',
-          currency: 'VND',
-          maximumFractionDigits: 0,
-        }).format(row.price),
+      format: (row) => `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(row.price)} VNĐ`,
     },
     { key: 'status', header: 'Trạng Thái', width: '140px' },
     { key: 'createdDate', header: 'Ngày Tạo', width: '130px' },

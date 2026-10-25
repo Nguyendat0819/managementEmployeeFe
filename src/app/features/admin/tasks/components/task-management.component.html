@@ -41,9 +41,9 @@
       </div>
       <div class="form-row">
         <label class="field"><span>Trọng số công việc <b>*</b></span><input name="weight" type="number" [(ngModel)]="form.weight" required min="0.01" max="99999.99" step="0.01"></label>
-        <label class="field"><span>Thưởng công việc (VNĐ) <b>*</b></span><input name="bonusAmount" type="number" [(ngModel)]="form.bonusAmount" required min="0" step="1000"></label>
+        <label class="field"><span>Thưởng công việc (VNĐ) <b>*</b></span><ss-currency name="bonusAmount" [(ngModel)]="form.bonusAmount" required [min]="0" [step]="1000" placeholder="Ví dụ: 1.000.000"></ss-currency></label>
       </div>
-      <label class="field"><span>Mức phạt khi công việc bị yêu cầu bổ sung (VNĐ) <b>*</b></span><input name="penaltyAmount" type="number" [(ngModel)]="form.penaltyAmount" required min="0" step="1000"></label>
+      <label class="field"><span>Mức phạt khi công việc bị yêu cầu bổ sung (VNĐ) <b>*</b></span><ss-currency name="penaltyAmount" [(ngModel)]="form.penaltyAmount" required [min]="0" [step]="1000" placeholder="Ví dụ: 1.000.000"></ss-currency></label>
       <p class="policy-hint">Nhân viên gửi kết quả kèm hình ảnh, đường dẫn hoặc tệp; quản lý nghiệm thu thì công việc chuyển thành hoàn thành.</p>
       <div dialog-footer class="dialog-actions">
         <ss-button variant="outline" color="neutral" htmlType="button" (onClick)="cancelEdit()">Hủy</ss-button>

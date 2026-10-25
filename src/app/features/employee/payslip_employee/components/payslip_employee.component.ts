@@ -73,7 +73,7 @@ export class PayslipEmployeeComponent implements OnInit {
   }
 
   formatCurrency(value: number): string {
-    return `${new Intl.NumberFormat('vi-VN').format(value)} VNĐ`;
+    return `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(value ?? 0)} VNĐ`;
   }
 
   formatDeduction(value: number): string {

@@ -46,12 +46,12 @@
       </div>
       <div class="form-field"><span></span></div>
       <div class="form-field">
-        <label for="position-min-salary">Lương tối thiểu <b>*</b></label>
-        <input id="position-min-salary" name="baseSalaryMin" type="number" min="0" step="100000" [(ngModel)]="positionForm.baseSalaryMin" required placeholder="Ví dụ: 10000000">
+        <label for="position-min-salary">Lương tối thiểu (VNĐ) <b>*</b></label>
+        <ss-currency id="position-min-salary" name="baseSalaryMin" [min]="0" [step]="100000" [(ngModel)]="positionForm.baseSalaryMin" required placeholder="Ví dụ: 10.000.000"></ss-currency>
       </div>
       <div class="form-field">
-        <label for="position-max-salary">Lương tối đa <b>*</b></label>
-        <input id="position-max-salary" name="baseSalaryMax" type="number" min="0" step="100000" [(ngModel)]="positionForm.baseSalaryMax" required placeholder="Ví dụ: 20000000">
+        <label for="position-max-salary">Lương tối đa (VNĐ) <b>*</b></label>
+        <ss-currency id="position-max-salary" name="baseSalaryMax" [min]="0" [step]="100000" [(ngModel)]="positionForm.baseSalaryMax" required placeholder="Ví dụ: 20.000.000"></ss-currency>
       </div>
     </div>
     <div dialog-footer class="dialog-actions">

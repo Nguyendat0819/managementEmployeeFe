@@ -12,6 +12,7 @@ export class API_ENDPOINTS {
     ME: '/me',
     MEPROFILE: '/profile-me',
     CATALOGS: '/catalogs',
+    UNLINKED_USERS: '/unlinked-users',
     DETAIL: (id: number) => `/${id}`,
     SEARCH: '/search',
   };

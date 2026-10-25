@@ -2,8 +2,8 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Observable, finalize, map } from 'rxjs';
-import { SsButtonComponent, SsConfirmService, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsDtPage, SsDtQuery, SsStatComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
-import { AdminEmployee, EmployeeRequest, EmployeeResponse } from '../../models/admin-employee.model';
+import { SsButtonComponent, SsConfirmService, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsDtPage, SsDtQuery, SsSelectComponent, SsStatComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
+import { AdminEmployee, EmployeeRequest, EmployeeResponse, EmployeeUserOption } from '../../models/admin-employee.model';
 import { AdminEmployeeService } from '../../services/admin-employee.service';
 import { DepartmentResponse } from '../../../organization/models/response.model';
 import { OrgUnitService } from '../../../organization/services/org-unit.service';
@@ -13,7 +13,7 @@ import { AdminRoleService } from '../../../roles-permissions/services/admin-role
 @Component({
   selector: 'app-admin-employee-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, SsButtonComponent, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsStatComponent, SsTagComponent],
+  imports: [CommonModule, FormsModule, SsButtonComponent, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsSelectComponent, SsStatComponent, SsTagComponent],
   templateUrl: './admin-employee-list.component.html',
   styleUrl: './admin-employee-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -35,7 +35,9 @@ export class AdminEmployeeListComponent implements OnInit {
   readonly createVisible = signal(false);
   readonly editingEmployee = signal<AdminEmployee | null>(null);
   readonly savingEmployee = signal(false);
+  readonly loadingUsers = signal(false);
   readonly employeeForm = this.emptyEmployeeForm();
+  userOptions: { label: string; value: number }[] = [];
   genders = ['Nam', 'Nữ', 'Khác'];
   employmentTypes = ['Toàn thời gian', 'Bán thời gian', 'Thử việc'];
   statuses = ['Đang làm việc', 'Đang thử việc', 'Tạm nghỉ'];
@@ -147,6 +149,7 @@ export class AdminEmployeeListComponent implements OnInit {
     Object.assign(this.employeeForm, this.emptyEmployeeForm());
     this.editingEmployee.set(null);
     this.loadPositions();
+    this.loadUnlinkedUsers();
     this.createVisible.set(true);
   }
 
@@ -155,6 +158,7 @@ export class AdminEmployeeListComponent implements OnInit {
     Object.assign(this.employeeForm, {
       employeeCode: employee.employeeCode,
       fullName: employee.fullName,
+      userId: null,
       birthDate: employee.birthDate === 'Chưa cập nhật' ? '' : this.toInputDate(employee.birthDate),
       gender: employee.gender === 'Chưa cập nhật' ? '' : employee.gender,
       idCard: employee.idCard === 'Chưa cập nhật' ? '' : employee.idCard,
@@ -178,6 +182,7 @@ export class AdminEmployeeListComponent implements OnInit {
     const editingEmployee = this.editingEmployee();
     const request: EmployeeRequest = {
       employeeCode: this.employeeForm.employeeCode.trim(),
+      userId: editingEmployee ? null : this.employeeForm.userId,
       fullName: this.employeeForm.fullName.trim(),
       birthDate: this.employeeForm.birthDate || null,
       gender: this.employeeForm.gender || null,
@@ -251,6 +256,24 @@ export class AdminEmployeeListComponent implements OnInit {
     });
   }
 
+  private loadUnlinkedUsers(): void {
+    this.userOptions = [];
+    this.loadingUsers.set(true);
+    this.employeeService.getUnlinkedUsers().pipe(
+      finalize(() => {
+        this.loadingUsers.set(false);
+        this.changeDetectorRef.markForCheck();
+      }),
+    ).subscribe({
+      next: (response) => {
+        this.userOptions = (response.data ?? []).map((user: EmployeeUserOption) => ({
+          label: user.userName,
+          value: user.id,
+        }));
+      },
+    });
+  }
+
   private refreshQuickFilters(): void {
     this.employeeTableSettings = {
       ...this.employeeTableSettings,
@@ -296,6 +319,7 @@ export class AdminEmployeeListComponent implements OnInit {
 
   private emptyEmployeeForm() {
     return {
+      userId: null as number | null,
       employeeCode: '', fullName: '', birthDate: '', gender: '', idCard: '', phone: '', email: '',
       departmentCode: '', positionCode: '', employmentType: 'Toàn thời gian', hireDate: '',
       contractEnd: '', status: 'Đang làm việc',

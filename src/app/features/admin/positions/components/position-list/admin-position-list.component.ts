@@ -6,6 +6,7 @@ import { Observable, map } from 'rxjs';
 import {
   SsButtonComponent,
   SsConfirmService,
+  SsCurrencyComponent,
   SsDataTableComponent,
   SsDialogComponent,
   SsDtActionClick,
@@ -30,7 +31,7 @@ interface PositionForm {
 @Component({
   selector: 'app-admin-position-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, SsButtonComponent, SsDataTableComponent, SsDialogComponent],
+  imports: [CommonModule, FormsModule, SsButtonComponent, SsCurrencyComponent, SsDataTableComponent, SsDialogComponent],
   templateUrl: './admin-position-list.component.html',
   styleUrl: './admin-position-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -240,7 +241,7 @@ export class AdminPositionListComponent {
   }
 
   private formatSalary(value: number): string {
-    return `${new Intl.NumberFormat('vi-VN').format(value ?? 0)} đ`;
+    return `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(value ?? 0)} VNĐ`;
   }
 
   private formatDate(value: string | null | undefined): string {

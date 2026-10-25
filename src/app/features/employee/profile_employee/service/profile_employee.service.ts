@@ -106,7 +106,7 @@ export class ProfileEmployeeService extends BaseService {
       startDate: this.formatDate(response.startDate),
       endDate: response.endDate ? this.formatDate(response.endDate) : 'Không xác định thời hạn',
       signedDate: this.formatDate(response.signedDate),
-      salary: `${new Intl.NumberFormat('vi-VN').format(response.actualSalary)} VNĐ / tháng`,
+      salary: `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(response.actualSalary ?? 0)} VNĐ / tháng`,
       department: response.departmentName ?? 'Chưa cập nhật',
       position: response.positionName ?? 'Chưa cập nhật',
       status: response.status,

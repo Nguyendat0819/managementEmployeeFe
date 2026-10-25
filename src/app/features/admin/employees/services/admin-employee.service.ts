@@ -10,6 +10,7 @@ import {
   EmployeeContractResponse,
   EmployeeRequest,
   EmployeeResponse,
+  EmployeeUserOption,
 } from '../models/admin-employee.model';
 
 export interface EmployeeQuery {
@@ -50,6 +51,10 @@ export class AdminEmployeeService extends BaseService {
 
   getCatalogs(): Observable<ApiResponse<EmployeeCatalogResponse>> {
     return this.get<ApiResponse<EmployeeCatalogResponse>>(this.endpoint.CATALOGS, this.endpoint.BASE);
+  }
+
+  getUnlinkedUsers(): Observable<ApiResponse<EmployeeUserOption[]>> {
+    return this.get<ApiResponse<EmployeeUserOption[]>>(this.endpoint.UNLINKED_USERS, this.endpoint.BASE);
   }
 
   searchEmployees(request: EmployeeSearchRequest): Observable<ApiResponse<Page<EmployeeResponse>>> {

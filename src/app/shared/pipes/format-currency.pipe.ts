@@ -14,6 +14,10 @@ export class FormatCurrencyPipe implements PipeTransform {
     const numericValue = typeof value === 'string' ? parseFloat(value) : value;
     if (isNaN(numericValue)) return String(value);
 
+    if (currency.toUpperCase() === 'VND') {
+      return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(numericValue)} VNĐ`;
+    }
+
     return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency,

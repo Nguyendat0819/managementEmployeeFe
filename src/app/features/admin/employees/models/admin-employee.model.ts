@@ -31,6 +31,8 @@ export interface EmployeeResponse {
   departmentName: string | null;
   positionCode: string | null;
   positionName: string | null;
+  positionSalaryMin: number | null;
+  positionSalaryMax: number | null;
   employmentType: string;
   hireDate: string;
   contractEnd: string | null;
@@ -39,6 +41,7 @@ export interface EmployeeResponse {
 }
 
 export interface EmployeeRequest {
+  userId: number | null;
   employeeCode: string;
   fullName: string;
   birthDate: string | null;
@@ -52,6 +55,11 @@ export interface EmployeeRequest {
   hireDate: string;
   contractEnd: string | null;
   status: string;
+}
+
+export interface EmployeeUserOption {
+  id: number;
+  userName: string;
 }
 
 export interface EmployeeCatalogResponse {

@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
-import { SsButtonComponent, SsConfirmService, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsSelectComponent, SsStatComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
+import { SsButtonComponent, SsConfirmService, SsCurrencyComponent, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsSelectComponent, SsStatComponent, SsTagComponent, SsToastService } from '@platform/ui-kit';
 import { PositionResponse } from '../../../positions/models/admin-position.model';
 import { AdminPositionService } from '../../../positions/services/admin-position.service';
 import { AdminSalaryStructure, AdminSalaryStructureStatus } from '../../models/admin-salary-structure.model';
@@ -24,7 +24,7 @@ interface SalaryStructureForm {
 @Component({
   selector: 'app-admin-salary-structure',
   standalone: true,
-  imports: [CommonModule, FormsModule, SsButtonComponent, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsSelectComponent, SsStatComponent, SsTagComponent],
+  imports: [CommonModule, FormsModule, SsButtonComponent, SsCurrencyComponent, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsSelectComponent, SsStatComponent, SsTagComponent],
   templateUrl: './admin-salary-structure.component.html',
   styleUrl: './admin-salary-structure.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -235,7 +235,7 @@ export class AdminSalaryStructureComponent implements OnInit {
   }
 
   formatCurrency(value: number): string {
-    return `${new Intl.NumberFormat('vi-VN').format(value)} VNĐ`;
+    return `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(value ?? 0)} VNĐ`;
   }
 
   toInputDate(value: string): string {

@@ -88,7 +88,7 @@ export class AdminPayrollRunComponent implements OnChanges, OnInit {
   readonly payslipColumns: SsDtColumn<AdminPayslip>[] = [
     { key: 'employeeCode', header: 'Mã nhân viên', field: 'employeeCode', width: '135px', filterable: true },
     { key: 'employeeName', header: 'Nhân viên', format: (row) => String(row.snapshotData?.['employeeName'] ?? row.employeeCode), width: '170px', filterable: true },
-    { key: 'baseSalary', header: 'Lương cơ bản', format: (row) => this.formatCurrency(row.baseSalary), width: '145px', align: 'right' },
+    { key: 'baseSalary', header: 'Lương Nhân viên', format: (row) => this.formatCurrency(row.baseSalary), width: '145px', align: 'right' },
     { key: 'approvedTaskCount', header: 'Task được duyệt', format: (row) => `${Number(row.snapshotData?.['approvedTaskCount'] ?? 0)} task`, width: '125px', align: 'right' },
     { key: 'approvedTaskBonus', header: 'Thưởng task', format: (row) => this.formatCurrency(Number(row.snapshotData?.['approvedTaskBonus'] ?? 0)), width: '140px', align: 'right' },
     { key: 'belowThresholdTaskPenalty', header: 'Phạt task dưới KPI', format: (row) => this.formatCurrency(Number(row.snapshotData?.['belowThresholdTaskPenalty'] ?? 0)), width: '155px', align: 'right' },
@@ -411,7 +411,7 @@ export class AdminPayrollRunComponent implements OnChanges, OnInit {
   }
 
   formatCurrency(value: number): string {
-    return `${new Intl.NumberFormat('vi-VN').format(value)} VNĐ`;
+    return `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(value ?? 0)} VNĐ`;
   }
 
   togglePayslipEntry(): void {

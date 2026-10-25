@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { SsButtonComponent, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsSelectComponent, SsStatComponent, SsToastService } from '@platform/ui-kit';
+import { SsButtonComponent, SsCurrencyComponent, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsDtActionClick, SsDtButton, SsDtColumn, SsDtConfig, SsSelectComponent, SsStatComponent, SsToastService } from '@platform/ui-kit';
 import { AdminEmployeeService } from '../../employees/services/admin-employee.service';
 import { EmployeeTask, EmployeeTaskProgress, EmployeeTaskRequest, MonthlyTaskKpi } from '../../../employee/tasks/models/employee-task.model';
 import { EmployeeTaskApiService } from '../../../employee/tasks/services/employee-task-api.service';
@@ -21,7 +21,7 @@ interface TaskForm {
 @Component({
   selector: 'app-task-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, SsButtonComponent, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsSelectComponent, SsStatComponent],
+  imports: [CommonModule, FormsModule, SsButtonComponent, SsCurrencyComponent, SsDataTableComponent, SsDatepickerComponent, SsDialogComponent, SsSelectComponent, SsStatComponent],
   templateUrl: './task-management.component.html',
   styleUrl: './task-management.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -183,7 +183,7 @@ export class TaskManagementComponent implements OnInit {
   }
 
   formatCurrency(value: number): string {
-    return `${new Intl.NumberFormat('vi-VN').format(value)} ₫`;
+    return `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(value ?? 0)} VNĐ`;
   }
 
   formatDate(value: string | null): string {
