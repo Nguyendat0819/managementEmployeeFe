@@ -24,6 +24,7 @@ import { salaryStructureAdminRoutes } from './features/admin/salary-structures/s
 import { payrollRunAdminRoutes } from './features/admin/payroll-runs/payroll-runs.routes';
 import { userAdminRoutes } from './features/admin/users/users.routes';
 import { rolesPermissionsAdminRoutes } from './features/admin/roles-permissions/roles-permissions.routes';
+import { menuManagementRoutes } from './features/admin/menus/menus.routes';
 import { auditLogAdminRoutes } from './features/admin/audit-logs/audit-logs.routes';
 import { LayoutComponent } from './layout/layout.component';
 
@@ -139,6 +140,10 @@ export const routes: Routes = [
           {
             path: 'roles-permissions',
             children: rolesPermissionsAdminRoutes,
+          },
+          {
+            path: 'menus',
+            children: menuManagementRoutes,
           },
           {
             path: 'audit-logs',

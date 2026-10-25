@@ -12,6 +12,7 @@ import {
 import { HeaderComponent } from './header/header.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
 import { BreadcrumbBuilderService } from '../core/breadcrumb/breadcrumb-builder.service';
+import { MenuService } from '../core/menu/menu.service';
 import {SharedModule} from '../shared/shared.module';
 @Component({
   selector: 'app-layout',
@@ -23,6 +24,7 @@ import {SharedModule} from '../shared/shared.module';
 export class LayoutComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   protected readonly breadcrumb = inject(BreadcrumbBuilderService);
+  private readonly menuService = inject(MenuService);
 
   collapsed = false;
   isMobile = false;
@@ -32,6 +34,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
   private readonly onMqlChange = (event: MediaQueryListEvent) => this.applyMobile(event.matches);
   private readonly onResize = () => this.applyViewport();
   ngOnInit(): void {
+    this.menuService.loadCurrentMenu();
     this.mql = window.matchMedia('(max-width: 767.98px)');
     this.applyMobile(this.mql.matches);
     this.mql.addEventListener('change', this.onMqlChange);

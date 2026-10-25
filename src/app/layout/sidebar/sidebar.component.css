@@ -193,6 +193,14 @@ img.brand-logo {
   overflow-wrap: anywhere;
 }
 
+.submenu-route-link {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
 /* Icon: sát chữ hơn (gap nhỏ) + không co, canh dòng chữ đầu */
 :host ::ng-deep .ant-menu-dark:not(.ant-menu-inline-collapsed) .ant-menu-item .anticon,
 :host ::ng-deep .ant-menu-dark:not(.ant-menu-inline-collapsed) .ant-menu-submenu-title .anticon {

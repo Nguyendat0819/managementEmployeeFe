@@ -1,381 +1,51 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { MenuItem } from './menu-item.model';
+import { MenuApiService, MenuRecord } from './menu-api.service';
 
 @Injectable({ providedIn: 'root' })
 export class MenuService {
-  private readonly items: MenuItem[] = [
-    // =========================================================
-    // PHÂN HỆ NHÂN VIÊN - ESS PORTAL
-    // =========================================================
-    {
-      id: 'ess',
-      label: 'Nhân viên',
-      icon: 'user',
-      iconColor: '#1677ff',
-      order: 10,
-      roles: ['USER', 'ADMIN'],
-      children: [
-        {
-          id: 'ess-dashboard',
-          label: 'Trang chủ',
-          icon: 'home',
-          iconColor: '#52c41a',
-          path: '/user/dashboard',
-          order: 10,
-          roles: ['USER', 'ADMIN'],
-          permissions: ['employee:dashboard:read'],
-        },
-        {
-          id: 'ess-attendance',
-          label: 'Chấm công & Ca làm việc',
-          icon: 'calendar',
-          iconColor: '#13c2c2',
-          path: '/user/attendance',
-          order: 20,
-          roles: ['USER', 'ADMIN'],
-          permissions: ['employee:attendance:read'],
-        },
-        {
-          id: 'ess-tasks',
-          label: 'Công việc được giao',
-          icon: 'ordered-list',
-          iconColor: '#13c2c2',
-          path: '/user/tasks',
-          order: 25,
-          roles: ['USER', 'ADMIN'],
-          permissions: ['employee:task:read'],
-        },
-        {
-          id: 'ess-leaves',
-          label: 'Nghỉ phép cá nhân',
-          icon: 'solution',
-          iconColor: '#722ed1',
-          path: '/user/leaves',
-          order: 30,
-          roles: ['USER', 'ADMIN'],
-          permissions: ['employee:leave:read'],
-        },
-        {
-          id: 'ess-profile',
-          label: 'Hồ sơ & Hợp đồng',
-          icon: 'idcard',
-          iconColor: '#2f54eb',
-          path: '/user/profile',
-          order: 40,
-          roles: ['USER', 'ADMIN'],
-          permissions: ['employee:profile:read'],
-        },
-        {
-          id: 'ess-payslips',
-          label: 'Phiếu lương điện tử',
-          icon: 'file-text',
-          iconColor: '#597ef7',
-          path: '/user/payslips',
-          order: 50,
-          roles: ['USER', 'ADMIN'],
-          permissions: ['employee:payroll:read'],
-        },
-      ],
-    },
-
-    // =========================================================
-    // THÔNG BÁO
-    // =========================================================
-    {
-      id: 'notifications',
-      label: 'Hộp thông báo',
-      icon: 'bell',
-      iconColor: '#faad14',
-      path: '/user/notifications',
-      order: 20,
-      roles: ['USER', 'ADMIN'],
-      permissions: ['employee:notification:read'],
-    },
-
-    // =========================================================
-    // PHÂN HỆ QUẢN LÝ & HR - ADMIN PORTAL
-    // =========================================================
-    {
-      id: 'admin',
-      label: 'Quản lý nhân sự',
-      icon: 'setting',
-      iconColor: '#722ed1',
-      order: 30,
-      roles: ['ADMIN'],
-      children: [
-        // -----------------------------------------------------
-        // Dashboard
-        // -----------------------------------------------------
-        {
-          id: 'admin-dashboard',
-          label: 'Tổng quan nhân sự',
-          icon: 'dashboard',
-          iconColor: '#1677ff',
-          path: '/admin/dashboard',
-          order: 10,
-          roles: ['ADMIN'],
-          permissions: ['employee:dashboard:read'],
-        },
-
-        // -----------------------------------------------------
-        // Tổ chức & phòng ban
-        // -----------------------------------------------------
-        {
-          id: 'admin-organization',
-          label: 'Cơ cấu tổ chức & Phòng ban',
-          icon: 'apartment',
-          iconColor: '#13c2c2',
-          path: '/admin/departments',
-          order: 20,
-          roles: ['ADMIN'],
-          permissions: ['employee:organization:read'],
-        },
-
-        // -----------------------------------------------------
-        // Hồ sơ nhân sự
-        // -----------------------------------------------------
-        {
-          id: 'admin-employees',
-          label: 'Hồ sơ Nhân sự & Hợp đồng',
-          icon: 'team',
-          iconColor: '#2f54eb',
-          order: 30,
-          roles: ['ADMIN'],
-          children: [
-            {
-              id: 'admin-employee-list',
-              label: 'Danh sách nhân viên',
-              icon: 'team',
-              iconColor: '#2f54eb',
-              path: '/admin/employees',
-              order: 10,
-              roles: ['ADMIN'],
-              permissions: ['employee:employee:read'],
-            },
-            {
-              id: 'admin-contracts',
-              label: 'Hợp đồng lao động',
-              icon: 'file-text',
-              iconColor: '#597ef7',
-              path: '/admin/contracts',
-              order: 20,
-              roles: ['ADMIN'],
-              permissions: ['employee:contract:read'],
-            },
-            {
-              id: 'admin-positions',
-              label: 'Danh mục chức vụ',
-              icon: 'solution',
-              iconColor: '#13c2c2',
-              path: '/admin/positions',
-              order: 30,
-              roles: ['ADMIN'],
-              permissions: ['employee:employee:read'],
-            },
-          ],
-        },
-
-        // -----------------------------------------------------
-        // Chấm công & lịch nghỉ
-        // -----------------------------------------------------
-        {
-          id: 'admin-attendance',
-          label: 'Phân ca, Lịch nghỉ & Chấm công',
-          icon: 'schedule',
-          iconColor: '#fa8c16',
-          order: 40,
-          roles: ['ADMIN'],
-          children: [
-            {
-              id: 'admin-shifts',
-              label: 'Ca làm việc',
-              icon: 'clock-circle',
-              iconColor: '#fa8c16',
-              path: '/admin/shifts',
-              order: 10,
-              roles: ['ADMIN'],
-              permissions: ['employee:shift:read'],
-            },
-            {
-              id: 'admin-shift-roster',
-              label: 'Phân ca làm việc',
-              icon: 'schedule',
-              iconColor: '#fa8c16',
-              path: '/admin/shift-roster',
-              order: 20,
-              roles: ['ADMIN'],
-              permissions: ['employee:shift:manage'],
-            },
-            {
-              id: 'admin-holidays',
-              label: 'Ngày nghỉ lễ',
-              icon: 'calendar',
-              iconColor: '#13c2c2',
-              path: '/admin/holidays',
-              order: 30,
-              roles: ['ADMIN'],
-              permissions: ['employee:holiday:read'],
-            },
-            {
-              id: 'admin-attendance-management',
-              label: 'Quản lý chấm công',
-              icon: 'check-circle',
-              iconColor: '#52c41a',
-              path: '/admin/attendance',
-              order: 40,
-              roles: ['ADMIN'],
-              permissions: ['employee:attendance:manage'],
-            },
-          ],
-        },
-
-        // -----------------------------------------------------
-        // Nghỉ phép
-        // -----------------------------------------------------
-        {
-          id: 'admin-leaves',
-          label: 'Quản lý nghỉ phép',
-          icon: 'audit',
-          iconColor: '#eb2f96',
-          order: 50,
-          roles: ['ADMIN'],
-          children: [
-            {
-              id: 'admin-leave-requests',
-              label: 'Duyệt đơn nghỉ phép',
-              icon: 'check',
-              iconColor: '#52c41a',
-              path: '/admin/leaves',
-              order: 10,
-              roles: ['ADMIN'],
-              permissions: ['employee:leave:approve'],
-            },
-            {
-              id: 'admin-leave-settings',
-              label: 'Cấu hình nghỉ phép',
-              icon: 'setting',
-              iconColor: '#722ed1',
-              path: '/admin/leave-settings',
-              order: 20,
-              roles: ['ADMIN'],
-              permissions: ['employee:leave:manage'],
-            },
-          ],
-        },
-        {
-          id: 'admin-notifications',
-          label: 'Gửi thông báo',
-          icon: 'bell',
-          iconColor: '#faad14',
-          path: '/admin/notifications',
-          order: 55,
-          roles: ['ADMIN'],
-          permissions: ['employee:notification:create'],
-        },
-        // -----------------------------------------------------
-        // Quản lý công việc
-        // -----------------------------------------------------
-        {
-          id: 'admin-tasks',
-          label: 'Quản lý công việc & thưởng',
-          icon: 'ordered-list',
-          iconColor: '#13c2c2',
-          path: '/admin/tasks',
-          order: 5,
-          roles: ['ADMIN'],
-          permissions: ['employee:task:manage'],
-        },
-        // -----------------------------------------------------
-        // Tiền lương
-        // -----------------------------------------------------
-        {
-          id: 'admin-payroll',
-          label: 'Quản lý tiền lương',
-          icon: 'dollar',
-          iconColor: '#52c41a',
-          order: 60,
-          roles: ['ADMIN'],
-          children: [
-            {
-              id: 'admin-salary-structures',
-              label: 'Thang bảng lương',
-              icon: 'database',
-              iconColor: '#722ed1',
-              path: '/admin/salary-structures',
-              order: 10,
-              roles: ['ADMIN'],
-              permissions: ['employee:salary:read'],
-            },
-            {
-              id: 'admin-payroll-runs',
-              label: 'Kỳ tính lương',
-              icon: 'calculator',
-              iconColor: '#13c2c2',
-              path: '/admin/payroll-runs',
-              order: 20,
-              roles: ['ADMIN'],
-              permissions: ['employee:payroll:manage'],
-            },
-          ],
-        },
-
-        // -----------------------------------------------------
-        // Tài khoản và phân quyền
-        // -----------------------------------------------------
-        {
-          id: 'admin-system',
-          label: 'Tài khoản & phân quyền',
-          icon: 'safety',
-          iconColor: '#f5222d',
-          order: 70,
-          roles: ['ADMIN'],
-          children: [
-            {
-              id: 'admin-users',
-              label: 'Tài khoản người dùng',
-              icon: 'user',
-              iconColor: '#1677ff',
-              path: '/admin/users',
-              order: 10,
-              roles: ['ADMIN'],
-              permissions: ['employee:user:read'],
-            },
-            {
-              id: 'admin-roles-permissions',
-              label: 'Vai trò & Phân quyền',
-              icon: 'lock',
-              iconColor: '#f5222d',
-              path: '/admin/roles-permissions',
-              order: 20,
-              roles: ['ADMIN'],
-              permissions: ['employee:role:manage'],
-            },
-            {
-              id: 'admin-audit-logs',
-              label: 'Nhật ký hoạt động',
-              icon: 'file-search',
-              iconColor: '#8c8c8c',
-              path: '/admin/audit-logs',
-              order: 30,
-              roles: ['ADMIN'],
-              permissions: ['employee:audit:read'],
-            },
-          ],
-        },
-      ],
-    },
-  ];
-
-  private readonly normalizedItems: MenuItem[] = this.items
-    .map((item) => ({
-      ...item,
-      children: item.children
-        ? item.children.map((child) => ({ ...child })).sort((a, b) => a.order - b.order)
-        : undefined,
-    }))
-    .sort((a, b) => a.order - b.order);
+  private readonly api = inject(MenuApiService);
+  private readonly items = signal<MenuItem[]>([]);
 
   getMenu(): MenuItem[] {
-    return this.normalizedItems;
+    return this.items();
+  }
+
+  loadCurrentMenu(): void {
+    this.api.current().subscribe({
+      next: (response) => this.items.set(this.toTree(response.data)),
+      error: () => this.items.set([]),
+    });
+  }
+
+  private toTree(records: MenuRecord[]): MenuItem[] {
+    const byCode = new Map<string, MenuItem>();
+    const parentCodes = new Map<string, string | null>();
+    records.forEach((record) => byCode.set(record.menuCode, {
+      id: record.menuCode,
+      label: record.label,
+      icon: record.icon,
+      iconColor: record.iconColor ?? undefined,
+      path: record.path ?? undefined,
+      order: record.sortOrder,
+      children: [],
+    }));
+    records.forEach(record => {
+      const parentCode = record.parentCode?.trim();
+      parentCodes.set(record.menuCode, parentCode && byCode.has(parentCode) && parentCode !== record.menuCode ? parentCode : null);
+    });
+
+    const roots: MenuItem[] = [];
+    records.forEach((record) => {
+      const item = byCode.get(record.menuCode)!;
+      const parentCode = parentCodes.get(record.menuCode);
+      const parent = parentCode ? byCode.get(parentCode) : undefined;
+      if (parent) parent.children!.push(item);
+      else roots.push(item);
+    });
+    const sort = (items: MenuItem[]): MenuItem[] => items
+      .sort((a, b) => a.order - b.order || a.label.localeCompare(b.label))
+      .map((item) => ({ ...item, children: item.children?.length ? sort(item.children) : undefined }));
+    return sort(roots);
   }
 }

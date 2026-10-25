@@ -24,9 +24,14 @@
             (nzOpenChange)="onOpenChange(item.id, $event)"
           >
             <ng-template #nodeTitle>
-<!--              <nz-icon [nzType]="item.icon ?? ''"></nz-icon>-->
               <nz-icon [nzType]="item.icon ?? ''" [style.color]="item.iconColor"></nz-icon>
-              <span>{{ item.label }}</span>
+              <a
+                *ngIf="item.path; else groupTitle"
+                class="submenu-route-link"
+                [routerLink]="item.path"
+                (click)="$event.stopPropagation(); onNavigate()"
+              >{{ item.label }}</a>
+              <ng-template #groupTitle><span>{{ item.label }}</span></ng-template>
             </ng-template>
 
             <ul>
@@ -41,7 +46,6 @@
             [nzPaddingLeft]="collapsed ? null : level * 24"
             [routerLink]="item.path ?? null"
           >
-<!--            <nz-icon [nzType]="item.icon ?? ''"></nz-icon>-->
             <nz-icon [nzType]="item.icon ?? ''" [style.color]="item.iconColor"></nz-icon>
             <span>{{ item.label }}</span>
           </li>

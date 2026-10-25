@@ -1,0 +1,137 @@
+<main class="menu-page">
+  <header class="page-heading">
+    <div>
+      <span class="eyebrow">Bảo mật hệ thống</span>
+      <h1>Quản lý menu</h1>
+      <p>Tạo cấu trúc điều hướng và chọn những menu hiển thị cho từng vai trò.</p>
+    </div>
+    <button type="button" class="primary-button" (click)="openCreate()">+ Thêm menu</button>
+  </header>
+
+  <div class="management-grid">
+    <section class="panel catalog-panel">
+      <div class="panel-heading">
+        <div>
+          <h2>Danh mục menu</h2>
+          <p>{{ menus().length }} mục đang hoạt động</p>
+        </div>
+      </div>
+      <ss-tree-table
+        class="menu-tree-table"
+        [data]="treeData()"
+        [columns]="treeColumns"
+        [config]="treeConfig"
+        [loading]="loadingMenus()"
+        [fill]="false"
+        (actionClick)="onActionClick($event)"
+      ></ss-tree-table>
+    </section>
+
+    <section class="panel assignment-panel">
+      <div class="panel-heading">
+        <div>
+          <h2>Menu theo vai trò</h2>
+          <p>Chọn các trang được hiển thị trong thanh điều hướng.</p>
+        </div>
+      </div>
+      <label class="field-label" for="role-select">Vai trò</label>
+      <select id="role-select" [ngModel]="selectedRole()" (ngModelChange)="selectRole($event)" [disabled]="loadingRoles()">
+        @for (role of roles(); track role.roleCode) {
+          <option [value]="role.roleCode">{{ role.roleName }} ({{ role.roleCode }})</option>
+        }
+      </select>
+      <div class="assignment-list">
+        @if (loadingAssignments()) {
+          <p class="empty">Đang tải menu của vai trò...</p>
+        } @else {
+          @for (menu of allRows(); track menu.id) {
+            <div class="assignment-item" [class.group]="!menu.path" [style.padding-left.px]="12 + menu.depth * 18">
+              @if (menu.path) {
+                <label>
+                  <input type="checkbox" [checked]="selectedCodes().has(menu.menuCode)" (change)="toggleMenu(menu.menuCode, $any($event.target).checked)">
+                  <span>{{ menu.label }}</span>
+                </label>
+              } @else {
+                <strong>{{ menu.label }}</strong>
+              }
+            </div>
+          } @empty {
+            <p class="empty">Chưa có menu để gán.</p>
+          }
+        }
+      </div>
+      <div class="assignment-footer">
+        <p>Gán menu điều khiển hiển thị. Quyền truy cập API được quản lý tại Vai trò &amp; Phân quyền.</p>
+        <button type="button" class="primary-button" [disabled]="!selectedRole() || !assignmentsLoaded() || loadingAssignments() || savingAssignments()" (click)="saveAssignments()">
+          {{ savingAssignments() ? 'Đang lưu...' : 'Lưu menu cho vai trò' }}
+        </button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<ss-dialog [visible]="dialogVisible()" [title]="editing() ? 'Sửa menu' : 'Thêm menu'" [width]="620" [maskClosable]="false" (visibleChange)="dialogVisible.set($event)">
+  <form #menuForm="ngForm" class="menu-form" (ngSubmit)="saveMenu(menuForm.valid)">
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="menu-code">Mã menu <b>*</b></label>
+        <input id="menu-code" name="menuCode" [(ngModel)]="form.menuCode" required maxlength="100" pattern="[a-z0-9][a-z0-9-]*" [disabled]="!!editing()" placeholder="vd: admin-reports">
+      </div>
+      <div class="form-field">
+        <label for="menu-label">Tên hiển thị <b>*</b></label>
+        <input id="menu-label" name="label" [(ngModel)]="form.label" required maxlength="255" placeholder="Tên menu">
+      </div>
+      <div class="form-field wide">
+        <label>Biểu tượng <b>*</b></label>
+        <div class="icon-selection">
+          <span class="icon-preview" [style.color]="form.iconColor || '#8c8c8c'"><nz-icon [nzType]="form.icon"></nz-icon></span>
+          <span>Đang chọn: <strong>{{ form.icon }}</strong></span>
+        </div>
+        <div class="icon-picker" role="group" aria-label="Chọn biểu tượng menu">
+          @for (icon of iconOptions; track icon) {
+            <button type="button" class="icon-option" [class.selected]="form.icon === icon" [attr.aria-label]="'Chọn icon ' + icon" [attr.aria-pressed]="form.icon === icon" (click)="selectIcon(icon)">
+              <nz-icon [nzType]="icon"></nz-icon>
+              <span>{{ icon }}</span>
+            </button>
+          }
+        </div>
+      </div>
+      <div class="form-field wide">
+        <label>Màu biểu tượng</label>
+        <div class="color-picker" role="group" aria-label="Chọn màu biểu tượng">
+          <button type="button" class="no-color" [class.selected]="!form.iconColor" (click)="selectColor(null)">Không màu</button>
+          @for (color of colorPalette; track color) {
+            <button type="button" class="color-swatch" [class.selected]="form.iconColor === color" [style.backgroundColor]="color" [attr.aria-label]="'Chọn màu ' + color" [attr.aria-pressed]="form.iconColor === color" (click)="selectColor(color)"></button>
+          }
+          <label class="custom-color">
+            <span>Tùy chỉnh</span>
+            <input type="color" name="customColor" [ngModel]="form.iconColor || '#1677ff'" (ngModelChange)="selectColor($event)">
+          </label>
+          @if (form.iconColor) { <code>{{ form.iconColor }}</code> }
+        </div>
+      </div>
+      <div class="form-field">
+        <label for="menu-parent">Menu cha</label>
+        <select id="menu-parent" name="parentCode" [(ngModel)]="form.parentCode">
+          <option [ngValue]="null">Cấp cao nhất</option>
+          @for (group of groups(); track group.menuCode) {
+            <option [ngValue]="group.menuCode" [disabled]="group.menuCode === editing()?.menuCode">{{ group.label }}</option>
+          }
+        </select>
+      </div>
+      <div class="form-field">
+        <label for="menu-order">Thứ tự <b>*</b></label>
+        <input id="menu-order" type="number" name="sortOrder" [(ngModel)]="form.sortOrder" required>
+      </div>
+      <div class="form-field wide">
+        <label for="menu-path">Đường dẫn</label>
+        <input id="menu-path" name="path" [(ngModel)]="form.path" maxlength="255" pattern="/[A-Za-z0-9/_-]+" placeholder="/admin/reports">
+        <small>Có thể đặt đường dẫn cho menu cha; để trống nếu menu chỉ dùng làm nhóm. Đường dẫn cần trỏ tới trang đã có trong ứng dụng.</small>
+      </div>
+    </div>
+    <div dialog-footer class="dialog-actions">
+      <button type="button" class="secondary-button" (click)="dialogVisible.set(false)">Hủy</button>
+      <button type="submit" class="primary-button" [disabled]="menuForm.invalid || saving()">{{ saving() ? 'Đang lưu...' : 'Lưu menu' }}</button>
+    </div>
+  </form>
+</ss-dialog>
