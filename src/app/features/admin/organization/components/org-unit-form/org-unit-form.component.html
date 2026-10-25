@@ -16,6 +16,10 @@
           <input name="deptCode" [(ngModel)]="form.deptCode" required maxlength="255" [disabled]="identityFieldsReadOnly" placeholder="VD: IT" />
         </label>
         <label class="form-field">
+          <span>Mã đơn vị <b>*</b></span>
+          <input name="code" [(ngModel)]="form.code" required maxlength="20" [disabled]="identityFieldsReadOnly" placeholder="Mã đơn vị" />
+        </label>
+        <label class="form-field">
           <span>Mã đơn vị cha</span>
           <ss-select
             name="parentCode"
@@ -28,15 +32,15 @@
             placeholder="Chọn đơn vị cha"
           ></ss-select>
         </label>
+        <label class="form-field">
+          <span>Cấp <b>*</b></span>
+          <input name="level" type="number" [(ngModel)]="form.level" required min="1" max="10" [readonly]="fieldsReadOnly" />
+        </label>
         <label class="form-field form-field-wide">
           <span>Tên đơn vị <b>*</b></span>
           <input name="name" [(ngModel)]="form.name" required maxlength="200" [readonly]="fieldsReadOnly" placeholder="Tên đơn vị" />
         </label>
-        <label class="form-field">
-          <span>Mã đơn vị <b>*</b></span>
-          <input name="code" [(ngModel)]="form.code" required maxlength="20" [disabled]="identityFieldsReadOnly" placeholder="Mã đơn vị" />
-        </label>
-        <label class="form-field">
+        <label class="form-field form-field-wide">
           <span>Mã người phụ trách</span>
           <ss-select
             name="headCode"
@@ -48,10 +52,6 @@
             [disabled]="fieldsReadOnly"
             placeholder="Chọn nhân viên"
           ></ss-select>
-        </label>
-        <label class="form-field">
-          <span>Cấp <b>*</b></span>
-          <input name="level" type="number" [(ngModel)]="form.level" required min="1" max="10" [readonly]="fieldsReadOnly" />
         </label>
       </div>
 

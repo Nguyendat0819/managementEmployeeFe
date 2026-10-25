@@ -60,3 +60,44 @@ body .form-field textarea:disabled {
   cursor: not-allowed;
   opacity: 1;
 }
+
+/* Keep form controls aligned consistently inside all shared dialogs. */
+.ss-dialog-modal .ant-modal-body .form-grid {
+  align-items: start;
+  column-gap: 20px;
+  row-gap: 16px;
+}
+
+.ss-dialog-modal .ant-modal-body .form-row {
+  align-items: start;
+  gap: 16px 20px;
+}
+
+.ss-dialog-modal .ant-modal-body .form-grid > *,
+.ss-dialog-modal .ant-modal-body .form-field {
+  min-width: 0;
+  align-content: start;
+}
+
+.ss-dialog-modal .ant-modal-body .form-field > input:not([type='checkbox']),
+.ss-dialog-modal .ant-modal-body .form-field > select,
+.ss-dialog-modal .ant-modal-body .form-field > textarea,
+.ss-dialog-modal .ant-modal-body .form-field > ss-select,
+.ss-dialog-modal .ant-modal-body .form-field > ss-datepicker,
+.ss-dialog-modal .ant-modal-body .form-field > ss-currency {
+  width: 100%;
+  min-width: 0;
+}
+
+.ss-dialog-modal .ant-modal-body .form-field > ss-select,
+.ss-dialog-modal .ant-modal-body .form-field > ss-datepicker,
+.ss-dialog-modal .ant-modal-body .form-field > ss-currency {
+  margin-bottom: 0;
+}
+
+@media (max-width: 640px) {
+  .ss-dialog-modal .ant-modal-body .form-grid,
+  .ss-dialog-modal .ant-modal-body .form-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

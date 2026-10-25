@@ -31,7 +31,7 @@
       <p class="dialog-description">Cập nhật thông tin liên hệ để bộ phận Nhân sự xác nhận.</p>
       <div class="form-field"><label for="profile-phone">Số điện thoại</label><input id="profile-phone" name="phone" type="tel" [(ngModel)]="profileForm.phone" required></div>
       <div class="form-field"><label for="profile-email">Email công việc</label><input id="profile-email" name="email" type="email" [(ngModel)]="profileForm.email" required></div>
-      <div class="form-field"><label for="profile-address">Địa chỉ</label><textarea id="profile-address" name="address" rows="3" [(ngModel)]="profileForm.address" required></textarea></div>
+      <div class="form-field form-field-wide"><label for="profile-address">Địa chỉ</label><textarea id="profile-address" name="address" rows="3" [(ngModel)]="profileForm.address" required></textarea></div>
       <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeUpdateDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit">Lưu</ss-button></div>
     </form>
   </ss-dialog>

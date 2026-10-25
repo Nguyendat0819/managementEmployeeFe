@@ -31,11 +31,11 @@
     <form #shiftFormRef="ngForm" class="shift-form" (ngSubmit)="saveShift(shiftFormRef.valid)">
       <p class="dialog-description">Cấu hình khung giờ và các ngày được áp dụng cho ca làm việc.</p>
       <div class="form-grid">
-        <div class="form-field form-field-wide"><label for="shift-name">Tên ca làm việc <b>*</b></label><input id="shift-name" name="shiftName" [(ngModel)]="shiftForm.shiftName" required maxlength="100" placeholder="VD: Ca hành chính"></div>
+        <div class="form-field"><label for="shift-name">Tên ca làm việc <b>*</b></label><input id="shift-name" name="shiftName" [(ngModel)]="shiftForm.shiftName" required maxlength="100" placeholder="VD: Ca hành chính"></div>
+        <div class="form-field"><label for="shift-status">Trạng thái <b>*</b></label><select id="shift-status" name="status" [(ngModel)]="shiftForm.status" required><option>Đang hoạt động</option><option>Tạm ngưng</option></select></div>
         <div class="form-field"><label for="shift-start-time">Giờ bắt đầu <b>*</b></label><input id="shift-start-time" name="startTime" type="time" [(ngModel)]="shiftForm.startTime" required></div>
         <div class="form-field"><label for="shift-end-time">Giờ kết thúc <b>*</b></label><input id="shift-end-time" name="endTime" type="time" [(ngModel)]="shiftForm.endTime" required></div>
         <div class="form-field form-field-wide"><label>Ngày áp dụng <b>*</b></label><div class="day-options">@for (day of dayOptions; track day) { <label class="day-option"><input type="checkbox" [checked]="isDaySelected(day)" (change)="toggleDay(day)"><span>{{ day }}</span></label> }</div></div>
-        <div class="form-field"><label for="shift-status">Trạng thái <b>*</b></label><select id="shift-status" name="status" [(ngModel)]="shiftForm.status" required><option>Đang hoạt động</option><option>Tạm ngưng</option></select></div>
       </div>
       <div dialog-footer class="dialog-actions"><ss-button variant="outline" color="neutral" htmlType="button" (onClick)="closeFormDialog()">Hủy</ss-button><ss-button color="primary" htmlType="submit" [disabled]="shiftFormRef.invalid">{{ editingShift() ? 'Cập nhật' : 'Lưu ca' }}</ss-button></div>
     </form>

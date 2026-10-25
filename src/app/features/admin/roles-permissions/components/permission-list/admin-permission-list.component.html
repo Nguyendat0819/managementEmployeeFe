@@ -59,11 +59,11 @@
   <form #permissionFormRef="ngForm" class="permission-form" (ngSubmit)="savePermission(permissionFormRef.valid)">
     <p class="dialog-description">Khai báo quyền để có thể cấp cho một hoặc nhiều vai trò.</p>
     <div class="form-grid">
-      <div class="form-field form-field-wide">
+      <div class="form-field">
         <label for="permission-code">Mã quyền <b>*</b></label>
         <input id="permission-code" name="permissionCode" [(ngModel)]="permissionForm.code" required maxlength="100" [disabled]="!!editingPermission()" placeholder="VD: employee.export">
       </div>
-      <div class="form-field form-field-wide">
+      <div class="form-field">
         <label for="permission-name">Tên quyền <b>*</b></label>
         <input id="permission-name" name="permissionName" [(ngModel)]="permissionForm.name" required maxlength="50" placeholder="VD: Xuất danh sách nhân viên">
       </div>
