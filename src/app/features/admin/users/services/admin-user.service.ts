@@ -58,6 +58,13 @@ export class AdminUserService extends BaseService {
       .pipe(map(({ data }) => this.toModel(data)));
   }
 
+  updateRole(userName: string, roleCode: string): Observable<AdminUser> {
+    return this.put<ApiResponse<UserAccountResponse>>(
+      `${this.usersUrl}/${encodeURIComponent(userName)}/role`,
+      { roleCode },
+    ).pipe(map(({ data }) => this.toModel(data)));
+  }
+
   updateStatus(userName: string, action: 'REVOKE' | 'RESTORE'): Observable<AdminUser> {
     return this.post<ApiResponse<UserAccountResponse>>(
       `${this.usersUrl}/${encodeURIComponent(userName)}/status`,
