@@ -54,7 +54,10 @@ export class DashboardEmployeeComponent implements OnInit {
   readonly workedDays = computed(() => this.records().filter((record) => record.checkIn !== '--:--').length);
   readonly lateDays = computed(() => this.records().filter((record) => record.status === 'Đi muộn').length);
   readonly totalHours = computed(() => {
-    const minutes = this.records().reduce((sum, record) => sum + (record.durationMinutes ?? 0), 0);
+    const minutes = this.records().reduce((sum, record) => {
+      const duration = record.durationMinutes;
+      return typeof duration === 'number' && Number.isFinite(duration) && duration >= 0 ? sum + duration : sum;
+    }, 0);
     return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`;
   });
   readonly shiftLabel = computed(() => {

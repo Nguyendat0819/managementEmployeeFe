@@ -45,13 +45,17 @@
           <ss-select
             name="headCode"
             [(ngModel)]="form.headCode"
-            [options]="employeeOptions"
+            (change)="onHeadCodeChange($event)"
+            [options]="headSelectOptions"
             [loading]="employeeLoading"
             [showSearch]="true"
             [allowClear]="true"
             [disabled]="fieldsReadOnly"
-            placeholder="Chọn nhân viên"
+            placeholder="Tìm và chọn nhân viên"
+            (search)="onHeadCodeSearch($event)"
+            (blur)="commitHeadCodeSearch()"
           ></ss-select>
+          <small class="form-hint">Có thể nhập chính xác mã hoặc tên nhân viên; hệ thống sẽ chọn kết quả tương ứng khi rời ô.</small>
         </label>
       </div>
 

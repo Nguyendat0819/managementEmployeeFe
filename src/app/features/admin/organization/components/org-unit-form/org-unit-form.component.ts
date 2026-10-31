@@ -29,6 +29,7 @@ export class OrgUnitFormComponent implements OnChanges, OnInit {
   employeeOptions: { label: string; value: string }[] = [];
   employeeLoading = false;
   departmentOptions: DepartmentResponse[] = [];
+  private headCodeSearchText = '';
 
   get title(): string {
     if (this.mode === 'child') return 'Thêm đơn vị con';
@@ -77,13 +78,25 @@ export class OrgUnitFormComponent implements OnChanges, OnInit {
   }
 
   get parentSelectOptions(): { label: string; value: string }[] {
-    return [
+    const options = [
       { label: 'Không có đơn vị cha', value: '' },
       ...this.parentOptions.map((item) => ({
         label: `${item.name} (${item.deptCode})`,
         value: item.deptCode,
       })),
     ];
+    if (this.form.parentCode && !options.some((option) => option.value === this.form.parentCode)) {
+      options.push({ label: this.form.parentCode, value: this.form.parentCode });
+    }
+    return options;
+  }
+
+  get headSelectOptions(): { label: string; value: string }[] {
+    const selectedCode = this.form.headCode?.trim();
+    if (!selectedCode || this.employeeOptions.some((option) => option.value === selectedCode)) {
+      return this.employeeOptions;
+    }
+    return [{ label: selectedCode, value: selectedCode }, ...this.employeeOptions];
   }
 
   ngOnInit(): void {
@@ -111,6 +124,31 @@ export class OrgUnitFormComponent implements OnChanges, OnInit {
       : 1;
   }
 
+  onHeadCodeChange(headCode: unknown): void {
+    this.form.headCode = typeof headCode === 'string' ? headCode : '';
+    this.headCodeSearchText = '';
+  }
+
+  onHeadCodeSearch(query: string): void {
+    this.headCodeSearchText = query;
+  }
+
+  commitHeadCodeSearch(): void {
+    const query = this.normalizeEmployeeText(this.headCodeSearchText);
+    if (!query) return;
+
+    const option = this.employeeOptions.find((employee) =>
+      this.normalizeEmployeeText(employee.value) === query
+      || this.normalizeEmployeeText(employee.label) === query,
+    );
+    if (option) this.form.headCode = option.value;
+    this.headCodeSearchText = '';
+  }
+
+  private normalizeEmployeeText(value: string): string {
+    return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').trim().toLowerCase();
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['mode'] || changes['department'] || changes['parentDepartment']) {
       this.form = this.department
@@ -120,6 +158,7 @@ export class OrgUnitFormComponent implements OnChanges, OnInit {
             parentCode: this.parentDepartment?.deptCode ?? '',
             level: this.parentDepartment ? this.parentDepartment.level + 1 : 1,
           };
+      this.headCodeSearchText = '';
       this.formError = '';
     }
   }
@@ -133,7 +172,7 @@ export class OrgUnitFormComponent implements OnChanges, OnInit {
       parentCode: this.form.parentCode.trim(),
       name: this.form.name.trim(),
       code: this.form.code.trim(),
-      headCode: this.form.headCode.trim(),
+      headCode: typeof this.form.headCode === 'string' ? this.form.headCode.trim() : '',
       level: Number(this.form.level),
     };
 

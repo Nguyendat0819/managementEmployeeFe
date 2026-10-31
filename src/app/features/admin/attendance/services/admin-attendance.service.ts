@@ -41,7 +41,7 @@ export class AdminAttendanceService {
   }
 
   private formatMinutes(value: number | null): string {
-    if (value === null) return '--:--';
+    if (value == null || !Number.isFinite(value) || value < 0) return '—';
     return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
   }
 }

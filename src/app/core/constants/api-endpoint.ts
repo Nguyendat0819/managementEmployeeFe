@@ -80,6 +80,11 @@ export class API_ENDPOINTS {
     BASE: 'api/role-permission',
   };
 
+  public static readonly AuditLog = {
+    BASE: 'api/audit-logs',
+    SUMMARY: '/summary',
+  };
+
   public static readonly Position = {
     BASE: 'api/position',
     DETAIL: (id: number) => `/${id}`,

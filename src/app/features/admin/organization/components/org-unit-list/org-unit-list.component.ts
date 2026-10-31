@@ -13,7 +13,7 @@ import {
   SsTreeTableToolbarActionEvent,
   SsTreeTableToolbarPrimaryAction,
 } from '@platform/ui-kit';
-import { finalize } from 'rxjs';
+import { finalize, map, switchMap } from 'rxjs';
 import { DepartmentCreateRequest, DepartmentFormValue, DepartmentUpdateRequest, OrganizationFormMode } from '../../models/request.model';
 import { DepartmentResponse, EmployeeResponse, OrganizationTreeRow } from '../../models/response.model';
 import { DepartmentQuery, OrgUnitService } from '../../services/org-unit.service';
@@ -196,32 +196,52 @@ export class OrgUnitListComponent implements OnInit {
   }
 
   onFormSave(value: DepartmentFormValue): void {
+    const headCode = typeof value.headCode === 'string' ? value.headCode.trim() || null : null;
     const request: DepartmentCreateRequest | DepartmentUpdateRequest = this.formDepartment
         ? {
           name: value.name,
           parentCode: value.parentCode || null,
-          headCode: value.headCode || null,
+          headCode,
         }
       : {
           deptCode: value.deptCode,
           parentCode: value.parentCode || null,
           name: value.name,
           code: value.code,
-          headCode: value.headCode || null,
+          headCode,
           level: value.level,
         };
 
     this.saving = true;
+    const isEdit = Boolean(this.formDepartment);
     const request$ = this.formDepartment
       ? this.orgUnitService.updateDepartment(this.formDepartment.deptCode, request as DepartmentUpdateRequest)
       : this.orgUnitService.createDepartment(request as DepartmentCreateRequest);
 
-    request$.pipe(finalize(() => this.saving = false)).subscribe({
-      next: () => {
+    request$.pipe(
+      switchMap(({ data: savedDepartment }) =>
+        this.orgUnitService.getDepartments().pipe(
+          map(({ data }) => ({ savedDepartment, departments: data ?? [] })),
+        ),
+      ),
+      finalize(() => this.saving = false),
+    ).subscribe({
+      next: ({ savedDepartment, departments }) => {
+        const listedDepartment = departments.find((department) => department.deptCode === savedDepartment.deptCode);
+        if ((savedDepartment.headCode?.trim() || null) !== headCode
+          || (listedDepartment?.headCode?.trim() || null) !== headCode) {
+          this.toast.show({
+            severity: 'error',
+            summary: 'Chưa lưu được mã người phụ trách',
+            detail: 'Mã người phụ trách trong danh sách sau khi tải lại không khớp với lựa chọn. Hãy kiểm tra lại rồi thử lại.',
+          });
+          this.loadDepartments();
+          return;
+        }
         this.toast.show({
           severity: 'success',
           summary: 'Thành công',
-          detail: this.formDepartment ? 'Đã cập nhật đơn vị.' : 'Đã thêm đơn vị.',
+          detail: isEdit ? 'Đã cập nhật đơn vị.' : 'Đã thêm đơn vị.',
         });
         this.closeForm();
         this.loadDepartments();

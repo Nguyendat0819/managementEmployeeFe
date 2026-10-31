@@ -197,7 +197,7 @@ export class AttendanceEmployeeComponent implements OnInit {
   }
 
   private formatWorkDuration(minutes: number | null): string {
-    if (minutes === null) return '—';
+    if (minutes === null || !Number.isFinite(minutes) || minutes < 0) return '-';
     if (minutes < 60) return `${minutes} phút`;
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;

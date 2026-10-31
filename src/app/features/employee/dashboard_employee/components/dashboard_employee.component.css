@@ -23,7 +23,8 @@ h1 { margin: 0; font-size: clamp(24px, 2.2vw, 32px); line-height: 1.2; }
 .time-line strong { font-size: 15px; }
 .card-note { color: var(--color-text-secondary); font-size: 12px; }
 .record-list { display: grid; }
-.record-row { display: grid; grid-template-columns: minmax(105px, 1fr) 64px 64px auto; align-items: center; gap: 10px; min-height: 56px; border-bottom: 1px solid var(--color-border); }
+.record-row { display: grid; grid-template-columns: minmax(105px, 1fr) 64px 64px 84px; align-items: center; gap: 10px; min-height: 56px; border-bottom: 1px solid var(--color-border); }
+.record-row ss-tag { justify-self: end; }
 .record-date strong, .record-date small, .record-time strong { display: block; }
 .record-date strong, .record-time strong { font-size: 13px; }
 .record-date small { margin-top: 3px; color: var(--color-text-secondary); font-size: 11px; }
@@ -35,4 +36,4 @@ h1 { margin: 0; font-size: clamp(24px, 2.2vw, 32px); line-height: 1.2; }
 .quick-links button span:last-child { margin-left: 12px; color: var(--color-text-secondary); }
 .quick-links button:hover { border-color: #91caff; background: #f5f9ff; }
 @media (max-width: 1000px) { .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .content-grid { grid-template-columns: 1fr; } }
-@media (max-width: 600px) { .dashboard-page { padding-top: 0; } .welcome-panel { align-items: flex-start; flex-direction: column; padding: 20px; } .today { width: 100%; padding: 12px 0 0; border-top: 1px solid rgba(255,255,255,.28); border-left: 0; text-align: left; } .stats-grid { gap: 10px; margin: 12px 0; } .time-line { grid-template-columns: 1fr; gap: 10px; } .record-row { grid-template-columns: minmax(85px, 1fr) 52px 52px auto; gap: 6px; } .record-row ss-tag { font-size: 10px; } .quick-links { flex-direction: column; } .quick-links button { justify-content: flex-start; } }
+@media (max-width: 600px) { .dashboard-page { padding-top: 0; } .welcome-panel { align-items: flex-start; flex-direction: column; padding: 20px; } .today { width: 100%; padding: 12px 0 0; border-top: 1px solid rgba(255,255,255,.28); border-left: 0; text-align: left; } .stats-grid { gap: 10px; margin: 12px 0; } .time-line { grid-template-columns: 1fr; gap: 10px; } .record-row { grid-template-columns: minmax(0, 1fr) 48px 48px 76px; gap: 6px; } .record-row ss-tag { font-size: 10px; } .quick-links { flex-direction: column; } .quick-links button { justify-content: flex-start; } }

@@ -24,6 +24,8 @@ export class AttendanceEmployeeService {
 
   toViewModel(record: AttendanceRecordDto): AttendanceRecord {
     const date = new Date(`${record.recordedAt}T00:00:00`);
+    const durationMinutes = this.toValidMinutes(record.workDurationMin);
+    const overtimeMinutes = record.status === 'NO_SHIFT' ? null : this.toValidMinutes(record.overtimeMin);
     const status = record.status === 'NO_SHIFT'
       ? 'Chưa có ca'
       : record.lateMinutes && record.lateMinutes > 0 || record.status === 'LATE'
@@ -35,10 +37,10 @@ export class AttendanceEmployeeService {
       shiftName: record.shiftName ?? '—',
       checkIn: this.toTime(record.checkIn),
       checkOut: this.toTime(record.checkOut),
-      durationMinutes: record.workDurationMin,
-      overtimeMinutes: record.status === 'NO_SHIFT' ? null : record.overtimeMin,
-      duration: this.formatMinutes(record.workDurationMin),
-      overtime: this.formatMinutes(record.status === 'NO_SHIFT' ? null : record.overtimeMin),
+      durationMinutes,
+      overtimeMinutes,
+      duration: this.formatMinutes(durationMinutes),
+      overtime: this.formatMinutes(overtimeMinutes),
       status,
       statusType: status === 'Đi muộn' ? 'error' : status === 'Thiếu dữ liệu' || status === 'Chưa có ca' ? 'warning' : 'success',
     };
@@ -48,8 +50,12 @@ export class AttendanceEmployeeService {
     return value ? value.slice(11, 16) : '--:--';
   }
 
+  private toValidMinutes(value: number | null | undefined): number | null {
+    return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
+  }
+
   private formatMinutes(value: number | null): string {
-    if (value === null) return '—';
+    if (value === null || !Number.isFinite(value) || value < 0) return '-';
     if (value < 60) return `${value} phút`;
     return `${Math.floor(value / 60)} giờ ${value % 60} phút`;
   }

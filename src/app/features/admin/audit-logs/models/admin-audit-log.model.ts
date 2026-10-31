@@ -13,3 +13,10 @@ export interface AdminAuditLog {
   device: string;
   details: string;
 }
+
+export interface AdminAuditLogSummary {
+  total: number;
+  successful: number;
+  failed: number;
+  securityEvents: number;
+}
